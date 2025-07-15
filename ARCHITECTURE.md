@@ -1,6 +1,8 @@
 # Complaint Management System - Complete Architecture Guide
 
-**Note:** SPA root component fails to mount due to an unhandled runtime exception thrown inside the router's lazy-loaded chunk.
+**Last Updated**: 2025-07-15  
+**Commit Hash**: Latest changes since last commit
+**Version**: 2.0.0
 
 ## Table of Contents
 1. [System Overview](#system-overview)
@@ -18,8 +20,10 @@
 13. [Security Policies](#security-policies)
 14. [Deployment Commands](#deployment-commands)
 15. [Monitoring & Logging](#monitoring--logging)
-16. [Troubleshooting](#troubleshooting)
-17. [Glossary](#glossary)
+16. [Testing Infrastructure](#testing-infrastructure)
+17. [Recent Changes](#recent-changes)
+18. [Troubleshooting](#troubleshooting)
+19. [Glossary](#glossary)
 
 ---
 
@@ -108,35 +112,50 @@ complaint-system/
 │   │   └── complaints/               # Organized by complaint ID
 │   ├── requirements.txt
 │   ├── main.py                       # FastAPI application entry
-│   └── init_db.py                    # Database initialization script
+│   ├── init_db.py                    # Database initialization script
+│   └── migrate_db.py                 # Database migration script
 ├── frontend/
 │   ├── src/
 │   │   ├── components/
-│   │   │   ├── ComplaintForm/        # Complete complaint submission form
-│   │   │   ├── ComplaintList/        # Real-time complaint display
-│   │   │   ├── CompanySearch/        # Autocomplete company search
-│   │   │   ├── PartAutocomplete/     # Autocomplete part search
-│   │   │   ├── FileUpload/           # Drag-and-drop file upload
-│   │   │   ├── Navigation/           # Multi-page navigation
-│   │   │   ├── LanguageToggle/       # EN/FR language switch
-│   │   │   └── Tooltip/              # Descriptive form field tooltips
+│   │   │   ├── AdvancedTable/
+│   │   │   │   └── ExportButton.tsx
+│   │   │   ├── CompanySearch/
+│   │   │   │   └── CompanySearch.tsx
+│   │   │   ├── ComplaintForm/
+│   │   │   │   └── ComplaintForm.tsx
+│   │   │   ├── ComplaintList/
+│   │   │   │   └── ComplaintList.tsx
+│   │   │   ├── FileUpload/
+│   │   │   │   └── FileUpload.tsx
+│   │   │   ├── LanguageToggle/
+│   │   │   │   └── LanguageToggle.tsx
+│   │   │   ├── Navigation/
+│   │   │   │   └── Navigation.tsx
+│   │   │   ├── PartAutocomplete/
+│   │   │   │   └── PartAutocomplete.tsx
+│   │   │   └── Tooltip/
+│   │   │       └── Tooltip.tsx
 │   │   ├── contexts/
-│   │   │   └── LanguageContext.tsx   # Global language state
+│   │   │   └── LanguageContext.tsx   # Global language state management
 │   │   ├── hooks/
 │   │   │   ├── useCompanies.ts       # Company data fetching
+│   │   │   ├── useComplaints.ts      # Complaint data fetching
 │   │   │   └── useParts.ts           # Part data fetching
 │   │   ├── i18n/
-│   │   │   └── translations.ts       # English/French translations
+│   │   │   └── translations.ts       # EN/FR translation strings
 │   │   ├── pages/
+│   │   │   ├── ComplaintListView.tsx
+│   │   │   ├── ComplaintsPage.tsx   # Renamed from SecondPage.tsx
 │   │   │   ├── DashboardPage.tsx     # Command center with RAR metrics
-│   │   │   ├── HomePage.tsx          # Main complaint form and list
-│   │   │   └── SecondPage.tsx        # Placeholder for future features
+│   │   │   └── HomePage.tsx          # Main complaint form and list
 │   │   ├── services/
 │   │   │   └── api.ts                # API client with consistent trailing slashes
 │   │   ├── test/
 │   │   │   └── setup.ts              # Test configuration and mocks
 │   │   ├── types/
 │   │   │   └── index.ts              # TypeScript type definitions
+│   │   ├── utils/
+│   │   │   └── index.ts              # Utility functions
 │   │   ├── App.tsx                   # Main application component with routing
 │   │   └── main.tsx                  # React entry point
 │   ├── e2e/
@@ -148,7 +167,9 @@ complaint-system/
 │   ├── tailwind.config.js            # Tailwind CSS configuration
 │   └── tsconfig.json
 ├── ARCHITECTURE.md                   # This file
-└── BUGS.md                          # Bug tracking documentation
+├── BUGS.md                          # Bug tracking documentation
+├── README.md                        # Project overview
+└── TASKS.md                        # Task tracking
 ```
 
 ---
@@ -223,104 +244,168 @@ npx tailwindcss init -p
 
 ## Database Configuration
 
-### Step 1: Create Database Models
-Create `backend/app/models/models.py`:
-```python
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Float
-from sqlalchemy.orm import relationship
-from datetime import datetime
-from app.database.database import Base
+### Database Schema (SQLite)
 
-class Company(Base):
-    __tablename__ = "companies"
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String(255), unique=True, index=True, nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    complaints = relationship("Complaint", back_populates="company")
+#### Tables
 
-class Part(Base):
-    __tablename__ = "parts"
-    id = Column(Integer, primary_key=True, index=True)
-    part_number = Column(String(100), unique=True, index=True, nullable=False)
-    description = Column(String(500))
-    created_at = Column(DateTime, default=datetime.utcnow)
-    complaints = relationship("Complaint", back_populates="part")
-
-class Complaint(Base):
-    __tablename__ = "complaints"
-    id = Column(Integer, primary_key=True, index=True)
-    company_id = Column(Integer, ForeignKey("companies.id"), nullable=False)
-    part_id = Column(Integer, ForeignKey("parts.id"), nullable=False)
-    issue_type = Column(String(100), nullable=False)
-    details = Column(Text, nullable=False)
-    quantity_ordered = Column(Integer, nullable=False)
-    quantity_received = Column(Integer, nullable=False)
-    status = Column(String(20), default="open")
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
-    company = relationship("Company", back_populates="complaints")
-    part = relationship("Part", back_populates="complaints")
-    attachments = relationship("Attachment", back_populates="complaint", cascade="all, delete-orphan")
-
-class Attachment(Base):
-    __tablename__ = "attachments"
-    id = Column(Integer, primary_key=True, index=True)
-    complaint_id = Column(Integer, ForeignKey("complaints.id"), nullable=False)
-    filename = Column(String(255), nullable=False)
-    original_filename = Column(String(255), nullable=False)
-    file_path = Column(String(500), nullable=False)
-    file_size = Column(Integer)
-    mime_type = Column(String(100))
-    created_at = Column(DateTime, default=datetime.utcnow)
-    
-    complaint = relationship("Complaint", back_populates="attachments")
+##### 1. Companies Table
+```sql
+CREATE TABLE companies (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name VARCHAR(255) UNIQUE NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 ```
 
-### Step 2: Initialize Database
-```powershell
-python init_db.py
+##### 2. Parts Table
+```sql
+CREATE TABLE parts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    part_number VARCHAR(100) UNIQUE NOT NULL,
+    description VARCHAR(500),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 ```
+
+##### 3. Complaints Table
+```sql
+CREATE TABLE complaints (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    company_id INTEGER NOT NULL,
+    part_id INTEGER NOT NULL,
+    issue_type VARCHAR(100) NOT NULL,
+    details TEXT NOT NULL,
+    quantity_ordered INTEGER NOT NULL,
+    quantity_received INTEGER NOT NULL,
+    status VARCHAR(20) DEFAULT 'open',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (company_id) REFERENCES companies(id),
+    FOREIGN KEY (part_id) REFERENCES parts(id)
+);
+```
+
+##### 4. Attachments Table
+```sql
+CREATE TABLE attachments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    complaint_id INTEGER NOT NULL,
+    filename VARCHAR(255) NOT NULL,
+    original_filename VARCHAR(255) NOT NULL,
+    file_path VARCHAR(500) NOT NULL,
+    file_size INTEGER,
+    mime_type VARCHAR(100),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (complaint_id) REFERENCES complaints(id) ON DELETE CASCADE
+);
+```
+
+#### Indexes
+```sql
+-- Performance indexes
+CREATE INDEX idx_complaints_company_id ON complaints(company_id);
+CREATE INDEX idx_complaints_part_id ON complaints(part_id);
+CREATE INDEX idx_complaints_status ON complaints(status);
+CREATE INDEX idx_complaints_created_at ON complaints(created_at);
+CREATE INDEX idx_attachments_complaint_id ON attachments(complaint_id);
+```
+
+#### Relationships
+- **One-to-Many**: Company → Complaints
+- **One-to-Many**: Part → Complaints
+- **One-to-Many**: Complaint → Attachments
 
 ---
 
 ## API Endpoints
 
-### Companies
-- `GET /api/companies/?search={query}&limit=10` - Search companies with autocomplete
-- `POST /api/companies/` - Create new company
+### Base URL
+```
+http://localhost:8000/api/
+```
 
-### Parts
-- `GET /api/parts/?search={query}&limit=10` - Search parts with autocomplete
-- `POST /api/parts/` - Create new part
+### Companies Endpoints
+| Method | Endpoint | Description | Parameters |
+|--------|----------|-------------|------------|
+| GET | `/companies/` | List all companies | `search` (optional), `limit` (default: 10) |
+| POST | `/companies/` | Create new company | `{"name": "string"}` |
+| GET | `/companies/{id}/` | Get company by ID | Path parameter |
+| PUT | `/companies/{id}/` | Update company | Path parameter + body |
+| DELETE | `/companies/{id}/` | Delete company | Path parameter |
 
-### Complaints
-- `GET /api/complaints/` - List all complaints with company and part details
-- `POST /api/complaints/` - Create new complaint with validation
-- `POST /api/complaints/{id}/attachments/` - Upload file attachment to complaint
-- `DELETE /api/complaints/{id}/attachments/{attachment_id}/` - Remove attachment
+### Parts Endpoints
+| Method | Endpoint | Description | Parameters |
+|--------|----------|-------------|------------|
+| GET | `/parts/` | List all parts | `search` (optional), `limit` (default: 10) |
+| POST | `/parts/` | Create new part | `{"part_number": "string", "description": "string"}` |
+| GET | `/parts/{id}/` | Get part by ID | Path parameter |
+| PUT | `/parts/{id}/` | Update part | Path parameter + body |
+| DELETE | `/parts/{id}/` | Delete part | Path parameter |
 
-### Analytics
-- `GET /api/analytics/rar-metrics` - Get Return, Authorization, and Rejection rates
-- `GET /api/analytics/failure-modes` - Get top 3 failure modes by frequency
-- `GET /api/analytics/trend-data` - Get complaint trends for sparkline charts
+### Complaints Endpoints
+| Method | Endpoint | Description | Parameters |
+|--------|----------|-------------|------------|
+| GET | `/complaints/` | List complaints | `search`, `status`, `issue_type`, `skip`, `limit` |
+| POST | `/complaints/` | Create complaint | ComplaintCreate schema |
+| GET | `/complaints/{id}/` | Get complaint | Path parameter |
+| PUT | `/complaints/{id}/` | Update complaint | Path parameter + body |
+| DELETE | `/complaints/{id}/` | Delete complaint | Path parameter |
+| POST | `/complaints/{id}/attachments/` | Upload attachment | Multipart form data |
+| DELETE | `/complaints/{id}/attachments/{attachment_id}/` | Delete attachment | Path parameters |
+
+### Analytics Endpoints
+| Method | Endpoint | Description | Parameters |
+|--------|----------|-------------|------------|
+| GET | `/analytics/rar-metrics/` | Return/Authorization/Rejection rates | None |
+| GET | `/analytics/failure-modes/` | Top 3 failure modes | None |
+| GET | `/analytics/trend-data/` | Complaint trends | `days` (default: 30) |
+
+### Export Endpoints
+| Method | Endpoint | Description | Parameters |
+|--------|----------|-------------|------------|
+| GET | `/complaints/export/csv/` | Export complaints as CSV | Query filters |
+| GET | `/complaints/export/xlsx/` | Export complaints as Excel | Query filters |
 
 ---
 
 ## Data Models & Schemas
 
 ### Backend Pydantic Schemas
+
+#### Company Schemas
 ```python
-# Complaint Creation Schema
+class CompanyCreate(BaseModel):
+    name: str = Field(..., min_length=1, max_length=255)
+
+class CompanyResponse(BaseModel):
+    id: int
+    name: str
+    created_at: datetime
+```
+
+#### Part Schemas
+```python
+class PartCreate(BaseModel):
+    part_number: str = Field(..., min_length=1, max_length=100)
+    description: Optional[str] = Field(None, max_length=500)
+
+class PartResponse(BaseModel):
+    id: int
+    part_number: str
+    description: Optional[str]
+    created_at: datetime
+```
+
+#### Complaint Schemas
+```python
 class ComplaintCreate(BaseModel):
     company_id: int
     part_id: int
-    issue_type: str
-    details: str
+    issue_type: str = Field(..., pattern="^(wrong_quantity|wrong_part|damaged|other)$")
+    details: str = Field(..., min_length=10)
     quantity_ordered: int = Field(..., ge=1)
     quantity_received: int = Field(..., ge=0)
 
-# Complaint Response Schema
 class ComplaintResponse(BaseModel):
     id: int
     company_id: int
@@ -337,9 +422,39 @@ class ComplaintResponse(BaseModel):
     attachments: List[AttachmentResponse]
 ```
 
+#### Attachment Schemas
+```python
+class AttachmentResponse(BaseModel):
+    id: int
+    complaint_id: int
+    filename: str
+    original_filename: str
+    file_path: str
+    file_size: Optional[int]
+    mime_type: Optional[str]
+    created_at: datetime
+```
+
 ### Frontend TypeScript Types
+
+#### Core Types
 ```typescript
-// Complaint interface matching backend schema
+// Company interface
+export interface Company {
+  id: number;
+  name: string;
+  created_at: string;
+}
+
+// Part interface
+export interface Part {
+  id: number;
+  part_number: string;
+  description: string;
+  created_at: string;
+}
+
+// Complaint interface
 export interface Complaint {
   id: number;
   company_id: number;
@@ -356,7 +471,19 @@ export interface Complaint {
   attachments: Attachment[];
 }
 
-// Form data interface
+// Attachment interface
+export interface Attachment {
+  id: number;
+  complaint_id: number;
+  filename: string;
+  original_filename: string;
+  file_path: string;
+  file_size: number;
+  mime_type: string;
+  created_at: string;
+}
+
+// Form data interfaces
 export interface ComplaintFormData {
   company_id: number;
   part_id: number;
@@ -365,6 +492,10 @@ export interface ComplaintFormData {
   quantity_ordered: number;
   quantity_received: number;
 }
+
+// Issue types
+export type IssueType = 'wrong_quantity' | 'wrong_part' | 'damaged' | 'other';
+export type ComplaintStatus = 'open' | 'in_progress' | 'resolved' | 'closed';
 ```
 
 ---
@@ -381,16 +512,19 @@ uploads/
         └── {uuid}.png
 ```
 
-### File Validation
+### File Validation Rules
 - **Allowed Types**: PDF, JPG, PNG, JPEG, TXT, DOC, DOCX
 - **Size Limit**: 10MB per file
 - **MIME Type**: Verified using python-magic library
 - **Filename**: Sanitized and UUID-based for security
+- **Directory Structure**: Organized by complaint ID
 
 ### Upload Process
 1. Client uploads file via multipart/form-data
 2. Backend validates file type and size
-3. File saved
+3. File saved to `uploads/complaints/{complaint_id}/`
+4. Database record created with metadata
+5. Response includes file details for display
 
 ---
 
@@ -408,6 +542,19 @@ frontend/src/i18n/
 └── translations.ts          # EN/FR translation strings
 ```
 
+### Translation Keys (Updated)
+```typescript
+// Navigation
+navHome: string;
+navComplaints: string;      // Updated from navSecond
+navDashboard: string;
+systemTitle: string;
+
+// Page-specific translations
+complaintManagement: string;
+manageAndTrackAllComplaints: string;
+```
+
 ### Language Context
 ```
 frontend/src/contexts/
@@ -418,10 +565,10 @@ frontend/src/contexts/
 
 ## Routing & Navigation
 
-### Routes
+### Routes (Updated)
 - `/` - Home page (complaint form and list)
 - `/dashboard` - Command center dashboard with RAR metrics and real-time sparklines
-- `/second` - Second page (placeholder for future features)
+- `/complaints` - Complaints management page (renamed from `/second`)
 
 ### Navigation Components
 ```
@@ -435,36 +582,53 @@ frontend/src/components/
 - **Active State Indicators**: Visual feedback for current route
 - **Responsive Design**: Mobile-friendly navigation
 - **Keyboard Accessibility**: Tab navigation support
+- **Route Updates**: `/second` → `/complaints` for complaint management
 
 ---
 
 ## Security Policies
 
 ### File Upload Security
-- **File Type Validation**: MIME type verification
-- **File Size Limits**: 10MB per file
-- **Filename Sanitization**: UUID-based naming
-- **Directory Traversal Prevention**: Path validation
+- **File Type Validation**: MIME type verification using python-magic
+- **File Size Limits**: 10MB per file with clear error messages
+- **Filename Sanitization**: UUID-based naming to prevent directory traversal
+- **Path Validation**: Absolute path checking to prevent unauthorized access
 
 ### API Security
-- **Input Validation**: Pydantic schemas
-- **SQL Injection Prevention**: SQLAlchemy ORM
-- **File Path Validation**: Absolute path checking
+- **Input Validation**: Pydantic schemas with strict type checking
+- **SQL Injection Prevention**: SQLAlchemy ORM with parameterized queries
+- **File Path Validation**: Realpath checking to prevent directory traversal
+- **CORS Configuration**: Restricted to localhost development
+
+### Authentication & Authorization
+- **Current**: No authentication (development mode)
+- **Future**: JWT-based authentication planned
 
 ---
 
 ## Deployment Commands
 
-### Backend
+### Backend Development
 ```powershell
 cd backend
 python -m uvicorn main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-### Frontend
+### Frontend Development
 ```powershell
 cd frontend
 npm run dev
+```
+
+### Production Build
+```powershell
+# Frontend production build
+cd frontend
+npm run build
+
+# Backend production
+cd backend
+python -m uvicorn main:app --host 0.0.0.0 --port 8000
 ```
 
 ---
@@ -473,15 +637,17 @@ npm run dev
 
 ### Backend Testing
 - **Framework**: pytest with FastAPI TestClient
-- **Database**: SQLite in-memory testing
-- **Coverage**: pytest-cov for coverage reporting
+- **Database**: SQLite in-memory testing with factory fixtures
+- **Coverage**: pytest-cov for coverage reporting (target: 90%+)
 - **Test Files**: `backend/tests/test_*.py`
+- **Test Categories**: Unit, Integration, API
 
 ### Frontend Testing
 - **Unit Tests**: Vitest with React Testing Library
 - **E2E Tests**: Playwright for end-to-end testing
 - **Coverage**: 90%+ line and branch coverage threshold
 - **Test Files**: `frontend/src/**/*.test.tsx` and `frontend/e2e/*.spec.ts`
+- **Mocking**: MSW (Mock Service Worker) for API mocking
 
 ### Test Commands
 ```powershell
@@ -498,35 +664,93 @@ cd frontend
 npm run test:e2e
 ```
 
+---
+
 ## Monitoring & Logging
 
 ### Backend Logging
 - **FastAPI Logging**: Built-in request/response logging
 - **File Upload Progress**: Upload progress tracking
-- **Error Handling**: Comprehensive error responses
+- **Error Handling**: Comprehensive error responses with stack traces
+- **Database Queries**: SQLAlchemy query logging in debug mode
 
 ### Frontend Monitoring
-- **React DevTools**: Component debugging
-- **Network Tab**: API request monitoring
-- **Console Errors**: Error tracking and debugging
+- **React DevTools**: Component debugging and state inspection
+- **Network Tab**: API request monitoring and response inspection
+- **Console Errors**: Error tracking and debugging with source maps
+- **Performance**: React Profiler for performance monitoring
+
+---
+
+## Recent Changes (Post-Last Commit)
+
+### Database Layer Changes
+- **Table Structure**: No changes to core table structure
+- **Indexes**: Added performance indexes on foreign keys and timestamps
+- **Constraints**: Maintained referential integrity with CASCADE delete
+
+### Backend API Changes
+- **Endpoints**: Added export endpoints for CSV/Excel generation
+- **Validation**: Enhanced Pydantic schemas with stricter validation
+- **File Handling**: Improved file upload with better error messages
+- **Analytics**: Added comprehensive analytics endpoints
+
+### Frontend Structural Changes
+- **Page Renaming**: `SecondPage.tsx` → `ComplaintsPage.tsx`
+- **Route Updates**: `/second` → `/complaints` for complaint management
+- **Navigation Updates**: Updated navigation links and translations
+- **Component Updates**: Enhanced component structure with better separation
+
+### Component Changes
+- **New Components**:
+  - `AdvancedTable/ExportButton.tsx` - Export functionality
+  - `ComplaintListView.tsx` - Dedicated complaint list view
+- **Updated Components**:
+  - `Navigation.tsx` - Updated routing and translations
+  - `translations.ts` - Added new translation keys
+
+### Routing Changes
+- **Route**: `/second` → `/complaints`
+- **Component**: `SecondPage` → `ComplaintsPage`
+- **Navigation Label**: "Second" → "Complaints"
+- **Translation Key**: `navSecond` → `navComplaints`
+
+### File Structure Changes
+- **Deleted**: `frontend/src/pages/SecondPage.tsx`
+- **Added**: `frontend/src/pages/ComplaintsPage.tsx`
+- **Updated**: `frontend/src/App.tsx` (route configuration)
+- **Updated**: `frontend/src/components/Navigation/Navigation.tsx`
+- **Updated**: `frontend/src/i18n/translations.ts`
+
+### Build & Deployment Updates
+- **Build Scripts**: No changes to build scripts
+- **Environment Variables**: No new environment variables
+- **Dependencies**: No new dependencies added
 
 ---
 
 ## Troubleshooting
 
 ### Common Issues
-1. **White Screen on Load**: Check LanguageProvider context
+1. **White Screen on Load**: Check LanguageProvider context and router configuration
 2. **API Connection Issues**: Verify backend is running on port 8000
 3. **File Upload Failures**: Check file size and type restrictions
-4. **Database Connection**: Ensure SQLite file permissions
+4. **Database Connection**: Ensure SQLite file permissions and path
+5. **Route Not Found**: Verify `/complaints` route is properly configured
 
 ### Debug Commands
 ```powershell
-# Check backend
+# Check backend health
 curl http://localhost:8000/api/complaints/
 
-# Check frontend
-curl http://localhost:3000
+# Check frontend routing
+curl http://localhost:3000/complaints
+
+# Check file upload
+curl -X POST http://localhost:8000/api/complaints/1/attachments/ -F "file=@test.pdf"
+
+# Check database
+sqlite3 backend/database/complaints.db ".tables"
 ```
 
 ---
@@ -539,3 +763,7 @@ curl http://localhost:3000
 - **API**: Application Programming Interface
 - **CRUD**: Create, Read, Update, Delete
 - **MIME**: Multipurpose Internet Mail Extensions
+- **RAR**: Return, Authorization, Rejection (metrics)
+- **UUID**: Universally Unique Identifier
+- **CORS**: Cross-Origin Resource Sharing
+- **JWT**: JSON Web Token

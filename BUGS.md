@@ -126,6 +126,37 @@
    **Resolution:** Fixed field name inconsistency by changing `totalPages` to `total_pages` in complaints.py response to match schema expectations
    **Commit:** Fixed camelCase to snake_case field name in complaints.py pagination response
    **Date Fixed:** 2025-07-15
+8. **ID-009** - **Severity:** High - **Status:** Open
+   **Summary:** SQLAlchemy TypeError when searching complaints - "Object '' associated with '.type' attribute is not a TypeEngine class"
+   **Reproduction Steps:**
+   1. Navigate to the complaint management tab
+   2. Enter any search term in the search input field
+   3. Observe the 500 Internal Server Error in the browser console
+   4. Check backend logs for the detailed SQLAlchemy error
+
+   **Expected Behavior:** Search should return filtered complaints matching the search term
+   **Actual Behavior:** API returns 500 Internal Server Error with SQLAlchemy TypeError
+   **Environment:** All browsers, backend API, SQLAlchemy
+   **Assignee:** Unassigned
+   **Status:** Open
+
+   **Console Logs:**
+   ```
+   TypeError: Object '' associated with '.type' attribute is not a TypeEngine class or object
+   ```
+   **Detailed Error:**
+   ```
+   sqlalchemy.sql.elements.TypeError: Object '' associated with '.type' attribute is not a TypeEngine class or object
+   ```
+   
+   **Root Cause Analysis:**
+   The issue occurs in the `get_complaints` endpoint in `complaints.py` at line 65. The SQLAlchemy query is trying to use `.cast(str)` on `Complaint.id`, but there's a type casting issue. The error suggests that the type casting is not properly configured or the column type is not correctly defined for string casting operations.
+
+   **Technical Details:**
+   - File: `complaint-system/backend/app/api/complaints.py` line 65
+   - Code: `Complaint.id.cast(str).like(search_term)`
+   - Issue: SQLAlchemy cannot cast the ID column to string type for LIKE comparison
+   - Context: This happens during global search functionality when searching across complaint IDs
 
 ---
 
