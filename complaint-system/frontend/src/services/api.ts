@@ -50,7 +50,7 @@ export const complaintsApi = {
     company_id?: number;
   }): Promise<Complaint[]> => {
     const response = await api.get('/complaints/', { params });
-    return response.data;
+    return response.data.items || response.data;
   },
   
   getById: async (id: number): Promise<Complaint> => {

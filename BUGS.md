@@ -100,7 +100,35 @@
    **Root Cause**: Missing QueryClientProvider wrapper in the React Router setup
    **Fix**: Added QueryClientProvider to main.tsx to wrap the entire App component
    **Date Fixed**: 2025-07-15
+7. **ID-008** - **Severity:** High - **FIXED** ✅
+   **Summary:** API returns 500 Internal Server Error when filtering complaints by status
+   **Reproduction Steps:**
+   1. Navigate to the complaint management tab
+   2. Apply any status filter (e.g., "open", "in_progress", "resolved", "closed")
+   3. Observe the 500 Internal Server Error in the browser console
+   4. Check backend logs for the detailed error
+
+   **Expected Behavior:** Complaints should be filtered by status and displayed correctly
+   **Actual Behavior:** API returns 500 Internal Server Error with ResponseValidationError
+   **Environment:** All browsers, backend API
+   **Assignee:** Kilo code
+   **Status:** **CLOSED** ✅
+
+   **Console Logs:**
+   ```
+   fastapi.exceptions.ResponseValidationError: 1 validation errors:
+     {'type': 'missing', 'loc': ('response', 'pagination', 'total_pages'), 'msg': 'Field required', 'input': {'page': 1, 'size': 10, 'total': 3, 'totalPages': 1}}
+   ```
+
+   **Root Cause Analysis:**
+   The API endpoint `/api/complaints/` is returning a response with camelCase field `totalPages` but the Pydantic schema `ComplaintSearchResponse` expects snake_case field `total_pages`. This field name mismatch causes FastAPI's response validation to fail.
+
+   **Resolution:** Fixed field name inconsistency by changing `totalPages` to `total_pages` in complaints.py response to match schema expectations
+   **Commit:** Fixed camelCase to snake_case field name in complaints.py pagination response
+   **Date Fixed:** 2025-07-15
+
 ---
+
 
 ## Triaging Workflow
 

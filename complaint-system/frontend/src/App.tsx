@@ -3,7 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { LanguageProvider } from './contexts/LanguageContext';
 import Navigation from './components/Navigation/Navigation';
 import HomePage from './pages/HomePage';
-import SecondPage from './pages/SecondPage';
+import ComplaintsPage from './pages/ComplaintsPage';
 import DashboardPage from './pages/DashboardPage';
 
 function App() {
@@ -15,7 +15,7 @@ function App() {
           <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/dashboard" element={<DashboardPage />} />
-            <Route path="/second" element={<SecondPage />} />
+            <Route path="/complaints" element={<ComplaintsPage />} />
           </Routes>
         </div>
       </Router>

@@ -43,15 +43,15 @@ export default function Navigation() {
               {t('navDashboard')}
             </Link>
             <Link
-              to="/second"
+              to="/complaints"
               className={`inline-flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                isActive('/second')
+                isActive('/complaints')
                   ? 'bg-blue-100 text-blue-700'
                   : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
               }`}
             >
               <FileText className="h-4 w-4 mr-2" />
-              {t('navSecond')}
+              {t('navComplaints')}
             </Link>
             
             <div className="ml-4">

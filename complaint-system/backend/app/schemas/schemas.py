@@ -118,3 +118,16 @@ class SearchResponse(BaseModel):
     total: int
     page: int
     size: int
+
+class PaginationResponse(BaseModel):
+    page: int
+    size: int
+    total: int
+    total_pages: int
+
+class ComplaintSearchResponse(BaseModel):
+    items: List[ComplaintResponse]
+    pagination: PaginationResponse
+    
+    class Config:
+        from_attributes = True

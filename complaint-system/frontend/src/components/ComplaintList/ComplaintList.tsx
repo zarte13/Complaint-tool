@@ -24,7 +24,7 @@ export default function ComplaintList({ refreshTrigger = 0 }: ComplaintListProps
     try {
       setLoading(true);
       const response = await api.get('/complaints');
-      setComplaints(response.data);
+      setComplaints(response.data.items || response.data);
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Failed to load complaints');
     } finally {

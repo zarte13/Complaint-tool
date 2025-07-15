@@ -1,7 +1,7 @@
 export interface Translations {
   // Navigation
   navHome: string;
-  navSecond: string;
+  navComplaints: string;
   navDashboard: string;
   systemTitle: string;
   
@@ -14,6 +14,30 @@ export interface Translations {
   secondSubtitle: string;
   comingSoon: string;
   placeholderMessage: string;
+  
+  // Complaint Management
+  complaintManagement: string;
+  manageAndTrackAllComplaints: string;
+  searchComplaints: string;
+  refresh: string;
+  export: string;
+  exportCSV: string;
+  exportExcel: string;
+  filters: string;
+  allStatuses: string;
+  allIssueTypes: string;
+  clearFilters: string;
+  from: string;
+  to: string;
+  showing: string;
+  of: string;
+  results: string;
+  show: string;
+  perPage: string;
+  previous: string;
+  next: string;
+  noComplaintsFound: string;
+  noActionsFound: string;
   
   // Complaint Form
   submitComplaint: string;
@@ -34,11 +58,13 @@ export interface Translations {
   damaged: string;
   other: string;
   
-  // New Fields
+  // Fields
   workOrderNumber: string;
   occurrence: string;
   partReceived: string;
   humanFactor: string;
+  createdAt: string;
+  updatedAt: string;
   
   // Tooltips
   tooltipCompany: string;
@@ -52,6 +78,22 @@ export interface Translations {
   tooltipOccurrence: string;
   tooltipPartReceived: string;
   tooltipHumanFactor: string;
+  
+  // Complaint Details
+  complaintDetails: string;
+  basicInformation: string;
+  additionalInformation: string;
+  followUpActions: string;
+  addAction: string;
+  actionText: string;
+  owner: string;
+  dueDate: string;
+  due: string;
+  overdue: string;
+  open: string;
+  closed: string;
+  add: string;
+  cancel: string;
   
   // Complaint List
   recentComplaints: string;
@@ -73,15 +115,41 @@ export interface Translations {
 export const translations: Record<'en' | 'fr', Translations> = {
   en: {
     navHome: 'Home',
-    navSecond: 'Second Page',
+    navComplaints: 'Complaints',
     navDashboard: 'Dashboard',
     systemTitle: 'Complaint System',
     homeTitle: 'Part Order Complaint System',
     homeSubtitle: 'Submit and track complaints for part order issues',
-    secondTitle: 'Second Page',
-    secondSubtitle: 'This is a placeholder page for future features.',
+    secondTitle: 'Complaint Management',
+    secondSubtitle: 'Manage and track all complaints in one place',
     comingSoon: 'Coming Soon',
-    placeholderMessage: 'This page is reserved for additional features and functionality.',
+    placeholderMessage: 'This page is reserved for additional features and functionality',
+    
+    // Complaint Management
+    complaintManagement: 'Complaint Management',
+    manageAndTrackAllComplaints: 'Manage and track all complaints in one place',
+    searchComplaints: 'Search complaints...',
+    refresh: 'Refresh',
+    export: 'Export',
+    exportCSV: 'Export CSV',
+    exportExcel: 'Export Excel',
+    filters: 'Filters',
+    allStatuses: 'All Statuses',
+    allIssueTypes: 'All Issue Types',
+    clearFilters: 'Clear Filters',
+    from: 'From',
+    to: 'To',
+    showing: 'Showing',
+    of: 'of',
+    results: 'results',
+    show: 'Show',
+    perPage: 'per page',
+    previous: 'Previous',
+    next: 'Next',
+    noComplaintsFound: 'No complaints found',
+    noActionsFound: 'No actions found',
+    
+    // Complaint Form
     submitComplaint: 'Submit New Complaint',
     customerCompany: 'Customer Company *',
     partNumber: 'Part Number *',
@@ -92,15 +160,23 @@ export const translations: Record<'en' | 'fr', Translations> = {
     attachFiles: 'Attach Files',
     submitButton: 'Submit Complaint',
     submitting: 'Submitting...',
+    
+    // Form Options
     selectIssueType: 'Select issue type',
     wrongQuantity: 'Wrong Quantity',
     wrongPart: 'Wrong Part',
     damaged: 'Damaged',
     other: 'Other',
+    
+    // Fields
     workOrderNumber: 'Work Order Number *',
     occurrence: 'Occurrence',
     partReceived: 'Part Received',
     humanFactor: 'Cause with Human Factor',
+    createdAt: 'Created At',
+    updatedAt: 'Updated At',
+    
+    // Tooltips
     tooltipCompany: 'Select the customer company that placed the order',
     tooltipPart: 'Choose the specific part number related to this complaint',
     tooltipIssueType: 'Categorize the type of problem encountered',
@@ -112,6 +188,24 @@ export const translations: Record<'en' | 'fr', Translations> = {
     tooltipOccurrence: 'Specify the occurrence or instance number',
     tooltipPartReceived: 'Enter the part number that was actually received',
     tooltipHumanFactor: 'Indicate if human error was involved in this issue',
+    
+    // Complaint Details
+    complaintDetails: 'Complaint Details',
+    basicInformation: 'Basic Information',
+    additionalInformation: 'Additional Information',
+    followUpActions: 'Follow-up Actions',
+    addAction: 'Add Action',
+    actionText: 'Action Text',
+    owner: 'Owner',
+    dueDate: 'Due Date',
+    due: 'Due',
+    overdue: 'Overdue',
+    open: 'Open',
+    closed: 'Closed',
+    add: 'Add',
+    cancel: 'Cancel',
+    
+    // Complaint List
     recentComplaints: 'Recent Complaints',
     noComplaints: 'No complaints found',
     id: 'ID',
@@ -120,6 +214,8 @@ export const translations: Record<'en' | 'fr', Translations> = {
     hasAttachments: 'Has attachments',
     attachFilesButton: 'Attach Files',
     hide: 'Hide',
+    
+    // Validation
     requiredField: 'This field is required',
     minCharacters: 'Details must be at least 10 characters',
     selectCompany: 'Please select a customer company',
@@ -127,15 +223,41 @@ export const translations: Record<'en' | 'fr', Translations> = {
   },
   fr: {
     navHome: 'Accueil',
-    navSecond: 'Deuxième Page',
+    navSecond: 'Gestion des Réclamations',
     navDashboard: 'Tableau de bord',
     systemTitle: 'Système de plainte',
     homeTitle: 'Système de Réclamation de Commandes de Pièces',
     homeSubtitle: 'Soumettre et suivre les réclamations pour les problèmes de commandes de pièces',
-    secondTitle: 'Deuxième Page',
-    secondSubtitle: 'Ceci est une page de remplacement pour les fonctionnalités futures.',
+    secondTitle: 'Gestion des Réclamations',
+    secondSubtitle: 'Gérer et suivre toutes les réclamations en un seul endroit',
     comingSoon: 'Bientôt Disponible',
-    placeholderMessage: 'Cette page est réservée aux fonctionnalités supplémentaires.',
+    placeholderMessage: 'Cette page est réservée aux fonctionnalités supplémentaires',
+    
+    // Complaint Management
+    complaintManagement: 'Gestion des Réclamations',
+    manageAndTrackAllComplaints: 'Gérer et suivre toutes les réclamations en un seul endroit',
+    searchComplaints: 'Rechercher des réclamations...',
+    refresh: 'Actualiser',
+    export: 'Exporter',
+    exportCSV: 'Exporter CSV',
+    exportExcel: 'Exporter Excel',
+    filters: 'Filtres',
+    allStatuses: 'Tous les Statuts',
+    allIssueTypes: 'Tous les Types de Problèmes',
+    clearFilters: 'Effacer les Filtres',
+    from: 'De',
+    to: 'À',
+    showing: 'Affichage',
+    of: 'de',
+    results: 'résultats',
+    show: 'Afficher',
+    perPage: 'par page',
+    previous: 'Précédent',
+    next: 'Suivant',
+    noComplaintsFound: 'Aucune réclamation trouvée',
+    noActionsFound: 'Aucune action trouvée',
+    
+    // Complaint Form
     submitComplaint: 'Soumettre une Nouvelle Plainte',
     customerCompany: 'Compagnie Cliente *',
     partNumber: 'Numéro de Pièce *',
@@ -146,15 +268,23 @@ export const translations: Record<'en' | 'fr', Translations> = {
     attachFiles: 'Joindre des Fichiers',
     submitButton: 'Soumettre la Plainte',
     submitting: 'Envoi en cours...',
+    
+    // Form Options
     selectIssueType: 'Sélectionner le type de problème',
     wrongQuantity: 'Mauvaise Quantité',
     wrongPart: 'Mauvaise Pièce',
     damaged: 'Endommagé',
     other: 'Autre',
+    
+    // Fields
     workOrderNumber: 'Numéro de bon de travail (BT) *',
     occurrence: 'Occurrence',
     partReceived: 'Pièce reçue',
     humanFactor: 'Cause avec facteur humain',
+    createdAt: 'Créé le',
+    updatedAt: 'Mis à jour le',
+    
+    // Tooltips
     tooltipCompany: 'Sélectionner la société cliente qui a passé la commande',
     tooltipPart: 'Choisir le numéro de pièce spécifique lié à cette réclamation',
     tooltipIssueType: 'Catégoriser le type de problème rencontré',
@@ -166,6 +296,24 @@ export const translations: Record<'en' | 'fr', Translations> = {
     tooltipOccurrence: 'Spécifier l\'occurrence ou le numéro d\'instance',
     tooltipPartReceived: 'Entrer le numéro de pièce qui a été réellement reçu',
     tooltipHumanFactor: 'Indiquer si une erreur humaine est impliquée dans ce problème',
+    
+    // Complaint Details
+    complaintDetails: 'Détails de la Réclamation',
+    basicInformation: 'Informations de Base',
+    additionalInformation: 'Informations Supplémentaires',
+    followUpActions: 'Actions de Suivi',
+    addAction: 'Ajouter une Action',
+    actionText: 'Texte de l\'Action',
+    owner: 'Propriétaire',
+    dueDate: 'Date d\'Échéance',
+    due: 'Dû',
+    overdue: 'En retard',
+    open: 'Ouvert',
+    closed: 'Fermé',
+    add: 'Ajouter',
+    cancel: 'Annuler',
+    
+    // Complaint List
     recentComplaints: 'Réclamations Récentes',
     noComplaints: 'Aucune réclamation trouvée',
     id: 'ID',
@@ -174,6 +322,8 @@ export const translations: Record<'en' | 'fr', Translations> = {
     hasAttachments: 'A des pièces jointes',
     attachFilesButton: 'Joindre des Fichiers',
     hide: 'Masquer',
+    
+    // Validation
     requiredField: 'Ce champ est obligatoire',
     minCharacters: 'Les détails doivent comporter au moins 10 caractères',
     selectCompany: 'Veuillez sélectionner une société cliente',

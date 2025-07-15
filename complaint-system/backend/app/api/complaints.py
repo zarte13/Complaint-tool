@@ -1,12 +1,16 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File, Response
 from sqlalchemy.orm import Session
-from sqlalchemy import desc
+from sqlalchemy import desc, asc, or_, and_
 from typing import List, Optional
+from datetime import datetime
+import io
+import csv
 from app.database.database import get_db
 from app.models.models import Complaint, Company, Part, ComplaintAttachment
 from app.schemas.schemas import (
-    ComplaintCreate, ComplaintResponse, ComplaintUpdate, 
-    AttachmentResponse, AttachmentUploadResponse
+    ComplaintCreate, ComplaintResponse, ComplaintUpdate,
+    AttachmentResponse, AttachmentUploadResponse,
+    ComplaintSearchResponse
 )
 from app.utils.file_handler import save_upload_file, validate_file, delete_file
 import mimetypes
@@ -35,25 +39,104 @@ async def create_complaint(
     db.refresh(db_complaint)
     return db_complaint
 
-@router.get("/", response_model=List[ComplaintResponse])
+@router.get("/", response_model=ComplaintSearchResponse)
 async def get_complaints(
-    skip: int = Query(0, ge=0),
-    limit: int = Query(10, ge=1, le=100),
+    page: int = Query(1, ge=1),
+    size: int = Query(10, ge=1, le=100),
+    search: Optional[str] = Query(None),
     status: Optional[str] = Query(None),
+    issue_type: Optional[str] = Query(None),
     company_id: Optional[int] = Query(None),
+    part_number: Optional[str] = Query(None),
+    date_from: Optional[str] = Query(None),
+    date_to: Optional[str] = Query(None),
+    sort_by: Optional[str] = Query(None, regex=r"^(created_at|updated_at|company|part|status)$"),
+    sort_order: Optional[str] = Query("desc", regex="^(asc|desc)$"),
     db: Session = Depends(get_db)
 ):
-    """Get complaints with optional filtering"""
+    """Get complaints with advanced filtering, search, and pagination"""
     query = db.query(Complaint).join(Company).join(Part)
     
+    # Global search across multiple fields
+    if search:
+        search_term = f"%{search}%"
+        query = query.filter(
+            or_(
+                Complaint.id.cast(str).like(search_term),
+                Part.part_number.ilike(search_term),
+                Part.description.ilike(search_term),
+                Company.name.ilike(search_term),
+                Complaint.details.ilike(search_term),
+                Complaint.work_order_number.ilike(search_term),
+                Complaint.occurrence.ilike(search_term),
+                Complaint.part_received.ilike(search_term)
+            )
+        )
+    
+    # Status filter
     if status:
         query = query.filter(Complaint.status == status)
     
+    # Issue type filter
+    if issue_type:
+        query = query.filter(Complaint.issue_type == issue_type)
+    
+    # Company filter
     if company_id:
         query = query.filter(Complaint.company_id == company_id)
     
-    complaints = query.order_by(desc(Complaint.created_at)).offset(skip).limit(limit).all()
-    return complaints
+    # Part number filter
+    if part_number:
+        query = query.filter(Part.part_number.ilike(f"%{part_number}%"))
+    
+    # Date range filter
+    if date_from:
+        try:
+            date_from_dt = datetime.fromisoformat(date_from.replace('Z', '+00:00'))
+            query = query.filter(Complaint.created_at >= date_from_dt)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid date_from format")
+    
+    if date_to:
+        try:
+            date_to_dt = datetime.fromisoformat(date_to.replace('Z', '+00:00'))
+            query = query.filter(Complaint.created_at <= date_to_dt)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid date_to format")
+    
+    # Sorting
+    sort_column_map = {
+        'created_at': Complaint.created_at,
+        'updated_at': Complaint.updated_at,
+        'company': Company.name,
+        'part': Part.part_number,
+        'status': Complaint.status
+    }
+    
+    if sort_by and sort_by in sort_column_map:
+        sort_column = sort_column_map[sort_by]
+        if sort_order == 'asc':
+            query = query.order_by(asc(sort_column))
+        else:
+            query = query.order_by(desc(sort_column))
+    else:
+        query = query.order_by(desc(Complaint.created_at))
+    
+    # Pagination
+    total = query.count()
+    total_pages = (total + size - 1) // size
+    
+    complaints = query.offset((page - 1) * size).limit(size).all()
+    
+    return {
+        "items": complaints,
+        "pagination": {
+            "page": page,
+            "size": size,
+            "total": total,
+            "total_pages": total_pages
+        }
+    }
 
 @router.get("/{complaint_id}", response_model=ComplaintResponse)
 async def get_complaint(
@@ -185,3 +268,182 @@ async def delete_attachment(
     
     db.commit()
     return {"message": "Attachment deleted successfully"}
+
+@router.get("/export/csv")
+async def export_csv(
+    search: Optional[str] = Query(None),
+    status: Optional[str] = Query(None),
+    issue_type: Optional[str] = Query(None),
+    company_id: Optional[int] = Query(None),
+    part_number: Optional[str] = Query(None),
+    date_from: Optional[str] = Query(None),
+    date_to: Optional[str] = Query(None),
+    db: Session = Depends(get_db)
+):
+    """Export complaints to CSV format"""
+    query = db.query(Complaint).join(Company).join(Part)
+    
+    # Apply same filters as get_complaints
+    if search:
+        search_term = f"%{search}%"
+        query = query.filter(
+            or_(
+                Complaint.id.cast(str).like(search_term),
+                Part.part_number.ilike(search_term),
+                Part.description.ilike(search_term),
+                Company.name.ilike(search_term),
+                Complaint.details.ilike(search_term),
+                Complaint.work_order_number.ilike(search_term),
+                Complaint.occurrence.ilike(search_term),
+                Complaint.part_received.ilike(search_term)
+            )
+        )
+    
+    if status:
+        query = query.filter(Complaint.status == status)
+    
+    if issue_type:
+        query = query.filter(Complaint.issue_type == issue_type)
+    
+    if company_id:
+        query = query.filter(Complaint.company_id == company_id)
+    
+    if part_number:
+        query = query.filter(Part.part_number.ilike(f"%{part_number}%"))
+    
+    if date_from:
+        try:
+            date_from_dt = datetime.fromisoformat(date_from.replace('Z', '+00:00'))
+            query = query.filter(Complaint.created_at >= date_from_dt)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid date_from format")
+    
+    if date_to:
+        try:
+            date_to_dt = datetime.fromisoformat(date_to.replace('Z', '+00:00'))
+            query = query.filter(Complaint.created_at <= date_to_dt)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid date_to format")
+    
+    complaints = query.order_by(desc(Complaint.created_at)).all()
+    
+    # Create CSV
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(['ID', 'Company', 'Part Number', 'Issue Type', 'Status', 'Created At', 'Details', 'Work Order', 'Occurrence', 'Part Received'])
+    
+    for complaint in complaints:
+        writer.writerow([
+            complaint.id,
+            complaint.company.name,
+            complaint.part.part_number,
+            complaint.issue_type,
+            complaint.status,
+            complaint.created_at.isoformat(),
+            complaint.details,
+            complaint.work_order_number,
+            complaint.occurrence or '',
+            complaint.part_received or ''
+        ])
+    
+    return Response(
+        content=output.getvalue(),
+        media_type='text/csv',
+        headers={'Content-Disposition': 'attachment; filename=complaints.csv'}
+    )
+
+@router.get("/export/excel")
+async def export_excel(
+    search: Optional[str] = Query(None),
+    status: Optional[str] = Query(None),
+    issue_type: Optional[str] = Query(None),
+    company_id: Optional[int] = Query(None),
+    part_number: Optional[str] = Query(None),
+    date_from: Optional[str] = Query(None),
+    date_to: Optional[str] = Query(None),
+    db: Session = Depends(get_db)
+):
+    """Export complaints to Excel format"""
+    try:
+        import openpyxl
+    except ImportError:
+        raise HTTPException(status_code=500, detail="Excel export not available. Please install openpyxl: pip install openpyxl")
+    
+    query = db.query(Complaint).join(Company).join(Part)
+    
+    # Apply same filters as get_complaints
+    if search:
+        search_term = f"%{search}%"
+        query = query.filter(
+            or_(
+                Complaint.id.cast(str).like(search_term),
+                Part.part_number.ilike(search_term),
+                Part.description.ilike(search_term),
+                Company.name.ilike(search_term),
+                Complaint.details.ilike(search_term),
+                Complaint.work_order_number.ilike(search_term),
+                Complaint.occurrence.ilike(search_term),
+                Complaint.part_received.ilike(search_term)
+            )
+        )
+    
+    if status:
+        query = query.filter(Complaint.status == status)
+    
+    if issue_type:
+        query = query.filter(Complaint.issue_type == issue_type)
+    
+    if company_id:
+        query = query.filter(Complaint.company_id == company_id)
+    
+    if part_number:
+        query = query.filter(Part.part_number.ilike(f"%{part_number}%"))
+    
+    if date_from:
+        try:
+            date_from_dt = datetime.fromisoformat(date_from.replace('Z', '+00:00'))
+            query = query.filter(Complaint.created_at >= date_from_dt)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid date_from format")
+    
+    if date_to:
+        try:
+            date_to_dt = datetime.fromisoformat(date_to.replace('Z', '+00:00'))
+            query = query.filter(Complaint.created_at <= date_to_dt)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid date_to format")
+    
+    complaints = query.order_by(desc(Complaint.created_at)).all()
+    
+    # Create Excel
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Complaints"
+    
+    # Headers
+    headers = ['ID', 'Company', 'Part Number', 'Issue Type', 'Status', 'Created At', 'Details', 'Work Order', 'Occurrence', 'Part Received']
+    for col, header in enumerate(headers, 1):
+        ws.cell(row=1, column=col, value=header)
+    
+    # Data
+    for row, complaint in enumerate(complaints, 2):
+        ws.cell(row=row, column=1, value=complaint.id)
+        ws.cell(row=row, column=2, value=complaint.company.name)
+        ws.cell(row=row, column=3, value=complaint.part.part_number)
+        ws.cell(row=row, column=4, value=complaint.issue_type)
+        ws.cell(row=row, column=5, value=complaint.status)
+        ws.cell(row=row, column=6, value=complaint.created_at.isoformat())
+        ws.cell(row=row, column=7, value=complaint.details)
+        ws.cell(row=row, column=8, value=complaint.work_order_number)
+        ws.cell(row=row, column=9, value=complaint.occurrence or '')
+        ws.cell(row=row, column=10, value=complaint.part_received or '')
+    
+    buffer = io.BytesIO()
+    wb.save(buffer)
+    buffer.seek(0)
+    
+    return Response(
+        content=buffer.getvalue(),
+        media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        headers={'Content-Disposition': 'attachment; filename=complaints.xlsx'}
+    )
