@@ -88,6 +88,7 @@ complaint-system/
 │   ├── app/
 │   │   ├── api/
 │   │   │   ├── __init__.py
+│   │   │   ├── analytics.py          # Analytics endpoints for dashboard
 │   │   │   ├── companies.py          # Company CRUD operations
 │   │   │   ├── parts.py              # Part CRUD operations
 │   │   │   └── complaints.py         # Complaint management with file uploads
@@ -127,16 +128,23 @@ complaint-system/
 │   │   ├── i18n/
 │   │   │   └── translations.ts       # English/French translations
 │   │   ├── pages/
+│   │   │   ├── DashboardPage.tsx     # Command center with RAR metrics
 │   │   │   ├── HomePage.tsx          # Main complaint form and list
 │   │   │   └── SecondPage.tsx        # Placeholder for future features
 │   │   ├── services/
 │   │   │   └── api.ts                # API client with consistent trailing slashes
+│   │   ├── test/
+│   │   │   └── setup.ts              # Test configuration and mocks
 │   │   ├── types/
 │   │   │   └── index.ts              # TypeScript type definitions
 │   │   ├── App.tsx                   # Main application component with routing
 │   │   └── main.tsx                  # React entry point
+│   ├── e2e/
+│   │   └── *.spec.ts                 # End-to-end test files
 │   ├── package.json
 │   ├── vite.config.ts                # Vite configuration
+│   ├── vitest.config.ts              # Vitest test configuration
+│   ├── playwright.config.ts          # Playwright E2E configuration
 │   ├── tailwind.config.js            # Tailwind CSS configuration
 │   └── tsconfig.json
 ├── ARCHITECTURE.md                   # This file
@@ -165,6 +173,8 @@ python-multipart==0.0.20
 aiofiles==24.1.0
 pillow==11.3.0
 python-magic==0.4.27
+pytest==8.3.4
+pytest-cov==6.0.0
 ```
 
 ### Step 3: Install Dependencies
@@ -290,6 +300,11 @@ python init_db.py
 - `POST /api/complaints/{id}/attachments/` - Upload file attachment to complaint
 - `DELETE /api/complaints/{id}/attachments/{attachment_id}/` - Remove attachment
 
+### Analytics
+- `GET /api/analytics/rar-metrics` - Get Return, Authorization, and Rejection rates
+- `GET /api/analytics/failure-modes` - Get top 3 failure modes by frequency
+- `GET /api/analytics/trend-data` - Get complaint trends for sparkline charts
+
 ---
 
 ## Data Models & Schemas
@@ -405,6 +420,7 @@ frontend/src/contexts/
 
 ### Routes
 - `/` - Home page (complaint form and list)
+- `/dashboard` - Command center dashboard with RAR metrics and real-time sparklines
 - `/second` - Second page (placeholder for future features)
 
 ### Navigation Components
@@ -452,6 +468,35 @@ npm run dev
 ```
 
 ---
+
+## Testing Infrastructure
+
+### Backend Testing
+- **Framework**: pytest with FastAPI TestClient
+- **Database**: SQLite in-memory testing
+- **Coverage**: pytest-cov for coverage reporting
+- **Test Files**: `backend/tests/test_*.py`
+
+### Frontend Testing
+- **Unit Tests**: Vitest with React Testing Library
+- **E2E Tests**: Playwright for end-to-end testing
+- **Coverage**: 90%+ line and branch coverage threshold
+- **Test Files**: `frontend/src/**/*.test.tsx` and `frontend/e2e/*.spec.ts`
+
+### Test Commands
+```powershell
+# Backend tests
+cd backend
+pytest tests/ -v --cov=app --cov-report=html
+
+# Frontend unit tests
+cd frontend
+npm run test
+
+# Frontend E2E tests
+cd frontend
+npm run test:e2e
+```
 
 ## Monitoring & Logging
 

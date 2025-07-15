@@ -2,6 +2,7 @@ export interface Translations {
   // Navigation
   navHome: string;
   navSecond: string;
+  navDashboard: string;
   systemTitle: string;
   
   // Home Page
@@ -73,6 +74,7 @@ export const translations: Record<'en' | 'fr', Translations> = {
   en: {
     navHome: 'Home',
     navSecond: 'Second Page',
+    navDashboard: 'Dashboard',
     systemTitle: 'Complaint System',
     homeTitle: 'Part Order Complaint System',
     homeSubtitle: 'Submit and track complaints for part order issues',
@@ -126,6 +128,7 @@ export const translations: Record<'en' | 'fr', Translations> = {
   fr: {
     navHome: 'Accueil',
     navSecond: 'Deuxième Page',
+    navDashboard: 'Tableau de bord',
     systemTitle: 'Système de plainte',
     homeTitle: 'Système de Réclamation de Commandes de Pièces',
     homeSubtitle: 'Soumettre et suivre les réclamations pour les problèmes de commandes de pièces',

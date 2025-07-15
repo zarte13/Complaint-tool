@@ -4,6 +4,7 @@ import { LanguageProvider } from './contexts/LanguageContext';
 import Navigation from './components/Navigation/Navigation';
 import HomePage from './pages/HomePage';
 import SecondPage from './pages/SecondPage';
+import DashboardPage from './pages/DashboardPage';
 
 function App() {
   return (
@@ -13,6 +14,7 @@ function App() {
           <Navigation />
           <Routes>
             <Route path="/" element={<HomePage />} />
+            <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/second" element={<SecondPage />} />
           </Routes>
         </div>
