@@ -2,7 +2,6 @@
 
 **Note:** SPA root component fails to mount due to an unhandled runtime exception thrown inside the router's lazy-loaded chunk.
 
-
 ## Table of Contents
 1. [System Overview](#system-overview)
 2. [Prerequisites](#prerequisites)
@@ -14,11 +13,13 @@
 8. [API Endpoints](#api-endpoints)
 9. [Data Models & Schemas](#data-models--schemas)
 10. [File Upload Architecture](#file-upload-architecture)
-11. [Security Policies](#security-policies)
-12. [Deployment Commands](#deployment-commands)
-13. [Monitoring & Logging](#monitoring--logging)
-14. [Troubleshooting](#troubleshooting)
-15. [Glossary](#glossary)
+11. [Internationalization](#internationalization)
+12. [Routing & Navigation](#routing--navigation)
+13. [Security Policies](#security-policies)
+14. [Deployment Commands](#deployment-commands)
+15. [Monitoring & Logging](#monitoring--logging)
+16. [Troubleshooting](#troubleshooting)
+17. [Glossary](#glossary)
 
 ---
 
@@ -30,6 +31,8 @@ The Complaint Management System is a full-stack web application for tracking par
 - **Frontend**: React + TypeScript with Tailwind CSS
 - **File Upload**: Local storage with validation and MIME type checking
 - **Real-time Updates**: Automatic refresh after submissions
+- **Internationalization**: English/French language support with persistent toggle
+- **Routing**: React Router with multi-page navigation
 - **Web Port**: **3000** (frontend development server)
 - **API Port**: **8000** (backend FastAPI server)
 
@@ -112,21 +115,32 @@ complaint-system/
 │   │   │   ├── ComplaintList/        # Real-time complaint display
 │   │   │   ├── CompanySearch/        # Autocomplete company search
 │   │   │   ├── PartAutocomplete/     # Autocomplete part search
-│   │   │   └── FileUpload/           # Drag-and-drop file upload
+│   │   │   ├── FileUpload/           # Drag-and-drop file upload
+│   │   │   ├── Navigation/           # Multi-page navigation
+│   │   │   ├── LanguageToggle/       # EN/FR language switch
+│   │   │   └── Tooltip/              # Descriptive form field tooltips
+│   │   ├── contexts/
+│   │   │   └── LanguageContext.tsx   # Global language state
 │   │   ├── hooks/
 │   │   │   ├── useCompanies.ts       # Company data fetching
 │   │   │   └── useParts.ts           # Part data fetching
+│   │   ├── i18n/
+│   │   │   └── translations.ts       # English/French translations
+│   │   ├── pages/
+│   │   │   ├── HomePage.tsx          # Main complaint form and list
+│   │   │   └── SecondPage.tsx        # Placeholder for future features
 │   │   ├── services/
 │   │   │   └── api.ts                # API client with consistent trailing slashes
 │   │   ├── types/
 │   │   │   └── index.ts              # TypeScript type definitions
-│   │   ├── App.tsx                   # Main application component
+│   │   ├── App.tsx                   # Main application component with routing
 │   │   └── main.tsx                  # React entry point
 │   ├── package.json
 │   ├── vite.config.ts                # Vite configuration
 │   ├── tailwind.config.js            # Tailwind CSS configuration
 │   └── tsconfig.json
-└── ARCHITECTURE.md                   # This file
+├── ARCHITECTURE.md                   # This file
+└── BUGS.md                          # Bug tracking documentation
 ```
 
 ---
@@ -190,7 +204,7 @@ npm install
 
 ### Step 3: Install Dependencies
 ```powershell
-npm install axios react-hook-form @hookform/resolvers zod lucide-react react-dropzone
+npm install axios react-hook-form @hookform/resolvers zod lucide-react react-dropzone react-router-dom
 npm install -D tailwindcss postcss autoprefixer
 npx tailwindcss init -p
 ```
@@ -362,3 +376,121 @@ uploads/
 1. Client uploads file via multipart/form-data
 2. Backend validates file type and size
 3. File saved
+
+---
+
+## Internationalization
+
+### Language Support
+- **Languages**: English (EN) and French (FR)
+- **Implementation**: React Context API with persistent language preference
+- **Storage**: localStorage for language persistence across sessions
+- **Toggle**: Top-right corner navigation with EN/FR buttons
+
+### Translation Structure
+```
+frontend/src/i18n/
+└── translations.ts          # EN/FR translation strings
+```
+
+### Language Context
+```
+frontend/src/contexts/
+└── LanguageContext.tsx     # Global language state management
+```
+
+---
+
+## Routing & Navigation
+
+### Routes
+- `/` - Home page (complaint form and list)
+- `/second` - Second page (placeholder for future features)
+
+### Navigation Components
+```
+frontend/src/components/
+├── Navigation/              # Top navigation bar with routing
+├── LanguageToggle/        # EN/FR language switch
+└── Tooltip/               # Descriptive form field tooltips
+```
+
+### Navigation Features
+- **Active State Indicators**: Visual feedback for current route
+- **Responsive Design**: Mobile-friendly navigation
+- **Keyboard Accessibility**: Tab navigation support
+
+---
+
+## Security Policies
+
+### File Upload Security
+- **File Type Validation**: MIME type verification
+- **File Size Limits**: 10MB per file
+- **Filename Sanitization**: UUID-based naming
+- **Directory Traversal Prevention**: Path validation
+
+### API Security
+- **Input Validation**: Pydantic schemas
+- **SQL Injection Prevention**: SQLAlchemy ORM
+- **File Path Validation**: Absolute path checking
+
+---
+
+## Deployment Commands
+
+### Backend
+```powershell
+cd backend
+python -m uvicorn main:app --reload --host 0.0.0.0 --port 8000
+```
+
+### Frontend
+```powershell
+cd frontend
+npm run dev
+```
+
+---
+
+## Monitoring & Logging
+
+### Backend Logging
+- **FastAPI Logging**: Built-in request/response logging
+- **File Upload Progress**: Upload progress tracking
+- **Error Handling**: Comprehensive error responses
+
+### Frontend Monitoring
+- **React DevTools**: Component debugging
+- **Network Tab**: API request monitoring
+- **Console Errors**: Error tracking and debugging
+
+---
+
+## Troubleshooting
+
+### Common Issues
+1. **White Screen on Load**: Check LanguageProvider context
+2. **API Connection Issues**: Verify backend is running on port 8000
+3. **File Upload Failures**: Check file size and type restrictions
+4. **Database Connection**: Ensure SQLite file permissions
+
+### Debug Commands
+```powershell
+# Check backend
+curl http://localhost:8000/api/complaints/
+
+# Check frontend
+curl http://localhost:3000
+```
+
+---
+
+## Glossary
+
+- **MCP**: Model Context Protocol
+- **ORM**: Object-Relational Mapping
+- **SPA**: Single Page Application
+- **API**: Application Programming Interface
+- **CRUD**: Create, Read, Update, Delete
+- **MIME**: Multipurpose Internet Mail Extensions

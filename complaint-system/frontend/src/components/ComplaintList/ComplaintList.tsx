@@ -47,6 +47,19 @@ export default function ComplaintList({ refreshTrigger = 0 }: ComplaintListProps
     }
   };
 
+  const getIssueTypeDisplay = (issueType: string) => {
+    const issueTypeMap: Record<string, string> = {
+      'wrong_quantity': 'wrongQuantity',
+      'wrong_part': 'wrongPart',
+      'damaged': 'damaged',
+      'other': 'other'
+    };
+    
+    const key = issueTypeMap[issueType] || 'other';
+    const translated = t(key as any);
+    return translated ? translated.toUpperCase() : issueType.toUpperCase();
+  };
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -93,11 +106,13 @@ export default function ComplaintList({ refreshTrigger = 0 }: ComplaintListProps
           <div key={complaint.id} className="bg-white border rounded-lg p-4">
             <div className="flex items-start justify-between">
               <div className="flex-1">
-                <div className="flex items-center space-x-2 mb-2">
-                  <span className="text-sm font-medium text-gray-500">{t('id')}: {complaint.id}</span>
-                  <h3 className="font-medium text-gray-900">{complaint.details.substring(0, 50)}{complaint.details.length > 50 ? '...' : ''}</h3>
-                  <span className={`px-2 py-1 text-xs font-medium rounded-full ${getIssueTypeColor(complaint.issue_type)}`}>
-                    {t(complaint.issue_type as any).toUpperCase()}
+                <div className="flex items-start space-x-2 mb-2">
+                  <span className="text-sm font-medium text-gray-500 whitespace-nowrap">{t('id')}: {complaint.id}</span>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-medium text-gray-900 break-words leading-tight">{complaint.details.substring(0, 50)}{complaint.details.length > 50 ? '...' : ''}</h3>
+                  </div>
+                  <span className={`px-2 py-1 text-xs font-medium rounded-full whitespace-nowrap ml-auto ${getIssueTypeColor(complaint.issue_type)}`}>
+                    {getIssueTypeDisplay(complaint.issue_type)}
                   </span>
                 </div>
                 

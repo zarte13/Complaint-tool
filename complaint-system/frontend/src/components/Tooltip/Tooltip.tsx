@@ -18,14 +18,14 @@ export default function Tooltip({ content, children, position = 'top' }: Tooltip
   };
 
   return (
-    <div className="relative inline-block">
+    <div className="relative inline-flex items-center">
+      {children}
       <div
         onMouseEnter={() => setIsVisible(true)}
         onMouseLeave={() => setIsVisible(false)}
-        className="inline-flex items-center"
+        className="inline-flex items-center ml-1"
       >
-        {children}
-        <HelpCircle className="h-4 w-4 text-gray-400 ml-1 cursor-help" />
+        <HelpCircle className="h-4 w-4 text-gray-400 cursor-help flex-shrink-0" />
       </div>
       
       {isVisible && (

@@ -108,7 +108,7 @@ export const translations: Record<'en' | 'fr', Translations> = {
   fr: {
     navHome: 'Accueil',
     navSecond: 'Deuxième Page',
-    systemTitle: 'Système de Réclamation',
+    systemTitle: 'Système de plainte',
     homeTitle: 'Système de Réclamation de Commandes de Pièces',
     homeSubtitle: 'Soumettre et suivre les réclamations pour les problèmes de commandes de pièces',
     secondTitle: 'Deuxième Page',
