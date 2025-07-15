@@ -154,7 +154,7 @@ export default function ComplaintForm({ onSuccess }: ComplaintFormProps) {
             {t('customerCompany')}
           </label>
           <Tooltip content={t('tooltipCompany')}>
-            <span className="ml-1">ⓘ</span>
+            <span className="ml-1"></span>
           </Tooltip>
         </div>
         <CompanySearch
@@ -170,7 +170,7 @@ export default function ComplaintForm({ onSuccess }: ComplaintFormProps) {
             {t('partNumber')}
           </label>
           <Tooltip content={t('tooltipPart')}>
-            <span className="ml-1">ⓘ</span>
+            <span className="ml-1"></span>
           </Tooltip>
         </div>
         <PartAutocomplete
@@ -186,7 +186,7 @@ export default function ComplaintForm({ onSuccess }: ComplaintFormProps) {
             {t('issueType')}
           </label>
           <Tooltip content={t('tooltipIssueType')}>
-            <span className="ml-1">ⓘ</span>
+            <span className="ml-1"></span>
           </Tooltip>
         </div>
         <select
