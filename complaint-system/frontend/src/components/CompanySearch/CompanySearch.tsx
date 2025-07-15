@@ -52,7 +52,6 @@ export default function CompanySearch({ value, onChange, error }: CompanySearchP
   return (
     <div className="relative" ref={dropdownRef}>
       <label className="block text-sm font-medium text-gray-700 mb-1">
-        Company *
       </label>
       
       {value ? (

@@ -49,9 +49,7 @@ export default function PartAutocomplete({ value, onChange, error }: PartAutocom
 
   return (
     <div className="relative" ref={dropdownRef}>
-      <label className="block text-sm font-medium text-gray-700 mb-1">
-        Part Number *
-      </label>
+
       
       {value ? (
         <div className="flex items-center justify-between p-3 bg-gray-50 rounded-md">
