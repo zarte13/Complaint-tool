@@ -20,7 +20,7 @@ npm run dev
 ```
 
 ### 3. Open Browser
-Visit http://localhost:5173
+Visit http://localhost:3000
 
 ## What You Can Do
 

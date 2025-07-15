@@ -1,5 +1,8 @@
 # Complaint Management System - Complete Architecture Guide
 
+**Note:** SPA root component fails to mount due to an unhandled runtime exception thrown inside the router's lazy-loaded chunk.
+
+
 ## Table of Contents
 1. [System Overview](#system-overview)
 2. [Prerequisites](#prerequisites)

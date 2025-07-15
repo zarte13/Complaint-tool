@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { AlertCircle, Calendar, User, Package, Paperclip } from 'lucide-react';
+import { useLanguage } from '../../contexts/LanguageContext';
 import { Complaint } from '../../types';
 import api from '../../services/api';
 import FileUpload from '../FileUpload/FileUpload';
@@ -13,6 +14,7 @@ export default function ComplaintList({ refreshTrigger = 0 }: ComplaintListProps
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedComplaint, setSelectedComplaint] = useState<number | null>(null);
+  const { t } = useLanguage();
 
   useEffect(() => {
     fetchComplaints();
@@ -77,14 +79,14 @@ export default function ComplaintList({ refreshTrigger = 0 }: ComplaintListProps
   if (complaints.length === 0) {
     return (
       <div className="text-center py-8">
-        <p className="text-gray-500">No complaints found</p>
+        <p className="text-gray-500">{t('noComplaints')}</p>
       </div>
     );
   }
 
   return (
     <div className="space-y-4">
-      <h2 className="text-lg font-semibold text-gray-900">Recent Complaints</h2>
+      <h2 className="text-lg font-semibold text-gray-900">{t('recentComplaints')}</h2>
       
       <div className="space-y-4">
         {complaints.map((complaint) => (
@@ -92,9 +94,10 @@ export default function ComplaintList({ refreshTrigger = 0 }: ComplaintListProps
             <div className="flex items-start justify-between">
               <div className="flex-1">
                 <div className="flex items-center space-x-2 mb-2">
+                  <span className="text-sm font-medium text-gray-500">{t('id')}: {complaint.id}</span>
                   <h3 className="font-medium text-gray-900">{complaint.details.substring(0, 50)}{complaint.details.length > 50 ? '...' : ''}</h3>
                   <span className={`px-2 py-1 text-xs font-medium rounded-full ${getIssueTypeColor(complaint.issue_type)}`}>
-                    {complaint.issue_type.replace('_', ' ').toUpperCase()}
+                    {t(complaint.issue_type as any).toUpperCase()}
                   </span>
                 </div>
                 
@@ -102,7 +105,7 @@ export default function ComplaintList({ refreshTrigger = 0 }: ComplaintListProps
                 
                 {complaint.quantity_ordered !== undefined && complaint.quantity_received !== undefined && (
                   <div className="text-sm text-gray-600 mb-2">
-                    Ordered: {complaint.quantity_ordered}, Received: {complaint.quantity_received}
+                    {t('ordered')}: {complaint.quantity_ordered}, {t('received')}: {complaint.quantity_received}
                   </div>
                 )}
                 
@@ -125,7 +128,7 @@ export default function ComplaintList({ refreshTrigger = 0 }: ComplaintListProps
                   {complaint.has_attachments && (
                     <div className="flex items-center">
                       <Paperclip className="h-4 w-4 mr-1" />
-                      Has attachments
+                      {t('hasAttachments')}
                     </div>
                   )}
                 </div>
@@ -138,7 +141,7 @@ export default function ComplaintList({ refreshTrigger = 0 }: ComplaintListProps
                 )}
                 className="text-sm text-blue-600 hover:text-blue-800"
               >
-                {selectedComplaint === complaint.id ? 'Hide' : 'Attach Files'}
+                {selectedComplaint === complaint.id ? t('hide') : t('attachFilesButton')}
               </button>
             </div>
             

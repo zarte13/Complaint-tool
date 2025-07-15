@@ -3,16 +3,18 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { AlertCircle, Send, Upload } from 'lucide-react';
+import { useLanguage } from '../../contexts/LanguageContext';
 import CompanySearch from '../CompanySearch/CompanySearch';
 import PartAutocomplete from '../PartAutocomplete/PartAutocomplete';
-import { Company, Part, IssueType } from '../../types';
+import Tooltip from '../Tooltip/Tooltip';
+import { Company, Part } from '../../types';
 import api from '../../services/api';
 
 const complaintSchema = z.object({
-  company_id: z.number().min(1, 'Please select a customer company'),
-  part_id: z.number().min(1, 'Please select a part'),
+  company_id: z.number().min(1, 'selectCompany'),
+  part_id: z.number().min(1, 'selectPart'),
   issue_type: z.enum(['wrong_quantity', 'wrong_part', 'damaged', 'other']),
-  details: z.string().min(10, 'Details must be at least 10 characters'),
+  details: z.string().min(10, 'minCharacters'),
   quantity_ordered: z.number().optional(),
   quantity_received: z.number().optional(),
 }).refine((data) => {
@@ -39,6 +41,7 @@ export default function ComplaintForm({ onSuccess }: ComplaintFormProps) {
   const [files, setFiles] = useState<File[]>([]);
   const [uploadProgress, setUploadProgress] = useState<{ [key: string]: number }>({});
   const [complaintId, setComplaintId] = useState<number | null>(null);
+  const { t } = useLanguage();
 
   const {
     register,
@@ -135,7 +138,7 @@ export default function ComplaintForm({ onSuccess }: ComplaintFormProps) {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
       <div>
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Submit New Complaint</h2>
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('submitComplaint')}</h2>
       </div>
 
       {error && (
@@ -145,22 +148,38 @@ export default function ComplaintForm({ onSuccess }: ComplaintFormProps) {
         </div>
       )}
 
-      <CompanySearch
-        value={selectedCompany}
-        onChange={handleCompanyChange}
-        error={errors.company_id?.message}
-      />
-
-      <PartAutocomplete
-        value={selectedPart}
-        onChange={handlePartChange}
-        error={errors.part_id?.message}
-      />
+      <div>
+        <Tooltip content={t('tooltipCompany')}>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            {t('customerCompany')}
+          </label>
+        </Tooltip>
+        <CompanySearch
+          value={selectedCompany}
+          onChange={handleCompanyChange}
+          error={errors.company_id?.message}
+        />
+      </div>
 
       <div>
-        <label htmlFor="issue_type" className="block text-sm font-medium text-gray-700 mb-1">
-          Issue Type *
-        </label>
+        <Tooltip content={t('tooltipPart')}>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            {t('partNumber')}
+          </label>
+        </Tooltip>
+        <PartAutocomplete
+          value={selectedPart}
+          onChange={handlePartChange}
+          error={errors.part_id?.message}
+        />
+      </div>
+
+      <div>
+        <Tooltip content={t('tooltipIssueType')}>
+          <label htmlFor="issue_type" className="block text-sm font-medium text-gray-700 mb-1">
+            {t('issueType')}
+          </label>
+        </Tooltip>
         <select
           id="issue_type"
           {...register('issue_type')}
@@ -168,11 +187,11 @@ export default function ComplaintForm({ onSuccess }: ComplaintFormProps) {
             errors.issue_type ? 'border-red-300' : 'border-gray-300'
           }`}
         >
-          <option value="">Select issue type</option>
-          <option value="wrong_quantity">Wrong Quantity</option>
-          <option value="wrong_part">Wrong Part</option>
-          <option value="damaged">Damaged</option>
-          <option value="other">Other</option>
+          <option value="">{t('selectIssueType')}</option>
+          <option value="wrong_quantity">{t('wrongQuantity')}</option>
+          <option value="wrong_part">{t('wrongPart')}</option>
+          <option value="damaged">{t('damaged')}</option>
+          <option value="other">{t('other')}</option>
         </select>
         {errors.issue_type && (
           <p className="mt-1 text-sm text-red-600">{errors.issue_type.message}</p>
@@ -182,9 +201,11 @@ export default function ComplaintForm({ onSuccess }: ComplaintFormProps) {
       {issueType === 'wrong_quantity' && (
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label htmlFor="quantity_ordered" className="block text-sm font-medium text-gray-700 mb-1">
-              Quantity Ordered
-            </label>
+            <Tooltip content={t('tooltipQuantityOrdered')}>
+              <label htmlFor="quantity_ordered" className="block text-sm font-medium text-gray-700 mb-1">
+                {t('quantityOrdered')}
+              </label>
+            </Tooltip>
             <input
               type="number"
               id="quantity_ordered"
@@ -196,9 +217,11 @@ export default function ComplaintForm({ onSuccess }: ComplaintFormProps) {
             />
           </div>
           <div>
-            <label htmlFor="quantity_received" className="block text-sm font-medium text-gray-700 mb-1">
-              Quantity Received
-            </label>
+            <Tooltip content={t('tooltipQuantityReceived')}>
+              <label htmlFor="quantity_received" className="block text-sm font-medium text-gray-700 mb-1">
+                {t('quantityReceived')}
+              </label>
+            </Tooltip>
             <input
               type="number"
               id="quantity_received"
@@ -213,9 +236,11 @@ export default function ComplaintForm({ onSuccess }: ComplaintFormProps) {
       )}
 
       <div>
-        <label htmlFor="details" className="block text-sm font-medium text-gray-700 mb-1">
-          Details *
-        </label>
+        <Tooltip content={t('tooltipDetails')}>
+          <label htmlFor="details" className="block text-sm font-medium text-gray-700 mb-1">
+            {t('details')}
+          </label>
+        </Tooltip>
         <textarea
           id="details"
           {...register('details')}
@@ -223,7 +248,7 @@ export default function ComplaintForm({ onSuccess }: ComplaintFormProps) {
           className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
             errors.details ? 'border-red-300' : 'border-gray-300'
           }`}
-          placeholder="Detailed description of the issue..."
+          placeholder={t('tooltipDetails')}
         />
         {errors.details && (
           <p className="mt-1 text-sm text-red-600">{errors.details.message}</p>
@@ -231,9 +256,11 @@ export default function ComplaintForm({ onSuccess }: ComplaintFormProps) {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Attach Files
-        </label>
+        <Tooltip content={t('tooltipFileUpload')}>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            {t('attachFiles')}
+          </label>
+        </Tooltip>
         <div className="space-y-2">
           <input
             type="file"
@@ -268,7 +295,7 @@ export default function ComplaintForm({ onSuccess }: ComplaintFormProps) {
           className="inline-flex items-center px-4 py-2 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Send className="h-4 w-4 mr-2" />
-          {submitting ? 'Submitting...' : 'Submit Complaint'}
+          {submitting ? t('submitting') : t('submitButton')}
         </button>
       </div>
     </form>
