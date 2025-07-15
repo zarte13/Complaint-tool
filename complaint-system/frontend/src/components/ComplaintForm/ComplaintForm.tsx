@@ -193,33 +193,6 @@ export default function ComplaintForm({ onSuccess }: ComplaintFormProps) {
       </div>
 
       <div>
-        <div className="flex items-center mb-1">
-          <label className="block text-sm font-medium text-gray-700">
-            {t('issueType')}
-          </label>
-          <Tooltip content={t('tooltipIssueType')}>
-            <span className="ml-1"></span>
-          </Tooltip>
-        </div>
-        <select
-          id="issue_type"
-          {...register('issue_type')}
-          className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-            errors.issue_type ? 'border-red-300' : 'border-gray-300'
-          }`}
-        >
-          <option value="">{t('selectIssueType')}</option>
-          <option value="wrong_quantity">{t('wrongQuantity')}</option>
-          <option value="wrong_part">{t('wrongPart')}</option>
-          <option value="damaged">{t('damaged')}</option>
-          <option value="other">{t('other')}</option>
-        </select>
-        {errors.issue_type && (
-          <p className="mt-1 text-sm text-red-600">{errors.issue_type.message}</p>
-        )}
-      </div>
-
-      <div>
         <label htmlFor="work_order_number" className="block text-sm font-medium text-gray-700 mb-1">
           <Tooltip content={t('tooltipWorkOrderNumber')}>
             <span>{t('workOrderNumber')}</span>
@@ -253,7 +226,32 @@ export default function ComplaintForm({ onSuccess }: ComplaintFormProps) {
           }`}
         />
       </div>
-
+      <div>
+        <div className="flex items-center mb-1">
+          <label className="block text-sm font-medium text-gray-700">
+            {t('issueType')}
+          </label>
+          <Tooltip content={t('tooltipIssueType')}>
+            <span className="ml-1"></span>
+          </Tooltip>
+        </div>
+        <select
+          id="issue_type"
+          {...register('issue_type')}
+          className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+            errors.issue_type ? 'border-red-300' : 'border-gray-300'
+          }`}
+        >
+          <option value="">{t('selectIssueType')}</option>
+          <option value="wrong_quantity">{t('wrongQuantity')}</option>
+          <option value="wrong_part">{t('wrongPart')}</option>
+          <option value="damaged">{t('damaged')}</option>
+          <option value="other">{t('other')}</option>
+        </select>
+        {errors.issue_type && (
+          <p className="mt-1 text-sm text-red-600">{errors.issue_type.message}</p>
+        )}
+      </div>
       {issueType === 'wrong_quantity' && (
         <div className="grid grid-cols-2 gap-4">
           <div>
