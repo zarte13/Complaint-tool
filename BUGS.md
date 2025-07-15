@@ -1,3 +1,6 @@
+
+
+
 # Complaint Management System - Bug Tracker
 
 **Last Updated:** 2025-07-15 1:03 PM  
@@ -84,6 +87,19 @@
    **Status:** **CLOSED** ✅
    **Resolution:** Added translation support to HomePage and updated French system title to "Système de plainte"
 
+
+7. **ID-007** **Status**: Fixed
+   **Severity**: High
+   **Description**: Dashboard page fails to load when clicking the "Dashboard" button
+   **Error**: `No QueryClient set, use QueryClientProvider to set one`
+   **Reproduction Steps**:
+   1. Start the application
+   2. Click on "Dashboard" in the navigation
+   3. Page crashes with React Query error
+
+   **Root Cause**: Missing QueryClientProvider wrapper in the React Router setup
+   **Fix**: Added QueryClientProvider to main.tsx to wrap the entire App component
+   **Date Fixed**: 2025-07-15
 ---
 
 ## Triaging Workflow
