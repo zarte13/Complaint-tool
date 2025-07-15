@@ -4,40 +4,14 @@ import { Complaint, ComplaintStatus, IssueType } from '../types';
 import api from '../services/api';
 import ComplaintList from '../components/ComplaintList/ComplaintList';
 
-export default function SecondPage() {
+export default function ComplaintsPage() {
   const { t } = useLanguage();
-  const [complaints, setComplaints] = useState<Complaint[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<ComplaintStatus | ''>('');
   const [issueTypeFilter, setIssueTypeFilter] = useState<IssueType | ''>('');
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-
-  useEffect(() => {
-    fetchComplaints();
-  }, [searchTerm, statusFilter, issueTypeFilter, page, pageSize]);
-
-  const fetchComplaints = async () => {
-    try {
-      setLoading(true);
-      const params = new URLSearchParams();
-      
-      if (searchTerm) params.append('search', searchTerm);
-      if (statusFilter) params.append('status', statusFilter);
-      if (issueTypeFilter) params.append('issue_type', issueTypeFilter);
-      params.append('skip', ((page - 1) * pageSize).toString());
-      params.append('limit', pageSize.toString());
-      
-      const response = await api.get(`/complaints?${params.toString()}`);
-      setComplaints(response.data);
-    } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to load complaints');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   const handleExport = async (format: 'csv' | 'xlsx') => {
     try {
@@ -62,25 +36,6 @@ export default function SecondPage() {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-        <div className="text-center py-8">
-          <p className="text-red-600">{error}</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
@@ -136,7 +91,14 @@ export default function SecondPage() {
             </div>
           </div>
 
-          <ComplaintList refreshTrigger={Date.now()} />
+          <ComplaintList
+            refreshTrigger={refreshTrigger}
+            searchTerm={searchTerm}
+            statusFilter={statusFilter}
+            issueTypeFilter={issueTypeFilter}
+            page={page}
+            pageSize={pageSize}
+          />
         </div>
       </div>
     </div>

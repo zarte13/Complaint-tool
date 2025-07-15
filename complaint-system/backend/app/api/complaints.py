@@ -60,9 +60,18 @@ async def get_complaints(
     # Global search across multiple fields
     if search:
         search_term = f"%{search}%"
+        # Handle ID search by converting to string for LIKE comparison
+        try:
+            # Try to convert search to int for exact ID match
+            search_id = int(search)
+            id_filter = Complaint.id == search_id
+        except ValueError:
+            # If search can't be converted to int, use false condition
+            id_filter = False
+        
         query = query.filter(
             or_(
-                Complaint.id.cast(str).like(search_term),
+                id_filter,
                 Part.part_number.ilike(search_term),
                 Part.description.ilike(search_term),
                 Company.name.ilike(search_term),
@@ -286,9 +295,18 @@ async def export_csv(
     # Apply same filters as get_complaints
     if search:
         search_term = f"%{search}%"
+        # Handle ID search by converting to string for LIKE comparison
+        try:
+            # Try to convert search to int for exact ID match
+            search_id = int(search)
+            id_filter = Complaint.id == search_id
+        except ValueError:
+            # If search can't be converted to int, use false condition
+            id_filter = False
+        
         query = query.filter(
             or_(
-                Complaint.id.cast(str).like(search_term),
+                id_filter,
                 Part.part_number.ilike(search_term),
                 Part.description.ilike(search_term),
                 Company.name.ilike(search_term),
@@ -374,9 +392,18 @@ async def export_excel(
     # Apply same filters as get_complaints
     if search:
         search_term = f"%{search}%"
+        # Handle ID search by converting to string for LIKE comparison
+        try:
+            # Try to convert search to int for exact ID match
+            search_id = int(search)
+            id_filter = Complaint.id == search_id
+        except ValueError:
+            # If search can't be converted to int, use false condition
+            id_filter = False
+        
         query = query.filter(
             or_(
-                Complaint.id.cast(str).like(search_term),
+                id_filter,
                 Part.part_number.ilike(search_term),
                 Part.description.ilike(search_term),
                 Company.name.ilike(search_term),

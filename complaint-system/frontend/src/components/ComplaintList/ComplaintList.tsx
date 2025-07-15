@@ -7,9 +7,21 @@ import FileUpload from '../FileUpload/FileUpload';
 
 interface ComplaintListProps {
   refreshTrigger?: number;
+  searchTerm?: string;
+  statusFilter?: string;
+  issueTypeFilter?: string;
+  page?: number;
+  pageSize?: number;
 }
 
-export default function ComplaintList({ refreshTrigger = 0 }: ComplaintListProps) {
+export default function ComplaintList({
+  refreshTrigger = 0,
+  searchTerm = '',
+  statusFilter = '',
+  issueTypeFilter = '',
+  page = 1,
+  pageSize = 10
+}: ComplaintListProps) {
   const [complaints, setComplaints] = useState<Complaint[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -18,15 +30,32 @@ export default function ComplaintList({ refreshTrigger = 0 }: ComplaintListProps
 
   useEffect(() => {
     fetchComplaints();
-  }, [refreshTrigger]);
+  }, [refreshTrigger, searchTerm, statusFilter, issueTypeFilter, page, pageSize]);
 
   const fetchComplaints = async () => {
     try {
       setLoading(true);
-      const response = await api.get('/complaints');
-      setComplaints(response.data.items || response.data);
+      const params = new URLSearchParams();
+      
+      if (searchTerm) params.append('search', searchTerm);
+      if (statusFilter) params.append('status', statusFilter);
+      if (issueTypeFilter) params.append('issue_type', issueTypeFilter);
+      params.append('skip', ((page - 1) * pageSize).toString());
+      params.append('limit', pageSize.toString());
+      
+      const response = await api.get(`/complaints?${params.toString()}`);
+      // Handle both direct array response and paginated response formats
+      const data = response.data;
+      if (Array.isArray(data)) {
+        setComplaints(data);
+      } else if (data && Array.isArray(data.items)) {
+        setComplaints(data.items);
+      } else {
+        setComplaints([]);
+      }
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Failed to load complaints');
+      setComplaints([]);
     } finally {
       setLoading(false);
     }
