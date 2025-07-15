@@ -17,6 +17,10 @@ const complaintSchema = z.object({
   details: z.string().min(10, 'minCharacters'),
   quantity_ordered: z.number().optional(),
   quantity_received: z.number().optional(),
+  work_order_number: z.string().min(1, 'requiredField'),
+  occurrence: z.string().optional(),
+  part_received: z.string().optional(),
+  human_factor: z.boolean().default(false),
 }).refine((data) => {
   if (data.issue_type === 'wrong_quantity') {
     return data.quantity_ordered !== undefined && data.quantity_received !== undefined;
@@ -25,6 +29,14 @@ const complaintSchema = z.object({
 }, {
   message: 'Both quantity ordered and received are required for wrong quantity issues',
   path: ['quantity_received'],
+}).refine((data) => {
+  if (data.issue_type === 'wrong_part') {
+    return data.part_received !== undefined && data.part_received.trim().length > 0;
+  }
+  return true;
+}, {
+  message: 'Part received is required for wrong part issues',
+  path: ['part_received'],
 });
 
 type ComplaintFormData = z.infer<typeof complaintSchema>;
@@ -207,6 +219,41 @@ export default function ComplaintForm({ onSuccess }: ComplaintFormProps) {
         )}
       </div>
 
+      <div>
+        <label htmlFor="work_order_number" className="block text-sm font-medium text-gray-700 mb-1">
+          <Tooltip content={t('tooltipWorkOrderNumber')}>
+            <span>{t('workOrderNumber')}</span>
+          </Tooltip>
+        </label>
+        <input
+          type="text"
+          id="work_order_number"
+          {...register('work_order_number')}
+          className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+            errors.work_order_number ? 'border-red-300' : 'border-gray-300'
+          }`}
+        />
+        {errors.work_order_number && (
+          <p className="mt-1 text-sm text-red-600">{errors.work_order_number.message}</p>
+        )}
+      </div>
+
+      <div>
+        <label htmlFor="occurrence" className="block text-sm font-medium text-gray-700 mb-1">
+          <Tooltip content={t('tooltipOccurrence')}>
+            <span>{t('occurrence')}</span>
+          </Tooltip>
+        </label>
+        <input
+          type="text"
+          id="occurrence"
+          {...register('occurrence')}
+          className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+            errors.occurrence ? 'border-red-300' : 'border-gray-300'
+          }`}
+        />
+      </div>
+
       {issueType === 'wrong_quantity' && (
         <div className="grid grid-cols-2 gap-4">
           <div>
@@ -243,6 +290,41 @@ export default function ComplaintForm({ onSuccess }: ComplaintFormProps) {
           </div>
         </div>
       )}
+
+      {issueType === 'wrong_part' && (
+        <div>
+          <label htmlFor="part_received" className="block text-sm font-medium text-gray-700 mb-1">
+            <Tooltip content={t('tooltipPartReceived')}>
+              <span>{t('partReceived')} *</span>
+            </Tooltip>
+          </label>
+          <input
+            type="text"
+            id="part_received"
+            {...register('part_received')}
+            className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+              errors.part_received ? 'border-red-300' : 'border-gray-300'
+            }`}
+          />
+          {errors.part_received && (
+            <p className="mt-1 text-sm text-red-600">{errors.part_received.message}</p>
+          )}
+        </div>
+      )}
+
+      <div className="flex items-center">
+        <input
+          type="checkbox"
+          id="human_factor"
+          {...register('human_factor')}
+          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+        />
+        <label htmlFor="human_factor" className="ml-2 block text-sm text-gray-900">
+          <Tooltip content={t('tooltipHumanFactor')}>
+            <span>{t('humanFactor')}</span>
+          </Tooltip>
+        </label>
+      </div>
 
       <div>
         <label htmlFor="details" className="block text-sm font-medium text-gray-700 mb-1">

@@ -22,6 +22,10 @@ export interface Complaint {
   details: string;
   quantity_ordered?: number;
   quantity_received?: number;
+  work_order_number: string;
+  occurrence?: string;
+  part_received?: string;
+  human_factor: boolean;
   status: ComplaintStatus;
   has_attachments: boolean;
   created_at: string;
@@ -35,6 +39,10 @@ export interface ComplaintCreate {
   details: string;
   quantity_ordered?: number;
   quantity_received?: number;
+  work_order_number: string;
+  occurrence?: string;
+  part_received?: string;
+  human_factor: boolean;
 }
 
 export interface Attachment {

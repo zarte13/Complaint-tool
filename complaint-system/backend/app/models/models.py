@@ -32,6 +32,10 @@ class Complaint(Base):
     details = Column(Text, nullable=False)
     quantity_ordered = Column(Integer)
     quantity_received = Column(Integer)
+    work_order_number = Column(String(100), nullable=False)  # Numero de bon de travail
+    occurrence = Column(String(100))  # Occurence
+    part_received = Column(String(100))  # Part received (for wrong_part issues)
+    human_factor = Column(Boolean, default=False)  # Cause avec facteur humain
     status = Column(String(20), default="open")  # open, in_progress, resolved, closed
     has_attachments = Column(Boolean, default=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())

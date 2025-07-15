@@ -118,9 +118,35 @@ export default function ComplaintList({ refreshTrigger = 0 }: ComplaintListProps
                 
                 <p className="text-sm text-gray-600 mb-3">{complaint.details}</p>
                 
+                {complaint.work_order_number && (
+                  <div className="text-sm text-gray-600 mb-1">
+                    Work Order: {complaint.work_order_number}
+                  </div>
+                )}
+                
+                {complaint.occurrence && (
+                  <div className="text-sm text-gray-600 mb-1">
+                    Occurrence: {complaint.occurrence}
+                  </div>
+                )}
+                
                 {complaint.quantity_ordered !== undefined && complaint.quantity_received !== undefined && (
                   <div className="text-sm text-gray-600 mb-2">
                     {t('ordered')}: {complaint.quantity_ordered}, {t('received')}: {complaint.quantity_received}
+                  </div>
+                )}
+                
+                {complaint.part_received && (
+                  <div className="text-sm text-gray-600 mb-2">
+                    Part Received: {complaint.part_received}
+                  </div>
+                )}
+                
+                {complaint.human_factor && (
+                  <div className="text-sm text-gray-600 mb-2">
+                    <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs">
+                      Human Factor
+                    </span>
                   </div>
                 )}
                 

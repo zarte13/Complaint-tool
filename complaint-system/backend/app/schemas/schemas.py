@@ -52,12 +52,23 @@ class ComplaintBase(BaseModel):
     details: str = Field(..., min_length=10)
     quantity_ordered: Optional[int] = Field(None, ge=0)
     quantity_received: Optional[int] = Field(None, ge=0)
+    work_order_number: str = Field(..., min_length=1, max_length=100)
+    occurrence: Optional[str] = Field(None, max_length=100)
+    part_received: Optional[str] = Field(None, max_length=100)
+    human_factor: bool = Field(default=False)
     
     @validator('quantity_received')
     def validate_quantities(cls, v, values):
         if 'issue_type' in values and values['issue_type'] == IssueType.WRONG_QUANTITY:
             if v is None or 'quantity_ordered' not in values or values['quantity_ordered'] is None:
                 raise ValueError('Both quantity_ordered and quantity_received are required for wrong_quantity issues')
+        return v
+    
+    @validator('part_received')
+    def validate_part_received(cls, v, values):
+        if 'issue_type' in values and values['issue_type'] == IssueType.WRONG_PART:
+            if v is None or not v.strip():
+                raise ValueError('Part received is required for wrong_part issues')
         return v
 
 class ComplaintCreate(ComplaintBase):
@@ -75,6 +86,10 @@ class ComplaintResponse(BaseModel):
     details: str
     quantity_ordered: Optional[int]
     quantity_received: Optional[int]
+    work_order_number: str
+    occurrence: Optional[str]
+    part_received: Optional[str]
+    human_factor: bool
     status: ComplaintStatus
     has_attachments: bool
     created_at: datetime

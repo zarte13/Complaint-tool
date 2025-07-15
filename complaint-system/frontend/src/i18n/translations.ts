@@ -33,6 +33,12 @@ export interface Translations {
   damaged: string;
   other: string;
   
+  // New Fields
+  workOrderNumber: string;
+  occurrence: string;
+  partReceived: string;
+  humanFactor: string;
+  
   // Tooltips
   tooltipCompany: string;
   tooltipPart: string;
@@ -41,6 +47,10 @@ export interface Translations {
   tooltipQuantityReceived: string;
   tooltipDetails: string;
   tooltipFileUpload: string;
+  tooltipWorkOrderNumber: string;
+  tooltipOccurrence: string;
+  tooltipPartReceived: string;
+  tooltipHumanFactor: string;
   
   // Complaint List
   recentComplaints: string;
@@ -85,6 +95,10 @@ export const translations: Record<'en' | 'fr', Translations> = {
     wrongPart: 'Wrong Part',
     damaged: 'Damaged',
     other: 'Other',
+    workOrderNumber: 'Work Order Number *',
+    occurrence: 'Occurrence',
+    partReceived: 'Part Received',
+    humanFactor: 'Cause with Human Factor',
     tooltipCompany: 'Select the customer company that placed the order',
     tooltipPart: 'Choose the specific part number related to this complaint',
     tooltipIssueType: 'Categorize the type of problem encountered',
@@ -92,6 +106,10 @@ export const translations: Record<'en' | 'fr', Translations> = {
     tooltipQuantityReceived: 'Enter the actual quantity received',
     tooltipDetails: 'Provide a detailed description of the issue, including any relevant context',
     tooltipFileUpload: 'Attach supporting documents, photos, or evidence (PDF, JPG, PNG, max 10MB each)',
+    tooltipWorkOrderNumber: 'Enter the work order number for tracking purposes',
+    tooltipOccurrence: 'Specify the occurrence or instance number',
+    tooltipPartReceived: 'Enter the part number that was actually received',
+    tooltipHumanFactor: 'Indicate if human error was involved in this issue',
     recentComplaints: 'Recent Complaints',
     noComplaints: 'No complaints found',
     id: 'ID',
@@ -130,6 +148,10 @@ export const translations: Record<'en' | 'fr', Translations> = {
     wrongPart: 'Mauvaise Pièce',
     damaged: 'Endommagé',
     other: 'Autre',
+    workOrderNumber: 'Numéro de bon de travail (BT) *',
+    occurrence: 'Occurrence',
+    partReceived: 'Pièce reçue',
+    humanFactor: 'Cause avec facteur humain',
     tooltipCompany: 'Sélectionner la société cliente qui a passé la commande',
     tooltipPart: 'Choisir le numéro de pièce spécifique lié à cette réclamation',
     tooltipIssueType: 'Catégoriser le type de problème rencontré',
@@ -137,6 +159,10 @@ export const translations: Record<'en' | 'fr', Translations> = {
     tooltipQuantityReceived: 'Entrer la quantité réellement reçue',
     tooltipDetails: 'Fournir une description détaillée du problème, incluant tout contexte pertinent',
     tooltipFileUpload: 'Joindre des documents, photos ou preuves à l\'appui (PDF, JPG, PNG, max 10 Mo chacun)',
+    tooltipWorkOrderNumber: 'Entrer le numéro de bon de travail (BT) pour le suivi',
+    tooltipOccurrence: 'Spécifier l\'occurrence ou le numéro d\'instance',
+    tooltipPartReceived: 'Entrer le numéro de pièce qui a été réellement reçu',
+    tooltipHumanFactor: 'Indiquer si une erreur humaine est impliquée dans ce problème',
     recentComplaints: 'Réclamations Récentes',
     noComplaints: 'Aucune réclamation trouvée',
     id: 'ID',
