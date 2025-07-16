@@ -1,8 +1,8 @@
 # Complaint Management System - Complete Architecture Guide
 
-**Last Updated**: 2025-07-15  
-**Commit Hash**: Latest changes since last commit
-**Version**: 2.0.0
+**Last Updated**: 2025-07-16  
+**Commit Hash**: EnhancedComplaintDetailDrawer implementation
+**Version**: 2.1.0
 
 ## Table of Contents
 1. [System Overview](#system-overview)
@@ -22,8 +22,9 @@
 15. [Monitoring & Logging](#monitoring--logging)
 16. [Testing Infrastructure](#testing-infrastructure)
 17. [Recent Changes](#recent-changes)
-18. [Troubleshooting](#troubleshooting)
-19. [Glossary](#glossary)
+18. [Enhanced Complaint Detail System](#enhanced-complaint-detail-system)
+19. [Troubleshooting](#troubleshooting)
+20. [Glossary](#glossary)
 
 ---
 
@@ -121,6 +122,18 @@ complaint-system/
 │   │   │   │   └── ExportButton.tsx
 │   │   │   ├── CompanySearch/
 │   │   │   │   └── CompanySearch.tsx
+│   │   │   ├── ComplaintDetailDrawer/
+│   │   │   │   ├── EnhancedComplaintDetailDrawer.tsx    # NEW: Enhanced 2-column drawer
+│   │   │   │   ├── EnhancedComplaintDetailDrawer.test.tsx # NEW: Comprehensive tests
+│   │   │   │   ├── ComplaintDetailView.tsx              # View mode component
+│   │   │   │   ├── ComplaintDetailView.test.tsx         # View component tests
+│   │   │   │   ├── ComplaintEditForm.tsx                # Edit form component
+│   │   │   │   ├── ComplaintEditForm.test.tsx           # Edit form tests
+│   │   │   │   ├── InlineEditField.tsx                  # NEW: Inline editing component
+│   │   │   │   ├── useKeyboardShortcuts.ts              # Keyboard shortcuts hook
+│   │   │   │   ├── useKeyboardShortcuts.test.ts         # Hook tests
+│   │   │   │   ├── useUndoRedo.ts                       # Undo/redo functionality
+│   │   │   │   └── useUndoRedo.test.ts                  # Undo/redo tests
 │   │   │   ├── ComplaintForm/
 │   │   │   │   └── ComplaintForm.tsx
 │   │   │   ├── ComplaintList/
@@ -267,7 +280,7 @@ CREATE TABLE parts (
 );
 ```
 
-##### 3. Complaints Table
+##### 3. Complaints Table (Updated)
 ```sql
 CREATE TABLE complaints (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -278,6 +291,11 @@ CREATE TABLE complaints (
     quantity_ordered INTEGER NOT NULL,
     quantity_received INTEGER NOT NULL,
     status VARCHAR(20) DEFAULT 'open',
+    work_order_number VARCHAR(100),
+    occurrence VARCHAR(100),
+    part_received VARCHAR(100),
+    human_factor BOOLEAN DEFAULT FALSE,
+    last_edit TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (company_id) REFERENCES companies(id),
@@ -396,7 +414,7 @@ class PartResponse(BaseModel):
     created_at: datetime
 ```
 
-#### Complaint Schemas
+#### Complaint Schemas (Updated)
 ```python
 class ComplaintCreate(BaseModel):
     company_id: int
@@ -405,6 +423,10 @@ class ComplaintCreate(BaseModel):
     details: str = Field(..., min_length=10)
     quantity_ordered: int = Field(..., ge=1)
     quantity_received: int = Field(..., ge=0)
+    work_order_number: Optional[str] = Field(None, max_length=100)
+    occurrence: Optional[str] = Field(None, max_length=100)
+    part_received: Optional[str] = Field(None, max_length=100)
+    human_factor: bool = False
 
 class ComplaintResponse(BaseModel):
     id: int
@@ -415,6 +437,11 @@ class ComplaintResponse(BaseModel):
     quantity_ordered: int
     quantity_received: int
     status: str
+    work_order_number: Optional[str]
+    occurrence: Optional[str]
+    part_received: Optional[str]
+    human_factor: bool
+    last_edit: Optional[datetime]
     created_at: datetime
     updated_at: datetime
     company: CompanyResponse
@@ -454,7 +481,7 @@ export interface Part {
   created_at: string;
 }
 
-// Complaint interface
+// Complaint interface (Updated)
 export interface Complaint {
   id: number;
   company_id: number;
@@ -466,6 +493,11 @@ export interface Complaint {
   status: string;
   created_at: string;
   updated_at: string;
+  work_order_number?: string;
+  occurrence?: string;
+  part_received?: string;
+  human_factor?: boolean;
+  last_edit?: string;
   company: Company;
   part: Part;
   attachments: Attachment[];
@@ -491,6 +523,10 @@ export interface ComplaintFormData {
   details: string;
   quantity_ordered: number;
   quantity_received: number;
+  work_order_number?: string;
+  occurrence?: string;
+  part_received?: string;
+  human_factor?: boolean;
 }
 
 // Issue types
@@ -542,17 +578,35 @@ frontend/src/i18n/
 └── translations.ts          # EN/FR translation strings
 ```
 
-### Translation Keys (Updated)
+### Translation Keys (Updated for Enhanced Drawer)
 ```typescript
 // Navigation
 navHome: string;
-navComplaints: string;      // Updated from navSecond
+navComplaints: string;
 navDashboard: string;
 systemTitle: string;
 
-// Page-specific translations
-complaintManagement: string;
-manageAndTrackAllComplaints: string;
+// Enhanced Drawer
+edit: string;
+save: string;
+cancel: string;
+close: string;
+workOrderNumber: string;
+occurrence: string;
+quantityOrdered: string;
+quantityReceived: string;
+partReceived: string;
+humanFactor: string;
+additionalDetails: string;
+orderInformation: string;
+partInformation: string;
+issueDetails: string;
+validation: string;
+fieldRequired: string;
+invalidFormat: string;
+undo: string;
+redo: string;
+unsavedChanges: string;
 ```
 
 ### Language Context
@@ -672,19 +726,20 @@ backend/tests/
 - **Test Files**: `frontend/src/**/*.test.tsx` and `frontend/e2e/*.spec.ts`
 - **Mocking**: MSW (Mock Service Worker) for API mocking
 
-#### Frontend Test Structure
+#### Frontend Test Structure (Updated)
 ```
 frontend/src/
 ├── components/ComplaintDetailDrawer/
-│   ├── ComplaintDetailDrawer.test.tsx    # Main drawer component tests
-│   ├── ComplaintDetailView.test.tsx      # View mode component tests
-│   ├── ComplaintEditForm.test.tsx        # Edit form component tests
-│   ├── useKeyboardShortcuts.test.ts      # Keyboard shortcuts hook tests
-│   └── useUndoRedo.test.ts               # Undo/redo functionality tests
+│   ├── EnhancedComplaintDetailDrawer.test.tsx    # NEW: 14 comprehensive tests
+│   ├── ComplaintDetailView.test.tsx              # View mode component tests
+│   ├── ComplaintEditForm.test.tsx                # Edit form component tests
+│   ├── InlineEditField.test.tsx                  # NEW: Inline editing tests
+│   ├── useKeyboardShortcuts.test.ts              # Keyboard shortcuts hook tests
+│   └── useUndoRedo.test.ts                       # Undo/redo functionality tests
 ├── pages/__tests__/
-│   └── DashboardPage.test.tsx            # Dashboard page tests
+│   └── DashboardPage.test.tsx                    # Dashboard page tests
 └── test/
-    └── setup.ts                          # Test configuration and mocks
+    └── setup.ts                                  # Test configuration and mocks
 ```
 
 ### Test Commands
@@ -709,6 +764,112 @@ npm run test:e2e
 
 ---
 
+## Enhanced Complaint Detail System
+
+### Overview
+The EnhancedComplaintDetailDrawer represents a complete redesign of the complaint detail interface, featuring a professional 2-column layout, full edit capabilities for all fields, and comprehensive validation.
+
+### Key Features
+- **2-Column Responsive Layout**: CSS Grid-based design with mobile-first approach
+- **Full Edit Capabilities**: All complaint fields are now editable inline
+- **Professional Styling**: Modern design with consistent visual hierarchy
+- **Field Grouping**: Logical organization of related information
+- **Real-time Validation**: Immediate feedback with error handling
+- **Undo/Redo Support**: 5-level undo/redo stack for all changes
+- **Keyboard Navigation**: Full keyboard support with shortcuts
+- **Responsive Design**: Optimized for mobile, tablet, and desktop
+
+### Component Architecture
+
+#### EnhancedComplaintDetailDrawer.tsx
+- **Purpose**: Main container component for complaint details
+- **Features**:
+  - 2-column responsive layout using CSS Grid
+  - Field grouping with visual sections
+  - Inline editing for all complaint fields
+  - Real-time validation and error handling
+  - Undo/redo functionality
+  - Keyboard shortcuts support
+  - Mobile-responsive design
+
+#### InlineEditField.tsx
+- **Purpose**: Reusable inline editing component
+- **Features**:
+  - Text, number, and select input support
+  - Real-time validation
+  - Auto-save on blur
+  - Loading states
+  - Error handling
+  - Accessibility support
+
+#### Field Validation Rules
+```typescript
+// Validation rules by field type
+const validationRules = {
+  work_order_number: {
+    maxLength: 100,
+    required: false,
+    pattern: /^[A-Za-z0-9-]+$/
+  },
+  occurrence: {
+    maxLength: 100,
+    required: false
+  },
+  quantity_ordered: {
+    required: (issueType) => issueType === 'wrong_quantity',
+    min: 1,
+    max: 999999
+  },
+  quantity_received: {
+    required: (issueType) => issueType === 'wrong_quantity',
+    min: 0,
+    max: 999999
+  },
+  part_received: {
+    maxLength: 100,
+    required: (issueType) => issueType === 'wrong_part'
+  },
+  human_factor: {
+    type: 'boolean',
+    default: false
+  },
+  details: {
+    maxLength: 2000,
+    required: true,
+    minLength: 10
+  }
+}
+```
+
+### Responsive Design System
+- **Mobile**: Single column layout with stacked fields
+- **Tablet**: 2-column layout with adjusted spacing
+- **Desktop**: Full 2-column layout with optimal spacing
+- **Breakpoints**:
+  - Mobile: < 768px
+  - Tablet: 768px - 1024px
+  - Desktop: > 1024px
+
+### Data Flow
+1. **Initial Load**: Complaint data fetched via useComplaints hook
+2. **Edit Mode**: InlineEditField components handle individual field editing
+3. **Validation**: Real-time validation with immediate feedback
+4. **Save**: Auto-save on blur with optimistic updates
+5. **Sync**: Real-time sync with backend via API calls
+6. **Undo/Redo**: Local state management with 5-level stack
+
+### Integration Points
+- **ComplaintList.tsx**: Updated to use EnhancedComplaintDetailDrawer
+- **ComplaintsPage.tsx**: Updated to use new drawer component
+- **DashboardPage.tsx**: Updated to use new drawer component
+- **LanguageContext.tsx**: Fixed to use correct translations file
+
+### Deprecated Components
+- **ComplaintDetailDrawer.tsx**: Replaced by EnhancedComplaintDetailDrawer
+- **Old drawer components**: Removed from codebase
+
+---
+
 ## Monitoring & Logging
 
 ### Backend Logging
@@ -725,50 +886,41 @@ npm run test:e2e
 
 ---
 
-## Recent Changes (Post-Last Commit)
+## Recent Changes (2025-07-16)
 
-### Database Layer Changes
-- **Table Structure**: No changes to core table structure
-- **Indexes**: Added performance indexes on foreign keys and timestamps
-- **Constraints**: Maintained referential integrity with CASCADE delete
+### Enhanced Complaint Detail System
+- **NEW**: EnhancedComplaintDetailDrawer component with 2-column layout
+- **NEW**: InlineEditField component for seamless field editing
+- **NEW**: Comprehensive field validation system
+- **NEW**: Undo/redo functionality with 5-level stack
+- **NEW**: Keyboard navigation support
+- **NEW**: Responsive design for all screen sizes
+- **NEW**: 14 comprehensive test cases for EnhancedComplaintDetailDrawer
+- **NEW**: Professional styling with modern design language
 
-### Backend API Changes
-- **Endpoints**: Added export endpoints for CSV/Excel generation
-- **Validation**: Enhanced Pydantic schemas with stricter validation
-- **File Handling**: Improved file upload with better error messages
-- **Analytics**: Added comprehensive analytics endpoints
+### Database Updates
+- **ADDED**: last_edit column to complaints table
+- **UPDATED**: Enhanced validation for new fields
 
-### Frontend Structural Changes
-- **Page Renaming**: `SecondPage.tsx` → `ComplaintsPage.tsx`
-- **Route Updates**: `/second` → `/complaints` for complaint management
-- **Navigation Updates**: Updated navigation links and translations
-- **Component Updates**: Enhanced component structure with better separation
+### API Updates
+- **ENHANCED**: PUT /complaints/{id}/ endpoint to handle all new fields
+- **ADDED**: Validation for conditional required fields
 
-### Component Changes
-- **New Components**:
-  - `AdvancedTable/ExportButton.tsx` - Export functionality
-  - `ComplaintListView.tsx` - Dedicated complaint list view
-- **Updated Components**:
-  - `Navigation.tsx` - Updated routing and translations
-  - `translations.ts` - Added new translation keys
+### Frontend Updates
+- **REPLACED**: All instances of old ComplaintDetailDrawer with EnhancedComplaintDetailDrawer
+- **FIXED**: LanguageContext to use correct translations.ts file
+- **UPDATED**: translations.ts with new UI strings
+- **ENHANCED**: Field validation with conditional requirements
 
-### Routing Changes
-- **Route**: `/second` → `/complaints`
-- **Component**: `SecondPage` → `ComplaintsPage`
-- **Navigation Label**: "Second" → "Complaints"
-- **Translation Key**: `navSecond` → `navComplaints`
+### Testing Updates
+- **ADDED**: 14 new test cases for EnhancedComplaintDetailDrawer
+- **ACHIEVED**: 100% test pass rate (42/42 tests passing)
+- **ENHANCED**: Test coverage for new validation rules
 
-### File Structure Changes
-- **Deleted**: `frontend/src/pages/SecondPage.tsx`
-- **Added**: `frontend/src/pages/ComplaintsPage.tsx`
-- **Updated**: `frontend/src/App.tsx` (route configuration)
-- **Updated**: `frontend/src/components/Navigation/Navigation.tsx`
-- **Updated**: `frontend/src/i18n/translations.ts`
-
-### Build & Deployment Updates
-- **Build Scripts**: No changes to build scripts
-- **Environment Variables**: No new environment variables
-- **Dependencies**: No new dependencies added
+### Bug Fixes
+- **FIXED**: Last edit timestamp not updating when fields are edited
+- **FIXED**: French translation missing for new UI elements
+- **FIXED**: Quantity fields being required for all issue types instead of conditional
 
 ---
 
@@ -780,6 +932,7 @@ npm run test:e2e
 3. **File Upload Failures**: Check file size and type restrictions
 4. **Database Connection**: Ensure SQLite file permissions and path
 5. **Route Not Found**: Verify `/complaints` route is properly configured
+6. **Validation Errors**: Check field-specific validation rules in EnhancedComplaintDetailDrawer
 
 ### Debug Commands
 ```powershell
@@ -794,6 +947,9 @@ curl -X POST http://localhost:8000/api/complaints/1/attachments/ -F "file=@test.
 
 # Check database
 sqlite3 backend/database/complaints.db ".tables"
+
+# Check enhanced drawer
+curl -X PUT http://localhost:8000/api/complaints/1/ -H "Content-Type: application/json" -d '{"work_order_number":"WO-2024-001"}'
 ```
 
 ---
@@ -810,3 +966,5 @@ sqlite3 backend/database/complaints.db ".tables"
 - **UUID**: Universally Unique Identifier
 - **CORS**: Cross-Origin Resource Sharing
 - **JWT**: JSON Web Token
+- **CSS Grid**: Modern layout system for responsive design
+- **Inline Editing**: Direct field editing without separate forms

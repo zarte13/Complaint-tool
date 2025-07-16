@@ -4,7 +4,7 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { Complaint } from '../../types';
 import api from '../../services/api';
 import FileUpload from '../FileUpload/FileUpload';
-import ComplaintDetailDrawer from '../ComplaintDetailDrawer/ComplaintDetailDrawer';
+import EnhancedComplaintDetailDrawer from '../ComplaintDetailDrawer/EnhancedComplaintDetailDrawer';
 
 interface ComplaintListProps {
   refreshTrigger?: number;
@@ -272,7 +272,7 @@ export default function ComplaintList({
         </div>
       </div>
       
-      <ComplaintDetailDrawer
+      <EnhancedComplaintDetailDrawer
         complaint={drawerComplaint}
         isOpen={isDrawerOpen}
         onClose={handleDrawerClose}

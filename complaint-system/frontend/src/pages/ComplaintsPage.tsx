@@ -3,7 +3,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { Complaint, ComplaintStatus, IssueType } from '../types';
 import api from '../services/api';
 import ComplaintList from '../components/ComplaintList/ComplaintList';
-import ComplaintDetailDrawer from '../components/ComplaintDetailDrawer/ComplaintDetailDrawer';
+import EnhancedComplaintDetailDrawer from '../components/ComplaintDetailDrawer/EnhancedComplaintDetailDrawer';
 
 export default function ComplaintsPage() {
   const { t } = useLanguage();
@@ -132,7 +132,7 @@ export default function ComplaintsPage() {
             onComplaintClick={handleComplaintClick}
           />
           
-          <ComplaintDetailDrawer
+          <EnhancedComplaintDetailDrawer
             complaint={selectedComplaint}
             isOpen={isDrawerOpen}
             onClose={handleDrawerClose}

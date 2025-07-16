@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { translations, Translations } from '../i18n/translations-old';
+import { translations, Translations } from '../i18n/translations';
 
 type Language = 'en' | 'fr';
 

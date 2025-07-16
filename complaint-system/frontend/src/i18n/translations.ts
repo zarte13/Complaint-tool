@@ -122,6 +122,12 @@ export interface Translations {
   lastEdit: string;
   editableFields: string;
   readOnlyInformation: string;
+  
+  // Enhanced Details
+  orderDetails: string;
+  issueDetails: string;
+  systemInformation: string;
+  neverEdited: string;
 }
 
 export const translations: Record<'en' | 'fr', Translations> = {
@@ -243,7 +249,13 @@ export const translations: Record<'en' | 'fr', Translations> = {
     redo: 'Redo',
     lastEdit: 'Last Edit',
     editableFields: 'Editable Fields',
-    readOnlyInformation: 'Read-Only Information'
+    readOnlyInformation: 'Read-Only Information',
+    
+    // Enhanced Details
+    orderDetails: 'Order Details',
+    issueDetails: 'Issue Details',
+    systemInformation: 'System Information',
+    neverEdited: 'Never edited'
   },
   fr: {
     navHome: 'Accueil',
@@ -363,6 +375,12 @@ export const translations: Record<'en' | 'fr', Translations> = {
     redo: 'Refaire',
     lastEdit: 'Dernière modification',
     editableFields: 'Champs modifiables',
-    readOnlyInformation: 'Informations en lecture seule'
+    readOnlyInformation: 'Informations en lecture seule',
+    
+    // Enhanced Details
+    orderDetails: 'Détails de la commande',
+    issueDetails: 'Détails du problème',
+    systemInformation: 'Informations système',
+    neverEdited: 'Jamais modifié'
   }
 };
