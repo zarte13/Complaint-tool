@@ -94,6 +94,7 @@ class ComplaintResponse(BaseModel):
     has_attachments: bool
     created_at: datetime
     updated_at: datetime
+    last_edit: Optional[datetime]
     
     class Config:
         from_attributes = True

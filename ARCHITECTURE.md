@@ -642,6 +642,29 @@ python -m uvicorn main:app --host 0.0.0.0 --port 8000
 - **Test Files**: `backend/tests/test_*.py`
 - **Test Categories**: Unit, Integration, API
 
+#### Backend Test Structure
+```
+backend/tests/
+├── conftest.py                    # Centralized test fixtures and setup
+├── test_analytics.py              # Analytics endpoints testing
+├── test_companies.py              # Company CRUD operations testing
+├── test_complaints.py             # Complaint management testing
+└── test_parts.py                  # Part CRUD operations testing
+```
+
+#### Backend Test Features
+- **Test Isolation**: Each test runs with a clean database using function-scoped fixtures
+- **Centralized Setup**: `conftest.py` provides shared fixtures including `client` for API testing
+- **Comprehensive Coverage**: Tests cover all API endpoints, error handling, and edge cases
+- **Real API Testing**: Tests use actual FastAPI TestClient against real endpoint implementations
+- **Database Testing**: Tests verify database operations, relationships, and constraints
+
+#### Backend Test Categories
+- **API Endpoint Tests**: Verify HTTP responses, status codes, and data formats
+- **Database Integration Tests**: Test ORM operations and data persistence
+- **Validation Tests**: Test Pydantic schema validation and error handling
+- **Business Logic Tests**: Test filtering, search, pagination, and sorting functionality
+
 ### Frontend Testing
 - **Unit Tests**: Vitest with React Testing Library
 - **E2E Tests**: Playwright for end-to-end testing
@@ -649,9 +672,24 @@ python -m uvicorn main:app --host 0.0.0.0 --port 8000
 - **Test Files**: `frontend/src/**/*.test.tsx` and `frontend/e2e/*.spec.ts`
 - **Mocking**: MSW (Mock Service Worker) for API mocking
 
+#### Frontend Test Structure
+```
+frontend/src/
+├── components/ComplaintDetailDrawer/
+│   ├── ComplaintDetailDrawer.test.tsx    # Main drawer component tests
+│   ├── ComplaintDetailView.test.tsx      # View mode component tests
+│   ├── ComplaintEditForm.test.tsx        # Edit form component tests
+│   ├── useKeyboardShortcuts.test.ts      # Keyboard shortcuts hook tests
+│   └── useUndoRedo.test.ts               # Undo/redo functionality tests
+├── pages/__tests__/
+│   └── DashboardPage.test.tsx            # Dashboard page tests
+└── test/
+    └── setup.ts                          # Test configuration and mocks
+```
+
 ### Test Commands
 ```powershell
-# Backend tests
+# Backend tests with coverage
 cd backend
 pytest tests/ -v --cov=app --cov-report=html
 
@@ -663,6 +701,11 @@ npm run test
 cd frontend
 npm run test:e2e
 ```
+
+### Test Coverage Reports
+- **Backend**: HTML coverage report generated in `backend/htmlcov/`
+- **Frontend**: Coverage reports available through Vitest
+- **Target Coverage**: 90%+ for both backend and frontend
 
 ---
 

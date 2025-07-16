@@ -65,7 +65,6 @@ export interface Translations {
   humanFactor: string;
   createdAt: string;
   updatedAt: string;
-  status: string;
   
   // Tooltips
   tooltipCompany: string;
@@ -105,6 +104,7 @@ export interface Translations {
   hasAttachments: string;
   attachFilesButton: string;
   hide: string;
+  status: string;
   
   // Validation
   requiredField: string;
@@ -113,10 +113,11 @@ export interface Translations {
   selectPart: string;
   
   // Drawer
+  complaintDetails: string;
   closePanel: string;
   edit: string;
+  cancel: string;
   save: string;
-  saving: string;
   undo: string;
   redo: string;
   lastEdit: string;
@@ -187,7 +188,6 @@ export const translations: Record<'en' | 'fr', Translations> = {
     humanFactor: 'Cause with Human Factor',
     createdAt: 'Created At',
     updatedAt: 'Updated At',
-    status: 'Status',
     
     // Tooltips
     tooltipCompany: 'Select the customer company that placed the order',
@@ -232,22 +232,11 @@ export const translations: Record<'en' | 'fr', Translations> = {
     requiredField: 'This field is required',
     minCharacters: 'Details must be at least 10 characters',
     selectCompany: 'Please select a customer company',
-    selectPart: 'Please select a part',
-    
-    // Drawer
-    closePanel: 'Close Panel',
-    edit: 'Edit',
-    save: 'Save',
-    saving: 'Saving...',
-    undo: 'Undo',
-    redo: 'Redo',
-    lastEdit: 'Last Edit',
-    editableFields: 'Editable Fields',
-    readOnlyInformation: 'Read-Only Information'
+    selectPart: 'Please select a part'
   },
   fr: {
     navHome: 'Accueil',
-    navComplaints: 'Réclamations',
+    navSecond: 'Gestion des Réclamations',
     navDashboard: 'Tableau de bord',
     systemTitle: 'Système de plainte',
     homeTitle: 'Système de Réclamation de Commandes de Pièces',
@@ -307,7 +296,6 @@ export const translations: Record<'en' | 'fr', Translations> = {
     humanFactor: 'Cause avec facteur humain',
     createdAt: 'Créé le',
     updatedAt: 'Mis à jour le',
-    status: 'Statut',
     
     // Tooltips
     tooltipCompany: 'Sélectionner la société cliente qui a passé la commande',
@@ -352,17 +340,6 @@ export const translations: Record<'en' | 'fr', Translations> = {
     requiredField: 'Ce champ est obligatoire',
     minCharacters: 'Les détails doivent comporter au moins 10 caractères',
     selectCompany: 'Veuillez sélectionner une société cliente',
-    selectPart: 'Veuillez sélectionner une pièce',
-    
-    // Drawer
-    closePanel: 'Fermer le panneau',
-    edit: 'Modifier',
-    save: 'Enregistrer',
-    saving: 'Enregistrement...',
-    undo: 'Annuler',
-    redo: 'Refaire',
-    lastEdit: 'Dernière modification',
-    editableFields: 'Champs modifiables',
-    readOnlyInformation: 'Informations en lecture seule'
+    selectPart: 'Veuillez sélectionner une pièce'
   }
 };

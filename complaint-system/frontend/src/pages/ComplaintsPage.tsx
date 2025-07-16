@@ -3,6 +3,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { Complaint, ComplaintStatus, IssueType } from '../types';
 import api from '../services/api';
 import ComplaintList from '../components/ComplaintList/ComplaintList';
+import ComplaintDetailDrawer from '../components/ComplaintDetailDrawer/ComplaintDetailDrawer';
 
 export default function ComplaintsPage() {
   const { t } = useLanguage();
@@ -12,6 +13,8 @@ export default function ComplaintsPage() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [selectedComplaint, setSelectedComplaint] = useState<Complaint | null>(null);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   const handleExport = async (format: 'csv' | 'xlsx') => {
     try {
@@ -33,6 +36,34 @@ export default function ComplaintsPage() {
       link.remove();
     } catch (err) {
       console.error('Export failed:', err);
+    }
+  };
+
+  const handleComplaintClick = (complaint: Complaint) => {
+    setSelectedComplaint(complaint);
+    setIsDrawerOpen(true);
+  };
+
+  const handleDrawerClose = () => {
+    setIsDrawerOpen(false);
+    setSelectedComplaint(null);
+  };
+
+  const handleComplaintUpdate = async (updatedData: Partial<Complaint>) => {
+    if (!selectedComplaint) return;
+
+    try {
+      const response = await api.put(`/complaints/${selectedComplaint.id}/`, updatedData);
+      
+      // Update the local state
+      setSelectedComplaint(response.data);
+      
+      // Trigger refresh of the complaint list
+      setRefreshTrigger(prev => prev + 1);
+      
+    } catch (error) {
+      console.error('Failed to update complaint:', error);
+      // You might want to show an error message here
     }
   };
 
@@ -98,6 +129,14 @@ export default function ComplaintsPage() {
             issueTypeFilter={issueTypeFilter}
             page={page}
             pageSize={pageSize}
+            onComplaintClick={handleComplaintClick}
+          />
+          
+          <ComplaintDetailDrawer
+            complaint={selectedComplaint}
+            isOpen={isDrawerOpen}
+            onClose={handleDrawerClose}
+            onUpdate={handleComplaintUpdate}
           />
         </div>
       </div>

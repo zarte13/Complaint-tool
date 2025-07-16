@@ -30,6 +30,7 @@ export interface Complaint {
   has_attachments: boolean;
   created_at: string;
   updated_at: string;
+  last_edit?: string;
 }
 
 export interface ComplaintCreate {
