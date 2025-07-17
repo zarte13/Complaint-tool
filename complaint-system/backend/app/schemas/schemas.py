@@ -102,7 +102,9 @@ class ComplaintResponse(BaseModel):
 # Attachment schemas
 class AttachmentResponse(BaseModel):
     id: int
-    original_filename: str
+    complaint_id: int
+    filename: str  # Generated unique filename
+    original_filename: str  # Original uploaded filename
     file_size: int
     mime_type: str
     created_at: datetime

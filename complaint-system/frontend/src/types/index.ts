@@ -48,10 +48,11 @@ export interface ComplaintCreate {
 
 export interface Attachment {
   id: number;
-  original_filename: string;
-  file_type: string;
+  complaint_id: number;
+  filename: string;  // Generated unique filename
+  original_filename: string;  // Original uploaded filename
   file_size: number;
-  thumbnail_url?: string;
+  mime_type: string;
   created_at: string;
 }
 

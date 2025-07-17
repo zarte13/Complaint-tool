@@ -4,6 +4,7 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { Complaint, Attachment } from '../../types';
 import { format } from 'date-fns';
 import { enUS, fr } from 'date-fns/locale';
+import ImageGallery from './ImageGallery';
 
 interface EnhancedComplaintDetailDrawerProps {
   complaint: Complaint | null;
@@ -328,6 +329,13 @@ export default function EnhancedComplaintDetailDrawer({
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6" data-testid="responsive-grid">
               {/* Left Column */}
               <div className="space-y-6">
+                {/* Image Gallery */}
+                <ImageGallery
+                  complaintId={complaint.id}
+                  attachments={attachments}
+                  isLoading={isLoadingAttachments}
+                />
+
                 {/* Basic Information */}
                 <div className="bg-white border border-gray-200 rounded-lg p-4">
                   <h3 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
@@ -417,7 +425,7 @@ export default function EnhancedComplaintDetailDrawer({
                                     {attachment.original_filename}
                                   </p>
                                   <p className="text-xs text-gray-500">
-                                    {Math.round(attachment.file_size / 1024)} KB • {attachment.file_type}
+                                    {Math.round(attachment.file_size / 1024)} KB • {attachment.mime_type}
                                   </p>
                                 </div>
                               </div>

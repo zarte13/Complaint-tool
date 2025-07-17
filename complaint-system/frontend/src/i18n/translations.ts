@@ -134,6 +134,15 @@ export interface Translations {
   systemInformation: string;
   neverEdited: string;
   attachedFiles: string;
+  
+  // Image Gallery
+  imageGallery: string;
+  loadingImages: string;
+  zoomIn: string;
+  zoomOut: string;
+  resetZoom: string;
+  downloadImage: string;
+  failedToLoadImage: string;
 }
 
 export const translations: Record<'en' | 'fr', Translations> = {
@@ -267,7 +276,16 @@ export const translations: Record<'en' | 'fr', Translations> = {
     issueDetails: 'Issue Details',
     systemInformation: 'System Information',
     neverEdited: 'Never edited',
-    attachedFiles: 'Attached Files'
+    attachedFiles: 'Attached Files',
+    
+    // Image Gallery
+    imageGallery: 'Image Gallery',
+    loadingImages: 'Loading images...',
+    zoomIn: 'Zoom In',
+    zoomOut: 'Zoom Out',
+    resetZoom: 'Reset Zoom',
+    downloadImage: 'Download',
+    failedToLoadImage: 'Failed to load image'
   },
   fr: {
     navHome: 'Accueil',
@@ -276,6 +294,8 @@ export const translations: Record<'en' | 'fr', Translations> = {
     systemTitle: 'Système de plainte',
     homeTitle: 'Système de Réclamation de Commandes de Pièces',
     homeSubtitle: 'Soumettre et suivre les réclamations pour les problèmes de commandes de pièces',
+    secondTitle: 'Gestion des Réclamations',
+    secondSubtitle: 'Gérer et suivre toutes les réclamations',
     comingSoon: 'Bientôt Disponible',
     placeholderMessage: 'Cette page est réservée aux fonctionnalités supplémentaires',
     
@@ -397,6 +417,15 @@ export const translations: Record<'en' | 'fr', Translations> = {
     issueDetails: 'Détails du problème',
     systemInformation: 'Informations système',
     neverEdited: 'Jamais modifié',
-    attachedFiles: 'Fichiers joints'
+    attachedFiles: 'Fichiers joints',
+    
+    // Image Gallery
+    imageGallery: 'Galerie d\'images',
+    loadingImages: 'Chargement des images...',
+    zoomIn: 'Agrandir',
+    zoomOut: 'Réduire',
+    resetZoom: 'Réinitialiser le zoom',
+    downloadImage: 'Télécharger',
+    failedToLoadImage: 'Impossible de charger l\'image'
   },
 };
