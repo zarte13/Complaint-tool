@@ -14,6 +14,7 @@ from app.schemas.schemas import (
 )
 from app.utils.file_handler import save_upload_file, validate_file, delete_file
 import mimetypes
+import os
 
 router = APIRouter(prefix="/api/complaints", tags=["complaints"])
 
@@ -242,6 +243,39 @@ async def get_attachments(
     ).all()
     
     return attachments
+
+@router.get("/attachments/{attachment_id}/download")
+async def download_attachment(
+    attachment_id: int,
+    db: Session = Depends(get_db)
+):
+    """Download a specific attachment file"""
+    attachment = db.query(ComplaintAttachment).filter(
+        ComplaintAttachment.id == attachment_id
+    ).first()
+    
+    if not attachment:
+        raise HTTPException(status_code=404, detail="Attachment not found")
+    
+    # Check if file exists
+    if not os.path.exists(attachment.file_path):
+        raise HTTPException(status_code=404, detail="File not found on server")
+    
+    # Get MIME type
+    mime_type = attachment.mime_type or mimetypes.guess_type(attachment.original_filename)[0] or "application/octet-stream"
+    
+    # Read file content
+    with open(attachment.file_path, "rb") as f:
+        file_content = f.read()
+    
+    # Return file as response
+    return Response(
+        content=file_content,
+        media_type=mime_type,
+        headers={
+            "Content-Disposition": f"attachment; filename=\"{attachment.original_filename}\""
+        }
+    )
 
 @router.delete("/attachments/{attachment_id}")
 async def delete_attachment(

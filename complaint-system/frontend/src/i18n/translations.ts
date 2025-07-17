@@ -105,6 +105,11 @@ export interface Translations {
   hasAttachments: string;
   attachFilesButton: string;
   hide: string;
+  itemNumber: string;
+  humanFactorIndicator: string;
+  viewFiles: string;
+  noFiles: string;
+  extraInfo: string;
   
   // Validation
   requiredField: string;
@@ -128,6 +133,7 @@ export interface Translations {
   issueDetails: string;
   systemInformation: string;
   neverEdited: string;
+  attachedFiles: string;
 }
 
 export const translations: Record<'en' | 'fr', Translations> = {
@@ -206,7 +212,7 @@ export const translations: Record<'en' | 'fr', Translations> = {
     tooltipWorkOrderNumber: 'Enter the work order number for tracking purposes',
     tooltipOccurrence: 'Specify the occurrence or instance number',
     tooltipPartReceived: 'Enter the part number that was actually received',
-    tooltipHumanFactor: 'Indicate if human error was involved in this issue',
+    tooltipHumanFactor: 'Human error was involved in this issue',
     
     // Complaint Details
     complaintDetails: 'Complaint Details',
@@ -233,6 +239,11 @@ export const translations: Record<'en' | 'fr', Translations> = {
     hasAttachments: 'Has attachments',
     attachFilesButton: 'Attach Files',
     hide: 'Hide',
+    itemNumber: 'Item #',
+    humanFactorIndicator: 'HF',
+    viewFiles: 'View Files',
+    noFiles: 'No files',
+    extraInfo: 'Additional Information',
     
     // Validation
     requiredField: 'This field is required',
@@ -255,7 +266,8 @@ export const translations: Record<'en' | 'fr', Translations> = {
     orderDetails: 'Order Details',
     issueDetails: 'Issue Details',
     systemInformation: 'System Information',
-    neverEdited: 'Never edited'
+    neverEdited: 'Never edited',
+    attachedFiles: 'Attached Files'
   },
   fr: {
     navHome: 'Accueil',
@@ -264,8 +276,6 @@ export const translations: Record<'en' | 'fr', Translations> = {
     systemTitle: 'Système de plainte',
     homeTitle: 'Système de Réclamation de Commandes de Pièces',
     homeSubtitle: 'Soumettre et suivre les réclamations pour les problèmes de commandes de pièces',
-    secondTitle: 'Gestion des Réclamations',
-    secondSubtitle: 'Gérer et suivre toutes les réclamations en un seul endroit',
     comingSoon: 'Bientôt Disponible',
     placeholderMessage: 'Cette page est réservée aux fonctionnalités supplémentaires',
     
@@ -332,7 +342,7 @@ export const translations: Record<'en' | 'fr', Translations> = {
     tooltipWorkOrderNumber: 'Entrer le numéro de bon de travail (BT) pour le suivi',
     tooltipOccurrence: 'Spécifier l\'occurrence ou le numéro d\'instance',
     tooltipPartReceived: 'Entrer le numéro de pièce qui a été réellement reçu',
-    tooltipHumanFactor: 'Indiquer si une erreur humaine est impliquée dans ce problème',
+    tooltipHumanFactor: 'Une erreur humaine est impliquée dans cette plainte',
     
     // Complaint Details
     complaintDetails: 'Détails de la Réclamation',
@@ -359,6 +369,11 @@ export const translations: Record<'en' | 'fr', Translations> = {
     hasAttachments: 'A des pièces jointes',
     attachFilesButton: 'Joindre des Fichiers',
     hide: 'Masquer',
+    itemNumber: 'Article #',
+    humanFactorIndicator: 'FH',
+    viewFiles: 'Voir les fichiers',
+    noFiles: 'Aucun fichier',
+    extraInfo: 'Informations supplémentaires',
     
     // Validation
     requiredField: 'Ce champ est obligatoire',
@@ -381,6 +396,7 @@ export const translations: Record<'en' | 'fr', Translations> = {
     orderDetails: 'Détails de la commande',
     issueDetails: 'Détails du problème',
     systemInformation: 'Informations système',
-    neverEdited: 'Jamais modifié'
-  }
+    neverEdited: 'Jamais modifié',
+    attachedFiles: 'Fichiers joints'
+  },
 };

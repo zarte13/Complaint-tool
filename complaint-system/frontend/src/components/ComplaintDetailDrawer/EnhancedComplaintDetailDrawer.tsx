@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
-import { X, Edit3, Save, AlertCircle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, Edit3, Save, AlertCircle, Download, FileText } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { Complaint } from '../../types';
+import { Complaint, Attachment } from '../../types';
 import { format } from 'date-fns';
 import { enUS, fr } from 'date-fns/locale';
 
@@ -24,6 +24,8 @@ export default function EnhancedComplaintDetailDrawer({
   const [error, setError] = useState<string | null>(null);
   const [editData, setEditData] = useState<Partial<Complaint>>({});
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [isLoadingAttachments, setIsLoadingAttachments] = useState(false);
 
   const dateLocale = language === 'fr' ? fr : enUS;
 
@@ -125,6 +127,48 @@ export default function EnhancedComplaintDetailDrawer({
     setValidationErrors({});
     setError(null);
   };
+
+  const fetchAttachments = async () => {
+    if (!complaint?.id) return;
+    
+    setIsLoadingAttachments(true);
+    try {
+      const response = await fetch(`/api/complaints/${complaint.id}/attachments`);
+      if (response.ok) {
+        const data = await response.json();
+        setAttachments(data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch attachments:', error);
+    } finally {
+      setIsLoadingAttachments(false);
+    }
+  };
+
+  const handleDownloadFile = async (attachment: Attachment) => {
+    try {
+      const response = await fetch(`/api/complaints/attachments/${attachment.id}/download`);
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = attachment.original_filename;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      }
+    } catch (error) {
+      console.error('Failed to download file:', error);
+    }
+  };
+
+  useEffect(() => {
+    if (complaint?.has_attachments) {
+      fetchAttachments();
+    }
+  }, [complaint?.id, complaint?.has_attachments]);
 
   const handleFieldChange = (field: keyof Complaint, value: any) => {
     setEditData(prev => ({ ...prev, [field]: value }));
@@ -345,6 +389,57 @@ export default function EnhancedComplaintDetailDrawer({
                     {renderField('Details', complaint.details, 'details', 'textarea')}
                   </div>
                 </div>
+
+                {/* Attached Files */}
+                {complaint.has_attachments && (
+                  <div className="bg-white border border-gray-200 rounded-lg p-4">
+                    <h3 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                      <div className="w-1 h-4 bg-purple-600 rounded-full" />
+                      {t('attachedFiles')}
+                    </h3>
+                    <div className="space-y-3">
+                      {isLoadingAttachments ? (
+                        <div className="flex items-center justify-center py-4">
+                          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-600"></div>
+                          <span className="ml-2 text-sm text-gray-600">Loading files...</span>
+                        </div>
+                      ) : attachments.length > 0 ? (
+                        <div className="space-y-2">
+                          {attachments.map((attachment) => (
+                            <div
+                              key={attachment.id}
+                              className="flex items-center justify-between p-3 bg-gray-50 rounded-md hover:bg-gray-100 transition-colors"
+                            >
+                              <div className="flex items-center space-x-3">
+                                <FileText className="h-5 w-5 text-gray-400" />
+                                <div>
+                                  <p className="text-sm font-medium text-gray-900">
+                                    {attachment.original_filename}
+                                  </p>
+                                  <p className="text-xs text-gray-500">
+                                    {Math.round(attachment.file_size / 1024)} KB • {attachment.file_type}
+                                  </p>
+                                </div>
+                              </div>
+                              <button
+                                onClick={() => handleDownloadFile(attachment)}
+                                className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-purple-600 bg-purple-50 rounded-md hover:bg-purple-100 transition-colors"
+                                title={`Download ${attachment.original_filename}`}
+                              >
+                                <Download className="h-3 w-3 mr-1" />
+                                Download
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-gray-500 text-center py-4">
+                          No files attached
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>

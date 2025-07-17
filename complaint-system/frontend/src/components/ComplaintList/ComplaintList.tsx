@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { AlertCircle, Calendar, User, Package, Paperclip } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { Complaint } from '../../types';
 import api from '../../services/api';
-import FileUpload from '../FileUpload/FileUpload';
 import EnhancedComplaintDetailDrawer from '../ComplaintDetailDrawer/EnhancedComplaintDetailDrawer';
+import ComplaintTile from './ComplaintTile';
 
 interface ComplaintListProps {
   refreshTrigger?: number;
@@ -28,7 +28,6 @@ export default function ComplaintList({
   const [complaints, setComplaints] = useState<Complaint[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedComplaint, setSelectedComplaint] = useState<number | null>(null);
   const [drawerComplaint, setDrawerComplaint] = useState<Complaint | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const { t } = useLanguage();
@@ -172,102 +171,12 @@ export default function ComplaintList({
         
         <div className="space-y-4">
           {complaints.map((complaint) => (
-            <div
+            <ComplaintTile
               key={complaint.id}
-              className="bg-white border rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
-              onClick={() => handleRowClick(complaint)}
-            >
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-start space-x-2 mb-2">
-                    <span className="text-sm font-medium text-gray-500 whitespace-nowrap">{t('id')}: {complaint.id}</span>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-medium text-gray-900 break-words leading-tight">{complaint.details.substring(0, 50)}{complaint.details.length > 50 ? '...' : ''}</h3>
-                    </div>
-                    <span className={`px-2 py-1 text-xs font-medium rounded-full whitespace-nowrap ml-auto ${getIssueTypeColor(complaint.issue_type)}`}>
-                      {getIssueTypeDisplay(complaint.issue_type)}
-                    </span>
-                  </div>
-                  
-                  <p className="text-sm text-gray-600 mb-3">{complaint.details}</p>
-                  
-                  {complaint.work_order_number && (
-                    <div className="text-sm text-gray-600 mb-1">
-                      Work Order: {complaint.work_order_number}
-                    </div>
-                  )}
-                  
-                  {complaint.occurrence && (
-                    <div className="text-sm text-gray-600 mb-1">
-                      Occurrence: {complaint.occurrence}
-                    </div>
-                  )}
-                  
-                  {complaint.quantity_ordered !== undefined && complaint.quantity_received !== undefined && (
-                    <div className="text-sm text-gray-600 mb-2">
-                      {t('ordered')}: {complaint.quantity_ordered}, {t('received')}: {complaint.quantity_received}
-                    </div>
-                  )}
-                  
-                  {complaint.part_received && (
-                    <div className="text-sm text-gray-600 mb-2">
-                      Part Received: {complaint.part_received}
-                    </div>
-                  )}
-                  
-                  {complaint.human_factor && (
-                    <div className="text-sm text-gray-600 mb-2">
-                      <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs">
-                        Human Factor
-                      </span>
-                    </div>
-                  )}
-                  
-                  <div className="flex items-center space-x-4 text-sm text-gray-500">
-                    <div className="flex items-center">
-                      <Calendar className="h-4 w-4 mr-1" />
-                      {formatDate(complaint.created_at)}
-                    </div>
-                    
-                    <div className="flex items-center">
-                      <User className="h-4 w-4 mr-1" />
-                      {complaint.company.name}
-                    </div>
-                    
-                    <div className="flex items-center">
-                      <Package className="h-4 w-4 mr-1" />
-                      {complaint.part.part_number}
-                    </div>
-                    
-                    {complaint.has_attachments && (
-                      <div className="flex items-center">
-                        <Paperclip className="h-4 w-4 mr-1" />
-                        {t('hasAttachments')}
-                      </div>
-                    )}
-                  </div>
-                </div>
-                
-                <button
-                  type="button"
-                  onClick={() => setSelectedComplaint(
-                    selectedComplaint === complaint.id ? null : complaint.id
-                  )}
-                  className="text-sm text-blue-600 hover:text-blue-800"
-                >
-                  {selectedComplaint === complaint.id ? t('hide') : t('attachFilesButton')}
-                </button>
-              </div>
-              
-              {selectedComplaint === complaint.id && (
-                <div className="mt-4 pt-4 border-t">
-                  <FileUpload
-                    complaintId={complaint.id}
-                    onUploadComplete={fetchComplaints}
-                  />
-                </div>
-              )}
-            </div>
+              complaint={complaint}
+              onClick={handleRowClick}
+              onFileUploadComplete={fetchComplaints}
+            />
           ))}
         </div>
       </div>
