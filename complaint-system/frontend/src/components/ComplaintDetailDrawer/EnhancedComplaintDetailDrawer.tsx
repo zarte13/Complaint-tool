@@ -1,11 +1,13 @@
-import React, { useState, useEffect } from 'react';
-import { X, Edit3, Save, AlertCircle, Download, FileText } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { X, Edit3, Save, AlertCircle, Download, FileText, ChevronDown, Loader2 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { Complaint, Attachment } from '../../types';
+import { Complaint, Attachment, ComplaintStatus } from '../../types';
 import { format } from 'date-fns';
 import { enUS, fr } from 'date-fns/locale';
 import ImageGallery from './ImageGallery';
 import { FollowUpActionsPanel } from '../FollowUpActions/FollowUpActionsPanel';
+import { complaintsStore } from '../../stores/complaintsStore';
 
 interface EnhancedComplaintDetailDrawerProps {
   complaint: Complaint | null;
@@ -28,6 +30,11 @@ export default function EnhancedComplaintDetailDrawer({
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [isLoadingAttachments, setIsLoadingAttachments] = useState(false);
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  const [statusError, setStatusError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
+  const [hasAnimated, setHasAnimated] = useState(false);
+  const tilesContainerRef = useRef<HTMLDivElement>(null);
 
   const dateLocale = language === 'fr' ? fr : enUS;
 
@@ -109,10 +116,12 @@ export default function EnhancedComplaintDetailDrawer({
     setError(null);
 
     try {
-      await onUpdate({
+      const updatedData = {
         ...editData,
         last_edit: new Date().toISOString(),
-      });
+      };
+      await onUpdate(updatedData);
+      complaintsStore.updateComplaintInCache({ ...complaint, ...updatedData });
       setIsEditing(false);
       setEditData({});
       setValidationErrors({});
@@ -128,6 +137,82 @@ export default function EnhancedComplaintDetailDrawer({
     setEditData({});
     setValidationErrors({});
     setError(null);
+  };
+
+  const handleStatusChange = async (newStatus: ComplaintStatus, isRetry: boolean = false) => {
+    if (!complaint || complaint.status === newStatus) return;
+    
+    if (!isRetry) {
+      setRetryCount(0);
+      setStatusError(null);
+    }
+    
+    setIsUpdatingStatus(true);
+    setError(null);
+    setStatusError(null);
+    
+    const startTime = Date.now();
+    
+    try {
+      // Use PUT for status updates (backend expects PUT)
+      const response = await fetch(`/api/complaints/${complaint.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to update status: ${response.statusText}`);
+      }
+      
+      const updatedComplaint = await response.json();
+      const elapsedTime = Date.now() - startTime;
+      
+      // If update took longer than 400ms and this isn't a retry, try once more
+      if (elapsedTime > 400 && retryCount === 0 && !isRetry) {
+        setRetryCount(1);
+        setTimeout(() => {
+          handleStatusChange(newStatus, true);
+        }, 100);
+        return;
+      }
+      
+      // Update the complaint data and cache
+      const updatedData = { status: updatedComplaint.status };
+      onUpdate(updatedData);
+      complaintsStore.updateComplaintInCache({ ...complaint, ...updatedData });
+      
+    } catch (err) {
+      const elapsedTime = Date.now() - startTime;
+      
+      // Retry once if first attempt failed or took too long
+      if (retryCount === 0 && !isRetry) {
+        setRetryCount(1);
+        setTimeout(() => {
+          handleStatusChange(newStatus, true);
+        }, 100);
+        return;
+      }
+      
+      // Show inline error after retry failure
+      setStatusError(err instanceof Error ? err.message : 'Failed to update status');
+    } finally {
+      setIsUpdatingStatus(false);
+    }
+  };
+
+  const handleFirstActionCreated = async () => {
+    // Automatically transition from "open" to "in_progress" when first action is added
+    if (complaint && complaint.status === 'open') {
+      try {
+        await onUpdate({ status: 'in_progress' });
+      } catch (err) {
+        console.error('Failed to auto-update status to in_progress:', err);
+        // Don't show user-facing error for this automatic transition
+      }
+    }
   };
 
   const fetchAttachments = async () => {
@@ -172,6 +257,43 @@ export default function EnhancedComplaintDetailDrawer({
     }
   }, [complaint?.id, complaint?.has_attachments]);
 
+  // Check session flag and trigger staggered animation once per session
+  useEffect(() => {
+    if (!isOpen || !complaint || hasAnimated) return;
+
+    const sessionKey = `complaint-${complaint.id}-animated`;
+    const hasAnimatedInSession = sessionStorage.getItem(sessionKey);
+    
+    if (hasAnimatedInSession) {
+      setHasAnimated(true);
+      return;
+    }
+
+    // Wait for page to fully load (including images and fonts)
+    const triggerAnimation = () => {
+      if (document.readyState === 'complete') {
+        // Additional delay to ensure fonts are loaded
+        requestAnimationFrame(() => {
+          setTimeout(() => {
+            setHasAnimated(true);
+            sessionStorage.setItem(sessionKey, 'true');
+          }, 100);
+        });
+      } else {
+        window.addEventListener('load', () => {
+          requestAnimationFrame(() => {
+            setTimeout(() => {
+              setHasAnimated(true);
+              sessionStorage.setItem(sessionKey, 'true');
+            }, 100);
+          });
+        });
+      }
+    };
+
+    triggerAnimation();
+  }, [isOpen, complaint, hasAnimated]);
+
   const handleFieldChange = (field: keyof Complaint, value: any) => {
     setEditData(prev => ({ ...prev, [field]: value }));
     const error = validateField(field, value);
@@ -186,6 +308,124 @@ export default function EnhancedComplaintDetailDrawer({
       other: 'Other',
     };
     return issueTypes[issueType] || issueType;
+  };
+
+  const getStatusDisplay = (status: ComplaintStatus) => {
+    switch (status) {
+      case 'open':
+        return { label: 'Open', color: 'text-blue-800', bgColor: 'bg-blue-100', icon: '⚪' };
+      case 'in_progress':
+        return { label: 'In Progress', color: 'text-yellow-800', bgColor: 'bg-yellow-100', icon: '🟡' };
+      case 'resolved':
+        return { label: 'Resolved', color: 'text-green-800', bgColor: 'bg-green-100', icon: '✅' };
+      default:
+        return { label: status, color: 'text-gray-800', bgColor: 'bg-gray-100', icon: '⚪' };
+    }
+  };
+
+  const renderStatusDropdown = () => {
+    if (!complaint) return null;
+    
+    const currentStatus = getStatusDisplay(complaint.status);
+    const statusOptions: ComplaintStatus[] = ['open', 'in_progress', 'resolved'];
+    
+    return (
+      <div className="space-y-1">
+        <label className="text-xs font-medium text-gray-600">Status</label>
+        <div className="relative">
+          <select
+            value={complaint.status}
+            onChange={(e) => {
+              e.preventDefault();
+              handleStatusChange(e.target.value as ComplaintStatus);
+            }}
+            disabled={isUpdatingStatus}
+            className={`
+              w-full px-3 py-2 pr-8 text-sm border border-gray-300 rounded-md 
+              focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
+              appearance-none cursor-pointer bg-white transition-opacity duration-200
+              ${isUpdatingStatus ? 'cursor-not-allowed' : ''}
+            `}
+          >
+            {statusOptions.map((status) => {
+              const statusInfo = getStatusDisplay(status);
+              return (
+                <option key={status} value={status}>
+                  {statusInfo.icon} {statusInfo.label}
+                </option>
+              );
+            })}
+          </select>
+          
+          {/* Animated caret/spinner */}
+          <div className="absolute right-2 top-1/2 transform -translate-y-1/2 pointer-events-none">
+            <AnimatePresence mode="wait">
+              {isUpdatingStatus ? (
+                <motion.div
+                  key="spinner"
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  exit={{ scale: 0 }}
+                  transition={{ 
+                    duration: 0.25,
+                    ease: "easeOut"
+                  }}
+                >
+                  <Loader2 className="w-4 h-4 text-blue-600 animate-spin" />
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="caret"
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  exit={{ scale: 0 }}
+                  transition={{ 
+                    duration: 0.2,
+                    ease: "easeOut"
+                  }}
+                >
+                  <ChevronDown className="w-4 h-4 text-gray-400" />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+          
+          {/* Animated status text with cross-fade */}
+          <div className="mt-2">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={complaint.status}
+                initial={{ opacity: 0, y: -4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 4 }}
+                transition={{ 
+                  duration: 0.2,
+                  ease: "easeOut"
+                }}
+                className="flex items-center justify-between"
+              >
+                <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${currentStatus.bgColor} ${currentStatus.color}`}>
+                  <span className="mr-1">{currentStatus.icon}</span>
+                  {currentStatus.label}
+                </span>
+                
+                {/* Inline error display */}
+                {statusError && (
+                  <motion.span
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    className="text-xs text-red-500 flex items-center gap-1"
+                  >
+                    <AlertCircle className="w-3 h-3" />
+                    {statusError}
+                  </motion.span>
+                )}
+              </motion.div>
+            </AnimatePresence>
+          </div>
+        </div>
+      </div>
+    );
   };
 
   const renderField = (
@@ -328,18 +568,37 @@ export default function EnhancedComplaintDetailDrawer({
             )}
 
                          {/* Two-Column Responsive Layout */}
-             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6" data-testid="responsive-grid">
+             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6" data-testid="responsive-grid" ref={tilesContainerRef}>
                {/* Left Column - Information Sections */}
                <div className="lg:col-span-1 space-y-6">
                  {/* Image Gallery */}
-                 <ImageGallery
-                   complaintId={complaint.id}
-                   attachments={attachments}
-                   isLoading={isLoadingAttachments}
-                 />
+                 <motion.div
+                   initial={hasAnimated ? false : { opacity: 0, y: 20 }}
+                   animate={hasAnimated ? {} : { opacity: 1, y: 0 }}
+                   transition={{
+                     duration: 0.4,
+                     delay: hasAnimated ? 0 : 0,
+                     ease: "easeOut"
+                   }}
+                 >
+                   <ImageGallery
+                     complaintId={complaint.id}
+                     attachments={attachments}
+                     isLoading={isLoadingAttachments}
+                   />
+                 </motion.div>
 
                  {/* Basic Information */}
-                 <div className="bg-white border border-gray-200 rounded-lg p-4">
+                 <motion.div 
+                   className="bg-white border border-gray-200 rounded-lg p-4"
+                   initial={hasAnimated ? false : { opacity: 0, y: 20 }}
+                   animate={hasAnimated ? {} : { opacity: 1, y: 0 }}
+                   transition={{
+                     duration: 0.4,
+                     delay: hasAnimated ? 0 : 0.1,
+                     ease: "easeOut"
+                   }}
+                 >
                    <h3 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
                      <div className="w-1 h-4 bg-blue-600 rounded-full" />
                      {t('basicInformation')}
@@ -349,12 +608,21 @@ export default function EnhancedComplaintDetailDrawer({
                      {renderField('Customer Company', complaint.company.name)}
                      {renderField('Part Number', complaint.part.part_number)}
                      {renderField('Issue Type', getIssueTypeDisplay(complaint.issue_type))}
-                     {renderField('Status', complaint.status)}
+                     {renderStatusDropdown()}
                    </div>
-                 </div>
+                 </motion.div>
 
                  {/* Order Details */}
-                 <div className="bg-white border border-gray-200 rounded-lg p-4">
+                 <motion.div 
+                   className="bg-white border border-gray-200 rounded-lg p-4"
+                   initial={hasAnimated ? false : { opacity: 0, y: 20 }}
+                   animate={hasAnimated ? {} : { opacity: 1, y: 0 }}
+                   transition={{
+                     duration: 0.4,
+                     delay: hasAnimated ? 0 : 0.2,
+                     ease: "easeOut"
+                   }}
+                 >
                    <h3 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
                      <div className="w-1 h-4 bg-green-600 rounded-full" />
                      {t('orderDetails')}
@@ -369,10 +637,19 @@ export default function EnhancedComplaintDetailDrawer({
                      )}
                      {renderField('Part Received', complaint.part_received, 'part_received')}
                    </div>
-                 </div>
+                 </motion.div>
 
                  {/* Issue Details */}
-                 <div className="bg-white border border-gray-200 rounded-lg p-4">
+                 <motion.div 
+                   className="bg-white border border-gray-200 rounded-lg p-4"
+                   initial={hasAnimated ? false : { opacity: 0, y: 20 }}
+                   animate={hasAnimated ? {} : { opacity: 1, y: 0 }}
+                   transition={{
+                     duration: 0.4,
+                     delay: hasAnimated ? 0 : 0.3,
+                     ease: "easeOut"
+                   }}
+                 >
                    <h3 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
                      <div className="w-1 h-4 bg-amber-600 rounded-full" />
                      {t('issueDetails')}
@@ -382,10 +659,19 @@ export default function EnhancedComplaintDetailDrawer({
                      {renderField('Human Factor', complaint.human_factor, 'human_factor', 'toggle')}
                      {renderField('Details', complaint.details, 'details', 'textarea')}
                    </div>
-                 </div>
+                 </motion.div>
 
                  {/* System Information */}
-                 <div className="bg-white border border-gray-200 rounded-lg p-4">
+                 <motion.div 
+                   className="bg-white border border-gray-200 rounded-lg p-4"
+                   initial={hasAnimated ? false : { opacity: 0, y: 20 }}
+                   animate={hasAnimated ? {} : { opacity: 1, y: 0 }}
+                   transition={{
+                     duration: 0.4,
+                     delay: hasAnimated ? 0 : 0.4,
+                     ease: "easeOut"
+                   }}
+                 >
                    <h3 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
                      <div className="w-1 h-4 bg-gray-600 rounded-full" />
                      {t('systemInformation')}
@@ -395,21 +681,41 @@ export default function EnhancedComplaintDetailDrawer({
                      {renderField('Updated', formatDate(complaint.updated_at))}
                      {renderField('Last Edit', formatRelativeDate(complaint.last_edit))}
                    </div>
-                 </div>
+                 </motion.div>
                </div>
 
                {/* Right Column - Actions & Attachments (Spans 2 columns) */}
                <div className="lg:col-span-2 space-y-6">
                  {/* Follow-up Actions Panel - Full width for better usability */}
-                 <FollowUpActionsPanel
+                 <motion.div
+                   initial={hasAnimated ? false : { opacity: 0, y: 20 }}
+                   animate={hasAnimated ? {} : { opacity: 1, y: 0 }}
+                   transition={{
+                     duration: 0.4,
+                     delay: hasAnimated ? 0 : 0.5,
+                     ease: "easeOut"
+                   }}
+                 >
+                   <FollowUpActionsPanel
                    complaintId={complaint.id}
                    isEditable={!isEditing} // Disable editing when complaint is being edited
                    className="bg-white border border-gray-200 rounded-lg"
+                   onFirstActionCreated={handleFirstActionCreated}
                  />
+                 </motion.div>
 
                  {/* Attached Files */}
                  {complaint.has_attachments && (
-                   <div className="bg-white border border-gray-200 rounded-lg p-4">
+                   <motion.div 
+                     className="bg-white border border-gray-200 rounded-lg p-4"
+                     initial={hasAnimated ? false : { opacity: 0, y: 20 }}
+                     animate={hasAnimated ? {} : { opacity: 1, y: 0 }}
+                     transition={{
+                       duration: 0.4,
+                       delay: hasAnimated ? 0 : 0.6,
+                       ease: "easeOut"
+                     }}
+                   >
                      <h3 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
                        <div className="w-1 h-4 bg-purple-600 rounded-full" />
                        {t('attachedFiles')}
@@ -455,7 +761,7 @@ export default function EnhancedComplaintDetailDrawer({
                          </p>
                        )}
                      </div>
-                   </div>
+                   </motion.div>
                  )}
                </div>
              </div>

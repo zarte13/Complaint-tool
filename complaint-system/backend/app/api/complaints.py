@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File, Response
 from sqlalchemy.orm import Session
 from sqlalchemy import desc, asc, or_, and_
-from typing import List, Optional
+from typing import List, Optional, Union
 from datetime import datetime
 import io
 import csv
@@ -45,7 +45,7 @@ async def get_complaints(
     page: int = Query(1, ge=1),
     size: int = Query(10, ge=1, le=100),
     search: Optional[str] = Query(None),
-    status: Optional[str] = Query(None),
+    status: Union[str, List[str], None] = Query(None, description="Single status or multiple statuses (comma-separated or repeated)"),
     issue_type: Optional[str] = Query(None),
     company_id: Optional[int] = Query(None),
     part_number: Optional[str] = Query(None),
@@ -83,9 +83,18 @@ async def get_complaints(
             )
         )
     
-    # Status filter
+    # Status filter - support both single status and multiple statuses
     if status:
-        query = query.filter(Complaint.status == status)
+        if isinstance(status, str):
+            # Handle comma-separated status values
+            if ',' in status:
+                status_list = [s.strip() for s in status.split(',')]
+                query = query.filter(Complaint.status.in_(status_list))
+            else:
+                query = query.filter(Complaint.status == status)
+        elif isinstance(status, list):
+            # Handle list of statuses
+            query = query.filter(Complaint.status.in_(status))
     
     # Issue type filter
     if issue_type:

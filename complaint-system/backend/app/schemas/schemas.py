@@ -13,7 +13,6 @@ class ComplaintStatus(str, Enum):
     OPEN = "open"
     IN_PROGRESS = "in_progress"
     RESOLVED = "resolved"
-    CLOSED = "closed"
 
 # Company schemas
 class CompanyBase(BaseModel):

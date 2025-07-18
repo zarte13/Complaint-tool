@@ -4,3 +4,4 @@ complaint-system/backend/app/database/__pycache__/__init__.cpython-313.pyc
 *.pyo
 complaint-system/backend/uploads/
 .kilocode/mcp.json
+node_modules/

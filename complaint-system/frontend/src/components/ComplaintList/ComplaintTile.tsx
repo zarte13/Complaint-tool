@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Paperclip, Calendar, Package, ChevronDown, ChevronUp } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { Complaint } from '../../types';
@@ -61,7 +62,7 @@ export default function ComplaintTile({ complaint, onClick, onFileUploadComplete
   const hasExtraInfo = complaint.issue_type === 'wrong_quantity' || complaint.issue_type === 'wrong_part';
 
   return (
-    <div 
+    <motion.div 
       className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow cursor-pointer"
       onClick={() => onClick(complaint)}
       role="button"
@@ -71,6 +72,9 @@ export default function ComplaintTile({ complaint, onClick, onFileUploadComplete
           onClick(complaint);
         }
       }}
+      whileHover={{ scale: 1.01 }}
+      whileTap={{ scale: 0.99 }}
+      transition={{ type: "spring", stiffness: 400, damping: 30 }}
     >
       {/* First Row: ID, Work Order, Client (left) | Problem-type tag & Human-factor (right) */}
       <div className="flex flex-col sm:flex-row justify-between items-start mb-3 gap-2">
@@ -125,21 +129,30 @@ export default function ComplaintTile({ complaint, onClick, onFileUploadComplete
             {t('extraInfo')}
           </button>
           
-          {isExpanded && (
-            <div id={`extra-info-${complaint.id}`} className="mt-2 p-3 bg-gray-50 rounded-md">
-              {complaint.issue_type === 'wrong_quantity' && (
-                <div className="text-sm space-y-1">
-                  <div><span className="font-medium">{t('ordered')}:</span> {complaint.quantity_ordered}</div>
-                  <div><span className="font-medium">{t('received')}:</span> {complaint.quantity_received}</div>
-                </div>
-              )}
-              {complaint.issue_type === 'wrong_part' && complaint.part_received && (
-                <div className="text-sm">
-                  <span className="font-medium">{t('partReceived')}:</span> {complaint.part_received}
-                </div>
-              )}
-            </div>
-          )}
+          <AnimatePresence>
+            {isExpanded && (
+              <motion.div 
+                id={`extra-info-${complaint.id}`}
+                className="mt-2 p-3 bg-gray-50 rounded-md"
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                {complaint.issue_type === 'wrong_quantity' && (
+                  <div className="text-sm space-y-1">
+                    <div><span className="font-medium">{t('ordered')}:</span> {complaint.quantity_ordered}</div>
+                    <div><span className="font-medium">{t('received')}:</span> {complaint.quantity_received}</div>
+                  </div>
+                )}
+                {complaint.issue_type === 'wrong_part' && complaint.part_received && (
+                  <div className="text-sm">
+                    <span className="font-medium">{t('partReceived')}:</span> {complaint.part_received}
+                  </div>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       )}
 
@@ -173,17 +186,26 @@ export default function ComplaintTile({ complaint, onClick, onFileUploadComplete
       </div>
 
       {/* File Upload Section (conditionally rendered) */}
-      {isExpanded && (
-        <div ref={fileUploadRef} className="mt-4 pt-4 border-t border-gray-200">
-          <FileUpload 
-            complaintId={complaint.id} 
-            onUploadComplete={() => {
-              onFileUploadComplete();
-              setIsExpanded(false);
-            }} 
-          />
-        </div>
-      )}
-    </div>
+      <AnimatePresence>
+        {isExpanded && (
+          <motion.div 
+            ref={fileUploadRef}
+            className="mt-4 pt-4 border-t border-gray-200"
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            <FileUpload 
+              complaintId={complaint.id} 
+              onUploadComplete={() => {
+                onFileUploadComplete();
+                setIsExpanded(false);
+              }} 
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
   );
 }

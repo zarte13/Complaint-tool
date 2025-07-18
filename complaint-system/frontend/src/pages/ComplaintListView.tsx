@@ -2,6 +2,7 @@ import React from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useComplaints } from '../hooks/useComplaints';
 import { ComplaintStatus, IssueType } from '../types';
+import StatusFilter from '../components/StatusFilter/StatusFilter';
 
 export default function ComplaintListView() {
   const { t } = useLanguage();
@@ -22,6 +23,74 @@ export default function ComplaintListView() {
     } catch (err) {
       console.error('Export failed:', err);
     }
+  };
+
+  // Status color and display utilities
+  const getStatusColors = (status: ComplaintStatus) => {
+    switch (status) {
+      case 'open':
+        return 'bg-blue-100 text-blue-800';
+      case 'in_progress':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'resolved':
+        return 'bg-green-100 text-green-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getStatusIcon = (status: ComplaintStatus) => {
+    switch (status) {
+      case 'open':
+        return '⚪';
+      case 'in_progress':
+        return '🟡';
+      case 'resolved':
+        return '✅';
+      default:
+        return '⚪';
+    }
+  };
+
+  const getStatusDisplay = (status: ComplaintStatus) => {
+    switch (status) {
+      case 'open':
+        return 'Open';
+      case 'in_progress':
+        return 'In Progress';
+      case 'resolved':
+        return 'Resolved';
+      default:
+        return status;
+    }
+  };
+
+  const getIssueTypeColor = (issueType: string) => {
+    switch (issueType) {
+      case 'wrong_quantity':
+        return 'bg-blue-100 text-blue-800';
+      case 'wrong_part':
+        return 'bg-purple-100 text-purple-800';
+      case 'damaged':
+        return 'bg-red-100 text-red-800';
+      case 'other':
+        return 'bg-gray-100 text-gray-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getIssueTypeDisplay = (issueType: string) => {
+    const issueTypeMap: Record<string, string> = {
+      'wrong_quantity': 'wrongQuantity',
+      'wrong_part': 'wrongPart',
+      'damaged': 'damaged',
+      'other': 'other'
+    };
+    
+    const key = issueTypeMap[issueType] || 'other';
+    const translated = t(key as any);
+    return translated ? translated.toUpperCase() : issueType.toUpperCase();
   };
 
   if (loading) {
@@ -65,17 +134,11 @@ export default function ComplaintListView() {
               />
             </div>
             <div className="flex gap-2">
-              <select
-                value={filters.status || ''}
-                onChange={(e) => setFilters({ ...filters, status: e.target.value as ComplaintStatus || undefined })}
-                className="px-3 py-2 border border-gray-300 rounded-md"
-              >
-                <option value="">{t('allStatuses')}</option>
-                <option value="open">Open</option>
-                <option value="in_progress">In Progress</option>
-                <option value="resolved">Resolved</option>
-                <option value="closed">Closed</option>
-              </select>
+              <StatusFilter
+                selectedStatuses={filters.status || []}
+                onStatusChange={(statuses) => setFilters({ ...filters, status: statuses.length > 0 ? statuses : undefined })}
+                className="min-w-[180px]"
+              />
 
               <select
                 value={filters.issue_type || ''}
@@ -120,13 +183,22 @@ export default function ComplaintListView() {
                               {complaint.details.length > 50 ? '...' : ''}
                             </h3>
                           </div>
-                          <span
-                            className={`px-2 py-1 text-xs font-medium rounded-full whitespace-nowrap ml-auto ${getIssueTypeColor(
-                              complaint.issue_type
-                            )}`}
-                          >
-                            {getIssueTypeDisplay(complaint.issue_type)}
-                          </span>
+                          <div className="flex gap-2 ml-auto">
+                            <span
+                              className={`px-2 py-1 text-xs font-medium rounded-full whitespace-nowrap ${getStatusColors(
+                                complaint.status
+                              )}`}
+                            >
+                              {getStatusIcon(complaint.status)} {getStatusDisplay(complaint.status)}
+                            </span>
+                            <span
+                              className={`px-2 py-1 text-xs font-medium rounded-full whitespace-nowrap ${getIssueTypeColor(
+                                complaint.issue_type
+                              )}`}
+                            >
+                              {getIssueTypeDisplay(complaint.issue_type)}
+                            </span>
+                          </div>
                         </div>
 
                         <p className="text-sm text-gray-600 mb-3">{complaint.details}</p>

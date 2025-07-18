@@ -4,11 +4,12 @@ import { Complaint, ComplaintStatus, IssueType } from '../types';
 import api from '../services/api';
 import ComplaintList from '../components/ComplaintList/ComplaintList';
 import EnhancedComplaintDetailDrawer from '../components/ComplaintDetailDrawer/EnhancedComplaintDetailDrawer';
+import StatusFilter from '../components/StatusFilter/StatusFilter';
 
 export default function ComplaintsPage() {
   const { t } = useLanguage();
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<ComplaintStatus | ''>('');
+  const [statusFilter, setStatusFilter] = useState<ComplaintStatus[]>([]);
   const [issueTypeFilter, setIssueTypeFilter] = useState<IssueType | ''>('');
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -20,7 +21,9 @@ export default function ComplaintsPage() {
     try {
       const params = new URLSearchParams();
       if (searchTerm) params.append('search', searchTerm);
-      if (statusFilter) params.append('status', statusFilter);
+      if (statusFilter.length > 0) {
+        statusFilter.forEach(status => params.append('status', status));
+      }
       if (issueTypeFilter) params.append('issue_type', issueTypeFilter);
       
       const response = await api.get(`/complaints/export/${format}?${params.toString()}`, {
@@ -89,17 +92,11 @@ export default function ComplaintsPage() {
               />
             </div>
             <div className="flex gap-2">
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value as ComplaintStatus | '')}
-                className="px-3 py-2 border border-gray-300 rounded-md"
-              >
-                <option value="">{t('allStatuses')}</option>
-                <option value="open">Open</option>
-                <option value="in_progress">In Progress</option>
-                <option value="resolved">Resolved</option>
-                <option value="closed">Closed</option>
-              </select>
+              <StatusFilter
+                selectedStatuses={statusFilter}
+                onStatusChange={setStatusFilter}
+                className="min-w-[180px]"
+              />
 
               <select
                 value={issueTypeFilter}

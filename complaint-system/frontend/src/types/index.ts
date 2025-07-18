@@ -12,7 +12,7 @@ export interface Part {
 }
 
 export type IssueType = 'wrong_quantity' | 'wrong_part' | 'damaged' | 'other';
-export type ComplaintStatus = 'open' | 'in_progress' | 'resolved' | 'closed';
+export type ComplaintStatus = 'open' | 'in_progress' | 'resolved';
 
 export interface Complaint {
   id: number;

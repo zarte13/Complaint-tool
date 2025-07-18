@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { AlertCircle } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { Complaint } from '../../types';
+import { Complaint, ComplaintStatus } from '../../types';
 import api from '../../services/api';
 import EnhancedComplaintDetailDrawer from '../ComplaintDetailDrawer/EnhancedComplaintDetailDrawer';
 import ComplaintTile from './ComplaintTile';
@@ -9,7 +10,7 @@ import ComplaintTile from './ComplaintTile';
 interface ComplaintListProps {
   refreshTrigger?: number;
   searchTerm?: string;
-  statusFilter?: string;
+  statusFilter?: ComplaintStatus[];
   issueTypeFilter?: string;
   page?: number;
   pageSize?: number;
@@ -19,7 +20,7 @@ interface ComplaintListProps {
 export default function ComplaintList({
   refreshTrigger = 0,
   searchTerm = '',
-  statusFilter = '',
+  statusFilter = [],
   issueTypeFilter = '',
   page = 1,
   pageSize = 10,
@@ -42,7 +43,9 @@ export default function ComplaintList({
       const params = new URLSearchParams();
       
       if (searchTerm) params.append('search', searchTerm);
-      if (statusFilter) params.append('status', statusFilter);
+      if (statusFilter && statusFilter.length > 0) {
+        statusFilter.forEach(status => params.append('status', status));
+      }
       if (issueTypeFilter) params.append('issue_type', issueTypeFilter);
       params.append('skip', ((page - 1) * pageSize).toString());
       params.append('limit', pageSize.toString());
@@ -137,49 +140,85 @@ export default function ComplaintList({
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex justify-center py-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex items-center justify-center py-8">
-        <div className="flex items-center text-red-600">
-          <AlertCircle className="h-5 w-5 mr-2" />
-          <p>{error}</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (complaints.length === 0) {
-    return (
-      <div className="text-center py-8">
-        <p className="text-gray-500">{t('noComplaints')}</p>
-      </div>
-    );
-  }
-
   return (
     <>
-      <div className="space-y-4">
-        <h2 className="text-lg font-semibold text-gray-900">{t('recentComplaints')}</h2>
+      <motion.div 
+        className="space-y-4"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.3 }}
+      >
+        <motion.h2 
+          className="text-lg font-semibold text-gray-900"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+        >
+          {t('recentComplaints')}
+        </motion.h2>
         
-        <div className="space-y-4">
-          {complaints.map((complaint) => (
-            <ComplaintTile
-              key={complaint.id}
-              complaint={complaint}
-              onClick={handleRowClick}
-              onFileUploadComplete={fetchComplaints}
-            />
-          ))}
-        </div>
-      </div>
+        <AnimatePresence mode="wait">
+          {loading ? (
+            <motion.div
+              key="loading"
+              className="flex justify-center py-8"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            </motion.div>
+          ) : error ? (
+            <motion.div
+              key="error"
+              className="flex items-center justify-center py-8"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3 }}
+            >
+              <div className="flex items-center text-red-600">
+                <AlertCircle className="h-5 w-5 mr-2" />
+                <p>{error}</p>
+              </div>
+            </motion.div>
+          ) : complaints.length === 0 ? (
+            <motion.div
+              key="empty"
+              className="text-center py-8"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.3 }}
+            >
+              <p className="text-gray-500">{t('noComplaints')}</p>
+            </motion.div>
+          ) : (
+            <motion.div 
+              className="space-y-4"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.3, delay: 0.2 }}
+            >
+              {complaints.map((complaint, index) => (
+                <motion.div
+                  key={complaint.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: index * 0.1 }}
+                >
+                  <ComplaintTile
+                    complaint={complaint}
+                    onClick={handleRowClick}
+                    onFileUploadComplete={fetchComplaints}
+                  />
+                </motion.div>
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
       
       <EnhancedComplaintDetailDrawer
         complaint={drawerComplaint}

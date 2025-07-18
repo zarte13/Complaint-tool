@@ -9,12 +9,14 @@ interface FollowUpActionsPanelProps {
   complaintId: number;
   isEditable?: boolean;
   className?: string;
+  onFirstActionCreated?: () => void;
 }
 
 export const FollowUpActionsPanel: React.FC<FollowUpActionsPanelProps> = ({
   complaintId,
   isEditable = true,
-  className = ''
+  className = '',
+  onFirstActionCreated
 }) => {
   const {
     actions,
@@ -67,8 +69,14 @@ export const FollowUpActionsPanel: React.FC<FollowUpActionsPanelProps> = ({
 
   const handleCreateAction = async (actionData: any) => {
     try {
+      const isFirstAction = actions.length === 0;
       await createAction(actionData);
       setShowAddForm(false);
+      
+      // If this was the first action created, trigger the callback to update complaint status
+      if (isFirstAction && onFirstActionCreated) {
+        onFirstActionCreated();
+      }
     } catch (err) {
       console.error('Failed to create action:', err);
     }
