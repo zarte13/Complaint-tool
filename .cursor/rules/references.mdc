@@ -3,3 +3,4 @@ description:always refer to ARCHITECTURE.md
 globs:ARCHITECTURE.md
 alwaysApply: true
 ---
+always refer to ARCHITECTURE.md

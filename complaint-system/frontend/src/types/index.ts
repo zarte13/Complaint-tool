@@ -69,3 +69,101 @@ export interface FileUploadProgress {
   status: 'uploading' | 'success' | 'error';
   error?: string;
 }
+
+// DA-004: Follow-up Actions Types
+
+export type ActionStatus = 'open' | 'pending' | 'in_progress' | 'blocked' | 'escalated' | 'closed';
+export type ActionPriority = 'low' | 'medium' | 'high' | 'critical';
+export type DependencyType = 'sequential' | 'blocking' | 'optional';
+
+export interface ResponsiblePerson {
+  id: number;
+  name: string;
+  email?: string;
+  department?: string;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface FollowUpAction {
+  id: number;
+  complaint_id: number;
+  action_number: number;
+  action_text: string;
+  responsible_person: string;
+  due_date?: string;  // ISO date string
+  status: ActionStatus;
+  priority: ActionPriority;
+  notes?: string;
+  completion_percentage: number;
+  created_at: string;
+  updated_at: string;
+  started_at?: string;
+  completed_at?: string;
+  is_overdue: boolean;
+  can_start: boolean;
+}
+
+export interface FollowUpActionCreate {
+  action_text: string;
+  responsible_person: string;
+  due_date?: string;  // ISO date string (YYYY-MM-DD)
+  priority: ActionPriority;
+  notes?: string;
+}
+
+export interface FollowUpActionUpdate {
+  action_text?: string;
+  responsible_person?: string;
+  due_date?: string;  // ISO date string (YYYY-MM-DD)
+  status?: ActionStatus;
+  priority?: ActionPriority;
+  notes?: string;
+  completion_percentage?: number;
+}
+
+export interface ActionHistory {
+  id: number;
+  action_id: number;
+  field_changed: string;
+  old_value?: string;
+  new_value?: string;
+  changed_by: string;
+  changed_at: string;
+  change_reason?: string;
+}
+
+export interface ActionDependency {
+  id: number;
+  action_id: number;
+  depends_on_action_id: number;
+  dependency_type: DependencyType;
+  created_at: string;
+}
+
+export interface ActionMetrics {
+  total_actions: number;
+  open_actions: number;
+  overdue_actions: number;
+  completion_rate: number;
+  actions_by_status: Record<string, number>;
+  actions_by_priority: Record<string, number>;
+}
+
+export interface BulkActionUpdate {
+  action_ids: number[];
+  updates: FollowUpActionUpdate;
+}
+
+export interface BulkActionResponse {
+  updated_count: number;
+  failed_updates: Array<{
+    action_id: number;
+    error: string;
+  }>;
+}
+
+// Extended Complaint interface with actions
+export interface ComplaintWithActions extends Complaint {
+  follow_up_actions: FollowUpAction[];
+}

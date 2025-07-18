@@ -96,6 +96,36 @@ export interface Translations {
   add: string;
   cancel: string;
   
+  // Follow-up Actions Extended
+  actionsPanel: string;
+  createNewAction: string;
+  actionNumber: string;
+  responsiblePerson: string;
+  priority: string;
+  notes: string;
+  progress: string;
+  actionsOpen: string;
+  actionsOverdue: string;
+  actionsCompleted: string;
+  completionRate: string;
+  createFirstAction: string;
+  actionLimit: string;
+  actionLimitReached: string;
+  
+  // Action Statuses
+  statusOpen: string;
+  statusPending: string;
+  statusInProgress: string;
+  statusBlocked: string;
+  statusEscalated: string;
+  statusClosed: string;
+  
+  // Action Priorities  
+  priorityLow: string;
+  priorityMedium: string;
+  priorityHigh: string;
+  priorityCritical: string;
+  
   // Complaint List
   recentComplaints: string;
   noComplaints: string;

@@ -1,6 +1,6 @@
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, validator, computed_field
 from typing import Optional, List
-from datetime import datetime
+from datetime import datetime, date
 from enum import Enum
 
 class IssueType(str, Enum):
@@ -134,3 +134,150 @@ class ComplaintSearchResponse(BaseModel):
     
     class Config:
         from_attributes = True
+
+
+# DA-004: Follow-up Actions Schemas
+
+class ActionStatus(str, Enum):
+    OPEN = "open"
+    PENDING = "pending"
+    IN_PROGRESS = "in_progress"
+    BLOCKED = "blocked"
+    ESCALATED = "escalated"
+    CLOSED = "closed"
+
+class ActionPriority(str, Enum):
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+    CRITICAL = "critical"
+
+class DependencyType(str, Enum):
+    SEQUENTIAL = "sequential"
+    BLOCKING = "blocking"
+    OPTIONAL = "optional"
+
+# Responsible Person schemas
+class ResponsiblePersonBase(BaseModel):
+    name: str = Field(..., min_length=2, max_length=255)
+    email: Optional[str] = Field(None, max_length=255)
+    department: Optional[str] = Field(None, max_length=100)
+    is_active: bool = Field(default=True)
+
+class ResponsiblePersonCreate(ResponsiblePersonBase):
+    pass
+
+class ResponsiblePersonResponse(ResponsiblePersonBase):
+    id: int
+    created_at: datetime
+    
+    class Config:
+        from_attributes = True
+
+# Follow-up Action schemas
+class FollowUpActionBase(BaseModel):
+    action_text: str = Field(..., min_length=5, max_length=500)
+    responsible_person: str = Field(..., min_length=2, max_length=255)
+    due_date: Optional[date] = None
+    priority: ActionPriority = Field(default=ActionPriority.MEDIUM)
+    notes: Optional[str] = Field(None, max_length=1000)
+
+class FollowUpActionCreate(FollowUpActionBase):
+    pass
+
+class FollowUpActionUpdate(BaseModel):
+    action_text: Optional[str] = Field(None, min_length=5, max_length=500)
+    responsible_person: Optional[str] = Field(None, min_length=2, max_length=255)
+    due_date: Optional[date] = None
+    status: Optional[ActionStatus] = None
+    priority: Optional[ActionPriority] = None
+    notes: Optional[str] = Field(None, max_length=1000)
+    completion_percentage: Optional[int] = Field(None, ge=0, le=100)
+
+class FollowUpActionResponse(BaseModel):
+    id: int
+    complaint_id: int
+    action_number: int
+    action_text: str
+    responsible_person: str
+    due_date: Optional[date]
+    status: ActionStatus
+    priority: ActionPriority
+    notes: Optional[str]
+    completion_percentage: int
+    created_at: datetime
+    updated_at: datetime
+    started_at: Optional[datetime]
+    completed_at: Optional[datetime]
+    
+    class Config:
+        from_attributes = True
+    
+    @computed_field
+    @property
+    def is_overdue(self) -> bool:
+        """Check if action is overdue"""
+        if self.due_date and self.status not in [ActionStatus.CLOSED]:
+            return date.today() > self.due_date
+        return False
+    
+    @computed_field
+    @property
+    def can_start(self) -> bool:
+        """Check if action can be started (placeholder for dependency logic)"""
+        # TODO: Implement dependency checking logic
+        return True
+
+# Action History schemas
+class ActionHistoryResponse(BaseModel):
+    id: int
+    action_id: int
+    field_changed: str
+    old_value: Optional[str]
+    new_value: Optional[str]
+    changed_by: str
+    changed_at: datetime
+    change_reason: Optional[str]
+    
+    class Config:
+        from_attributes = True
+
+# Action Dependency schemas
+class ActionDependencyCreate(BaseModel):
+    depends_on_action_id: int
+    dependency_type: DependencyType = Field(default=DependencyType.SEQUENTIAL)
+
+class ActionDependencyResponse(BaseModel):
+    id: int
+    action_id: int
+    depends_on_action_id: int
+    dependency_type: DependencyType
+    created_at: datetime
+    
+    class Config:
+        from_attributes = True
+
+# Extended Complaint Response with Actions
+class ComplaintWithActionsResponse(ComplaintResponse):
+    follow_up_actions: List[FollowUpActionResponse] = []
+    
+    class Config:
+        from_attributes = True
+
+# Bulk operations schemas
+class BulkActionUpdate(BaseModel):
+    action_ids: List[int] = Field(..., min_length=1, max_length=50)
+    updates: FollowUpActionUpdate
+
+class BulkActionResponse(BaseModel):
+    updated_count: int
+    failed_updates: List[dict] = []
+    
+# Action metrics for dashboard
+class ActionMetrics(BaseModel):
+    total_actions: int
+    open_actions: int
+    overdue_actions: int
+    completion_rate: float
+    actions_by_status: dict
+    actions_by_priority: dict

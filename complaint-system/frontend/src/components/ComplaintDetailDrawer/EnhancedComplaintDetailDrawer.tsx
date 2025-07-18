@@ -5,6 +5,7 @@ import { Complaint, Attachment } from '../../types';
 import { format } from 'date-fns';
 import { enUS, fr } from 'date-fns/locale';
 import ImageGallery from './ImageGallery';
+import { FollowUpActionsPanel } from '../FollowUpActions/FollowUpActionsPanel';
 
 interface EnhancedComplaintDetailDrawerProps {
   complaint: Complaint | null;
@@ -334,6 +335,13 @@ export default function EnhancedComplaintDetailDrawer({
                   complaintId={complaint.id}
                   attachments={attachments}
                   isLoading={isLoadingAttachments}
+                />
+
+                {/* Follow-up Actions Panel */}
+                <FollowUpActionsPanel
+                  complaintId={complaint.id}
+                  isEditable={!isEditing} // Disable editing when complaint is being edited
+                  className="bg-white border border-gray-200 rounded-lg"
                 />
 
                 {/* Basic Information */}

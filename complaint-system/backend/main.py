@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from app.database.database import engine
 from app.models import models
-from app.api import companies, parts, complaints, analytics
+from app.api import companies, parts, complaints, analytics, follow_up_actions
 import os
 
 # Create database tables
@@ -35,6 +35,7 @@ app.include_router(companies.router)
 app.include_router(parts.router)
 app.include_router(complaints.router)
 app.include_router(analytics.router)
+app.include_router(follow_up_actions.router)
 
 @app.get("/")
 async def root():

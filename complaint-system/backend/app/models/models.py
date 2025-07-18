@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, DateTime, Boolean, ForeignKey
+from sqlalchemy import Column, Integer, String, Text, DateTime, Boolean, ForeignKey, Date
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.database.database import Base
@@ -45,6 +45,7 @@ class Complaint(Base):
     company = relationship("Company", back_populates="complaints")
     part = relationship("Part", back_populates="complaints")
     attachments = relationship("ComplaintAttachment", back_populates="complaint", cascade="all, delete-orphan")
+    follow_up_actions = relationship("FollowUpAction", back_populates="complaint", cascade="all, delete-orphan")
 
 class ComplaintAttachment(Base):
     __tablename__ = "complaint_attachments"
@@ -59,3 +60,68 @@ class ComplaintAttachment(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
     complaint = relationship("Complaint", back_populates="attachments")
+
+
+# DA-004: Follow-up Actions Models
+
+class FollowUpAction(Base):
+    __tablename__ = "follow_up_actions"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    complaint_id = Column(Integer, ForeignKey("complaints.id"), nullable=False)
+    action_number = Column(Integer, nullable=False)
+    action_text = Column(Text, nullable=False)
+    responsible_person = Column(String(255), nullable=False)
+    due_date = Column(Date, nullable=True)
+    status = Column(String(20), default="open")  # open, pending, in_progress, blocked, escalated, closed
+    priority = Column(String(10), default="medium")  # low, medium, high, critical
+    notes = Column(Text, nullable=True)
+    completion_percentage = Column(Integer, default=0)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    started_at = Column(DateTime(timezone=True), nullable=True)
+    completed_at = Column(DateTime(timezone=True), nullable=True)
+    
+    # Relationships
+    complaint = relationship("Complaint", back_populates="follow_up_actions")
+    history = relationship("ActionHistory", back_populates="action", cascade="all, delete-orphan")
+    dependencies = relationship("ActionDependency", 
+                              foreign_keys="ActionDependency.action_id", 
+                              back_populates="action")
+
+class ActionHistory(Base):
+    __tablename__ = "action_history"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    action_id = Column(Integer, ForeignKey("follow_up_actions.id"), nullable=False)
+    field_changed = Column(String(100), nullable=False)
+    old_value = Column(Text, nullable=True)
+    new_value = Column(Text, nullable=True)
+    changed_by = Column(String(255), nullable=False)
+    changed_at = Column(DateTime(timezone=True), server_default=func.now())
+    change_reason = Column(Text, nullable=True)
+    
+    action = relationship("FollowUpAction", back_populates="history")
+
+class ResponsiblePerson(Base):
+    __tablename__ = "responsible_persons"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(255), unique=True, nullable=False)
+    email = Column(String(255), nullable=True)
+    department = Column(String(100), nullable=True)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+class ActionDependency(Base):
+    __tablename__ = "action_dependencies"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    action_id = Column(Integer, ForeignKey("follow_up_actions.id"), nullable=False)
+    depends_on_action_id = Column(Integer, ForeignKey("follow_up_actions.id"), nullable=False)
+    dependency_type = Column(String(20), default="sequential")
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    
+    action = relationship("FollowUpAction", 
+                         foreign_keys=[action_id], 
+                         back_populates="dependencies")
