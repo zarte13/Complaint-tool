@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { FollowUpAction, ResponsiblePerson, ActionStatus } from '../../types';
+import React, { useState, useEffect } from 'react';
+import { FollowUpAction, ResponsiblePerson, ActionStatus, FollowUpActionUpdate } from '../../types';
 import { useFollowUpActions } from '../../hooks/useFollowUpActions';
 import { ActionCard } from './ActionCard';
 import { AddActionForm } from './AddActionForm';
@@ -36,6 +36,9 @@ export const FollowUpActionsPanel: React.FC<FollowUpActionsPanelProps> = ({
   const [showAddForm, setShowAddForm] = useState(false);
   const [draggedAction, setDraggedAction] = useState<FollowUpAction | null>(null);
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [selectedAction, setSelectedAction] = useState<FollowUpAction | null>(null);
+
+  // No longer needed - ActionCard handles its own menu state
 
   // Handle drag and drop
   const handleDragStart = (action: FollowUpAction) => {
@@ -71,40 +74,59 @@ export const FollowUpActionsPanel: React.FC<FollowUpActionsPanelProps> = ({
     }
   };
 
-  // Get status icon (French action plan format)
-  const getStatusIcon = (status: ActionStatus) => {
-    switch (status) {
-      case 'closed': return '✅';
-      case 'in_progress': return '🟡';
-      case 'blocked': return '⏸️';
-      case 'escalated': return '🔥';
-      case 'pending': return '⏳';
-      default: return '⚪';
+  // Action handling now done by ActionCard component
+
+  // Toggle action status (checkbox functionality)
+  const toggleActionStatus = async (action: FollowUpAction) => {
+    if (!isEditable) return;
+    
+    const newStatus = action.status === 'closed' ? 'open' : 'closed';
+    const updates: any = { status: newStatus };
+    
+    if (newStatus === 'closed') {
+      updates.completion_percentage = 100;
+    } else if (newStatus === 'open') {
+      updates.completion_percentage = 0;
+    }
+    
+    try {
+      await updateAction(action.id, updates);
+    } catch (err) {
+      console.error('Failed to toggle action status:', err);
     }
   };
 
-  // Get priority color
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'critical': return 'text-red-600';
-      case 'high': return 'text-orange-600';
-      case 'medium': return 'text-yellow-600';
-      case 'low': return 'text-green-600';
-      default: return 'text-gray-600';
-    }
+  // Format date for display
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return null;
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffTime = date.getTime() - now.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays < 0) return `${Math.abs(diffDays)}j retard`;
+    if (diffDays === 0) return "Aujourd'hui";
+    if (diffDays === 1) return "Demain";
+    if (diffDays <= 7) return `${diffDays}j`;
+    return date.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
   };
 
   if (loading) {
     return (
-      <div className={`follow-up-actions-panel ${className}`}>
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-gray-900">
-            Actions de Suivi
-          </h3>
+      <div className={`follow-up-actions-panel bg-white border border-gray-200 rounded-lg overflow-hidden ${className}`}>
+        <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
+          <div className="flex items-center space-x-2">
+            <svg className="h-5 w-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            </svg>
+            <h3 className="text-sm font-semibold text-gray-900">
+              Actions de Suivi
+            </h3>
+          </div>
         </div>
-        <div className="space-y-3">
+        <div className="p-4 space-y-3">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="animate-pulse bg-gray-200 h-20 rounded-lg" />
+            <div key={i} className="bg-gray-200 h-16 rounded-lg" />
           ))}
         </div>
       </div>
@@ -112,135 +134,141 @@ export const FollowUpActionsPanel: React.FC<FollowUpActionsPanelProps> = ({
   }
 
   return (
-    <div className={`follow-up-actions-panel ${className}`}>
-      {/* Header with metrics */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center space-x-3">
-          <button
-            onClick={() => setIsCollapsed(!isCollapsed)}
-            className="flex items-center space-x-2 text-lg font-semibold text-gray-900 hover:text-gray-700 transition-colors"
-          >
-            <span className={`transform transition-transform ${isCollapsed ? 'rotate-0' : 'rotate-90'}`}>
-              ▶️
-            </span>
-            <span>Actions de Suivi ({actions.length})</span>
-          </button>
-          
-          {metrics && (
-            <div className="flex items-center space-x-4 text-sm text-gray-600">
-              <span className="flex items-center space-x-1">
-                <span className="w-2 h-2 bg-yellow-400 rounded-full"></span>
-                <span>{metrics.open_actions} ouvertes</span>
-              </span>
-              {metrics.overdue_actions > 0 && (
-                <span className="flex items-center space-x-1">
-                  <span className="w-2 h-2 bg-red-400 rounded-full"></span>
-                  <span>{metrics.overdue_actions} en retard</span>
-                </span>
-              )}
-              <span className="flex items-center space-x-1">
-                <span className="w-2 h-2 bg-green-400 rounded-full"></span>
-                <span>{metrics.completion_rate}% complétées</span>
-              </span>
-            </div>
+    <>
+      <div className={`follow-up-actions-panel bg-white border border-gray-200 rounded-lg overflow-hidden ${className}`}>
+        {/* Header */}
+        <button
+          onClick={() => setIsCollapsed(!isCollapsed)}
+          className="w-full px-4 py-3 flex items-center justify-between bg-gray-50 hover:bg-gray-100 transition-colors border-b border-gray-200"
+        >
+          <div className="flex items-center space-x-2">
+            <svg className="h-5 w-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            </svg>
+            <h3 className="text-sm font-semibold text-gray-900">
+              Actions de Suivi ({actions.length})
+            </h3>
+          </div>
+          {isCollapsed ? (
+            <svg className="h-4 w-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          ) : (
+            <svg className="h-4 w-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
           )}
-        </div>
+        </button>
 
-        {isEditable && !isCollapsed && (
-          <button
-            onClick={() => setShowAddForm(true)}
-            className="btn-primary text-sm"
-            disabled={actions.length >= 10 || creating}
-          >
-            {creating ? (
-              <>
-                <span className="animate-spin inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full mr-2"></span>
-                Création...
-              </>
-            ) : (
-              '+ Ajouter une Action'
-            )}
-          </button>
-        )}
-      </div>
-
-      {/* Error display */}
-      {error && (
-        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-          <p className="text-sm text-red-600">{error}</p>
-        </div>
-      )}
-
-      {!isCollapsed && (
-        <>
-          {/* Filters */}
-          <ActionFilters
-            filters={filters}
-            responsiblePersons={responsiblePersons}
-            onStatusFilter={filterByStatus}
-            onPersonFilter={filterByPerson}
-            onOverdueFilter={showOverdueOnly}
-            className="mb-4"
-          />
-
-          {/* Actions list */}
-          <div className="space-y-3 max-h-96 overflow-y-auto">
-            {actions.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
-                <div className="mb-4">
-                  <span className="text-4xl">📋</span>
-                </div>
-                <p className="text-lg font-medium mb-2">Aucune action de suivi</p>
-                <p className="text-sm mb-4">
-                  Créez votre première action pour organiser le plan d'action
-                </p>
-                {isEditable && (
-                  <button
-                    onClick={() => setShowAddForm(true)}
-                    className="btn-primary"
-                    disabled={creating}
-                  >
-                    Créer la première action
-                  </button>
+        {/* Content */}
+        {!isCollapsed && (
+          <div className="p-4">
+            {/* Header Row with Add Button and Metrics */}
+            <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-100">
+              <button
+                onClick={() => setShowAddForm(true)}
+                className="h-10 px-4 py-2 text-sm font-medium text-gray-600 bg-gray-100 border border-gray-200 rounded hover:bg-gray-200 shadow-sm"
+                style={{ fontSize: '14px', fontWeight: '500', boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)' }}
+                disabled={actions.length >= 10 || creating || !isEditable}
+              >
+                {creating ? (
+                  <>
+                    <span className="inline-block w-4 h-4 bg-gray-400 rounded-full mr-2"></span>
+                    Création...
+                  </>
+                ) : (
+                  'Ajouter une action'
                 )}
+              </button>
+
+              {metrics && (
+                <div className="flex items-center space-x-4 text-sm text-gray-600">
+                  <span>{metrics.open_actions} ouvertes</span>
+                  <span>•</span>
+                  <span>{metrics.completion_rate}% complétées</span>
+                </div>
+              )}
+            </div>
+
+            {/* Error display */}
+            {error && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-sm text-red-600">{error}</p>
               </div>
-            ) : (
-              actions.map((action) => (
-                <ActionCard
-                  key={action.id}
-                  action={action}
-                  isEditable={isEditable}
-                  isDragging={draggedAction?.id === action.id}
-                  responsiblePersons={responsiblePersons}
-                  onUpdate={(updates) => updateAction(action.id, updates)}
-                  onDelete={() => deleteAction(action.id)}
-                  onDragStart={() => handleDragStart(action)}
-                  onDragOver={handleDragOver}
-                  onDrop={() => handleDrop(action)}
-                />
-              ))
+            )}
+
+            {/* Filters */}
+            <ActionFilters
+              filters={filters}
+              responsiblePersons={responsiblePersons}
+              onStatusFilter={filterByStatus}
+              onPersonFilter={filterByPerson}
+              onOverdueFilter={showOverdueOnly}
+              className="mb-4"
+            />
+
+            {/* Actions list */}
+            <div className="space-y-1">
+              {actions.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  <div className="mb-4">
+                    <span className="text-4xl">📋</span>
+                  </div>
+                  <p className="text-lg font-medium mb-2">Aucune action de suivi</p>
+                  <p className="text-sm mb-4">
+                    Créez votre première action pour organiser le plan d'action
+                  </p>
+                  {isEditable && (
+                    <button
+                      onClick={() => setShowAddForm(true)}
+                      className="h-10 px-4 text-sm font-medium text-gray-600 bg-gray-100 border border-gray-200 rounded hover:bg-gray-200 shadow-sm"
+                      style={{ fontSize: '14px', fontWeight: '500', boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)' }}
+                      disabled={creating}
+                    >
+                      Créer la première action
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {actions.map((action) => (
+                    <ActionCard
+                      key={action.id}
+                      action={action}
+                      isEditable={isEditable}
+                      isDragging={draggedAction?.id === action.id}
+                      responsiblePersons={responsiblePersons}
+                      onUpdate={(updates: FollowUpActionUpdate) => updateAction(action.id, updates)}
+                      onDelete={() => deleteAction(action.id)}
+                      onDragStart={() => handleDragStart(action)}
+                      onDragOver={handleDragOver}
+                      onDrop={() => handleDrop(action)}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Action limit warning */}
+            {actions.length >= 8 && actions.length < 10 && (
+              <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <p className="text-sm text-yellow-700">
+                  ⚠️ Attention: Vous approchez de la limite de 10 actions par réclamation 
+                  ({actions.length}/10)
+                </p>
+              </div>
+            )}
+
+            {actions.length >= 10 && (
+              <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-sm text-red-700">
+                  🚫 Limite atteinte: Maximum 10 actions par réclamation
+                </p>
+              </div>
             )}
           </div>
-
-          {/* Action limit warning */}
-          {actions.length >= 8 && actions.length < 10 && (
-            <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-              <p className="text-sm text-yellow-700">
-                ⚠️ Attention: Vous approchez de la limite de 10 actions par réclamation 
-                ({actions.length}/10)
-              </p>
-            </div>
-          )}
-
-          {actions.length >= 10 && (
-            <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-sm text-red-700">
-                🚫 Limite atteinte: Maximum 10 actions par réclamation
-              </p>
-            </div>
-          )}
-        </>
-      )}
+        )}
+      </div>
 
       {/* Add Action Form Modal */}
       {showAddForm && (
@@ -253,7 +281,7 @@ export const FollowUpActionsPanel: React.FC<FollowUpActionsPanelProps> = ({
           isCreating={creating}
         />
       )}
-    </div>
+    </>
   );
 };
 

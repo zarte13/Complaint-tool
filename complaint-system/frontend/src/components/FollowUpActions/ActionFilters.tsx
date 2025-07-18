@@ -42,11 +42,10 @@ export const ActionFilters: React.FC<ActionFiltersProps> = ({
   const clearAllFilters = () => {
     onStatusFilter(undefined);
     onPersonFilter(undefined);
-    onOverdueFilter(false);
   };
 
   // Check if any filters are active
-  const hasActiveFilters = filters.status || filters.responsible_person || filters.overdue_only;
+  const hasActiveFilters = filters.status || filters.responsible_person;
 
   return (
     <div className={`action-filters bg-gray-50 border border-gray-200 rounded-lg p-4 ${className}`}>
@@ -107,18 +106,7 @@ export const ActionFilters: React.FC<ActionFiltersProps> = ({
             </select>
           </div>
 
-          {/* Overdue Filter */}
-          <div className="flex items-center space-x-2">
-            <label className="flex items-center space-x-2 text-sm text-gray-600 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={filters.overdue_only}
-                onChange={(e) => onOverdueFilter(e.target.checked)}
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 focus:ring-offset-0"
-              />
-              <span>⚠️ En retard seulement</span>
-            </label>
-          </div>
+
         </div>
       </div>
 
@@ -152,17 +140,7 @@ export const ActionFilters: React.FC<ActionFiltersProps> = ({
               </span>
             )}
             
-            {filters.overdue_only && (
-              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-red-100 text-red-800">
-                ⚠️ En retard
-                <button
-                  onClick={() => onOverdueFilter(false)}
-                  className="ml-1 text-red-600 hover:text-red-700"
-                >
-                  ×
-                </button>
-              </span>
-            )}
+
           </div>
         </div>
       )}
@@ -173,10 +151,7 @@ export const ActionFilters: React.FC<ActionFiltersProps> = ({
           <span className="text-xs text-gray-500 self-center">Filtres rapides:</span>
           
           <button
-            onClick={() => {
-              onStatusFilter('open');
-              onOverdueFilter(false);
-            }}
+            onClick={() => onStatusFilter('open')}
             className={`text-xs px-2 py-1 rounded-full border transition-colors ${
               filters.status === 'open' 
                 ? 'bg-gray-100 text-gray-800 border-gray-300' 
@@ -187,10 +162,7 @@ export const ActionFilters: React.FC<ActionFiltersProps> = ({
           </button>
           
           <button
-            onClick={() => {
-              onStatusFilter('in_progress');
-              onOverdueFilter(false);
-            }}
+            onClick={() => onStatusFilter('in_progress')}
             className={`text-xs px-2 py-1 rounded-full border transition-colors ${
               filters.status === 'in_progress' 
                 ? 'bg-yellow-100 text-yellow-800 border-yellow-300' 
@@ -201,24 +173,7 @@ export const ActionFilters: React.FC<ActionFiltersProps> = ({
           </button>
           
           <button
-            onClick={() => {
-              onStatusFilter(undefined);
-              onOverdueFilter(true);
-            }}
-            className={`text-xs px-2 py-1 rounded-full border transition-colors ${
-              filters.overdue_only 
-                ? 'bg-red-100 text-red-800 border-red-300' 
-                : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
-            }`}
-          >
-            ⚠️ En retard
-          </button>
-          
-          <button
-            onClick={() => {
-              onStatusFilter('closed');
-              onOverdueFilter(false);
-            }}
+            onClick={() => onStatusFilter('closed')}
             className={`text-xs px-2 py-1 rounded-full border transition-colors ${
               filters.status === 'closed' 
                 ? 'bg-green-100 text-green-800 border-green-300' 
@@ -229,10 +184,7 @@ export const ActionFilters: React.FC<ActionFiltersProps> = ({
           </button>
           
           <button
-            onClick={() => {
-              onStatusFilter('blocked');
-              onOverdueFilter(false);
-            }}
+            onClick={() => onStatusFilter('blocked')}
             className={`text-xs px-2 py-1 rounded-full border transition-colors ${
               filters.status === 'blocked' 
                 ? 'bg-red-100 text-red-800 border-red-300' 

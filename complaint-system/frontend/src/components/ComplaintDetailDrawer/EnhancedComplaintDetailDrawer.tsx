@@ -254,7 +254,7 @@ export default function EnhancedComplaintDetailDrawer({
   return (
     <>
       <div className="fixed inset-0 bg-black bg-opacity-50 z-40" onClick={onClose} data-testid="drawer-overlay" />
-      <div className="fixed right-0 top-0 h-full w-full max-w-4xl bg-gray-50 shadow-xl z-50 flex flex-col">
+      <div className="fixed right-0 top-0 h-full w-full max-w-7xl bg-gray-50 shadow-xl z-50 flex flex-col">
         {/* Header */}
         <div className="bg-white border-b border-gray-200 px-6 py-4">
           <div className="flex items-center justify-between">
@@ -327,137 +327,138 @@ export default function EnhancedComplaintDetailDrawer({
               </div>
             )}
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6" data-testid="responsive-grid">
-              {/* Left Column */}
-              <div className="space-y-6">
-                {/* Image Gallery */}
-                <ImageGallery
-                  complaintId={complaint.id}
-                  attachments={attachments}
-                  isLoading={isLoadingAttachments}
-                />
+                         {/* Two-Column Responsive Layout */}
+             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6" data-testid="responsive-grid">
+               {/* Left Column - Information Sections */}
+               <div className="lg:col-span-1 space-y-6">
+                 {/* Image Gallery */}
+                 <ImageGallery
+                   complaintId={complaint.id}
+                   attachments={attachments}
+                   isLoading={isLoadingAttachments}
+                 />
 
-                {/* Follow-up Actions Panel */}
-                <FollowUpActionsPanel
-                  complaintId={complaint.id}
-                  isEditable={!isEditing} // Disable editing when complaint is being edited
-                  className="bg-white border border-gray-200 rounded-lg"
-                />
+                 {/* Basic Information */}
+                 <div className="bg-white border border-gray-200 rounded-lg p-4">
+                   <h3 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                     <div className="w-1 h-4 bg-blue-600 rounded-full" />
+                     {t('basicInformation')}
+                   </h3>
+                   <div className="space-y-4">
+                     {renderField('ID', complaint.id)}
+                     {renderField('Customer Company', complaint.company.name)}
+                     {renderField('Part Number', complaint.part.part_number)}
+                     {renderField('Issue Type', getIssueTypeDisplay(complaint.issue_type))}
+                     {renderField('Status', complaint.status)}
+                   </div>
+                 </div>
 
-                {/* Basic Information */}
-                <div className="bg-white border border-gray-200 rounded-lg p-4">
-                  <h3 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                    <div className="w-1 h-4 bg-blue-600 rounded-full" />
-                    {t('basicInformation')}
-                  </h3>
-                  <div className="space-y-4">
-                    {renderField('ID', complaint.id)}
-                    {renderField('Customer Company', complaint.company.name)}
-                    {renderField('Part Number', complaint.part.part_number)}
-                    {renderField('Issue Type', getIssueTypeDisplay(complaint.issue_type))}
-                    {renderField('Status', complaint.status)}
-                  </div>
-                </div>
+                 {/* Order Details */}
+                 <div className="bg-white border border-gray-200 rounded-lg p-4">
+                   <h3 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                     <div className="w-1 h-4 bg-green-600 rounded-full" />
+                     {t('orderDetails')}
+                   </h3>
+                   <div className="space-y-4">
+                     {renderField('Work Order Number', complaint.work_order_number, 'work_order_number')}
+                     {(complaint.issue_type === 'wrong_quantity' || complaint.issue_type === 'wrong_part') && (
+                       <>
+                         {renderField('Quantity Ordered', complaint.quantity_ordered, 'quantity_ordered', 'number')}
+                         {renderField('Quantity Received', complaint.quantity_received, 'quantity_received', 'number')}
+                       </>
+                     )}
+                     {renderField('Part Received', complaint.part_received, 'part_received')}
+                   </div>
+                 </div>
 
-                {/* System Information */}
-                <div className="bg-white border border-gray-200 rounded-lg p-4">
-                  <h3 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                    <div className="w-1 h-4 bg-gray-600 rounded-full" />
-                    {t('systemInformation')}
-                  </h3>
-                  <div className="space-y-4">
-                    {renderField('Created', formatDate(complaint.created_at))}
-                    {renderField('Updated', formatDate(complaint.updated_at))}
-                    {renderField('Last Edit', formatRelativeDate(complaint.last_edit))}
-                  </div>
-                </div>
-              </div>
+                 {/* Issue Details */}
+                 <div className="bg-white border border-gray-200 rounded-lg p-4">
+                   <h3 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                     <div className="w-1 h-4 bg-amber-600 rounded-full" />
+                     {t('issueDetails')}
+                   </h3>
+                   <div className="space-y-4">
+                     {renderField('Occurrence', complaint.occurrence, 'occurrence')}
+                     {renderField('Human Factor', complaint.human_factor, 'human_factor', 'toggle')}
+                     {renderField('Details', complaint.details, 'details', 'textarea')}
+                   </div>
+                 </div>
 
-              {/* Right Column */}
-              <div className="space-y-6">
-                {/* Order Details */}
-                <div className="bg-white border border-gray-200 rounded-lg p-4">
-                  <h3 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                    <div className="w-1 h-4 bg-green-600 rounded-full" />
-                    {t('orderDetails')}
-                  </h3>
-                  <div className="space-y-4">
-                    {renderField('Work Order Number', complaint.work_order_number, 'work_order_number')}
-                    {(complaint.issue_type === 'wrong_quantity' || complaint.issue_type === 'wrong_part') && (
-                      <>
-                        {renderField('Quantity Ordered', complaint.quantity_ordered, 'quantity_ordered', 'number')}
-                        {renderField('Quantity Received', complaint.quantity_received, 'quantity_received', 'number')}
-                      </>
-                    )}
-                    {renderField('Part Received', complaint.part_received, 'part_received')}
-                  </div>
-                </div>
+                 {/* System Information */}
+                 <div className="bg-white border border-gray-200 rounded-lg p-4">
+                   <h3 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                     <div className="w-1 h-4 bg-gray-600 rounded-full" />
+                     {t('systemInformation')}
+                   </h3>
+                   <div className="space-y-4">
+                     {renderField('Created', formatDate(complaint.created_at))}
+                     {renderField('Updated', formatDate(complaint.updated_at))}
+                     {renderField('Last Edit', formatRelativeDate(complaint.last_edit))}
+                   </div>
+                 </div>
+               </div>
 
-                {/* Issue Details */}
-                <div className="bg-white border border-gray-200 rounded-lg p-4">
-                  <h3 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                    <div className="w-1 h-4 bg-amber-600 rounded-full" />
-                    {t('issueDetails')}
-                  </h3>
-                  <div className="space-y-4">
-                    {renderField('Occurrence', complaint.occurrence, 'occurrence')}
-                    {renderField('Human Factor', complaint.human_factor, 'human_factor', 'toggle')}
-                    {renderField('Details', complaint.details, 'details', 'textarea')}
-                  </div>
-                </div>
+               {/* Right Column - Actions & Attachments (Spans 2 columns) */}
+               <div className="lg:col-span-2 space-y-6">
+                 {/* Follow-up Actions Panel - Full width for better usability */}
+                 <FollowUpActionsPanel
+                   complaintId={complaint.id}
+                   isEditable={!isEditing} // Disable editing when complaint is being edited
+                   className="bg-white border border-gray-200 rounded-lg"
+                 />
 
-                {/* Attached Files */}
-                {complaint.has_attachments && (
-                  <div className="bg-white border border-gray-200 rounded-lg p-4">
-                    <h3 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                      <div className="w-1 h-4 bg-purple-600 rounded-full" />
-                      {t('attachedFiles')}
-                    </h3>
-                    <div className="space-y-3">
-                      {isLoadingAttachments ? (
-                        <div className="flex items-center justify-center py-4">
-                          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-600"></div>
-                          <span className="ml-2 text-sm text-gray-600">Loading files...</span>
-                        </div>
-                      ) : attachments.length > 0 ? (
-                        <div className="space-y-2">
-                          {attachments.map((attachment) => (
-                            <div
-                              key={attachment.id}
-                              className="flex items-center justify-between p-3 bg-gray-50 rounded-md hover:bg-gray-100 transition-colors"
-                            >
-                              <div className="flex items-center space-x-3">
-                                <FileText className="h-5 w-5 text-gray-400" />
-                                <div>
-                                  <p className="text-sm font-medium text-gray-900">
-                                    {attachment.original_filename}
-                                  </p>
-                                  <p className="text-xs text-gray-500">
-                                    {Math.round(attachment.file_size / 1024)} KB • {attachment.mime_type}
-                                  </p>
-                                </div>
-                              </div>
-                              <button
-                                onClick={() => handleDownloadFile(attachment)}
-                                className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-purple-600 bg-purple-50 rounded-md hover:bg-purple-100 transition-colors"
-                                title={`Download ${attachment.original_filename}`}
-                              >
-                                <Download className="h-3 w-3 mr-1" />
-                                Download
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="text-sm text-gray-500 text-center py-4">
-                          No files attached
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
+                 {/* Attached Files */}
+                 {complaint.has_attachments && (
+                   <div className="bg-white border border-gray-200 rounded-lg p-4">
+                     <h3 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                       <div className="w-1 h-4 bg-purple-600 rounded-full" />
+                       {t('attachedFiles')}
+                     </h3>
+                     <div className="space-y-3">
+                       {isLoadingAttachments ? (
+                         <div className="flex items-center justify-center py-4">
+                           <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-600"></div>
+                           <span className="ml-2 text-sm text-gray-600">Loading files...</span>
+                         </div>
+                       ) : attachments.length > 0 ? (
+                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                           {attachments.map((attachment) => (
+                             <div
+                               key={attachment.id}
+                               className="flex items-center justify-between p-3 bg-gray-50 rounded-md hover:bg-gray-100 transition-colors"
+                             >
+                               <div className="flex items-center space-x-3 min-w-0 flex-1">
+                                 <FileText className="h-5 w-5 text-gray-400 flex-shrink-0" />
+                                 <div className="min-w-0 flex-1">
+                                   <p className="text-sm font-medium text-gray-900 truncate">
+                                     {attachment.original_filename}
+                                   </p>
+                                   <p className="text-xs text-gray-500">
+                                     {Math.round(attachment.file_size / 1024)} KB • {attachment.mime_type}
+                                   </p>
+                                 </div>
+                               </div>
+                               <button
+                                 onClick={() => handleDownloadFile(attachment)}
+                                 className="ml-3 inline-flex items-center px-3 py-1.5 text-xs font-medium text-purple-600 bg-purple-50 rounded-md hover:bg-purple-100 transition-colors flex-shrink-0"
+                                 title={`Download ${attachment.original_filename}`}
+                               >
+                                 <Download className="h-3 w-3 mr-1" />
+                                 Download
+                               </button>
+                             </div>
+                           ))}
+                         </div>
+                       ) : (
+                         <p className="text-sm text-gray-500 text-center py-4">
+                           No files attached
+                         </p>
+                       )}
+                     </div>
+                   </div>
+                 )}
+               </div>
+             </div>
           </div>
         </div>
       </div>

@@ -28,85 +28,151 @@ export const ActionCard: React.FC<ActionCardProps> = ({
   const { t } = useLanguage();
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [editData, setEditData] = useState<FollowUpActionUpdate>({});
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
   const dragRef = useRef<HTMLDivElement>(null);
+  
+  // Form data for editing (mirrors AddActionForm structure)
+  const [formData, setFormData] = useState({
+    action_text: action.action_text,
+    responsible_person: action.responsible_person,
+    priority: action.priority,
+    due_date: action.due_date || '',
+    notes: action.notes || '',
+    status: action.status,
+    completion_percentage: action.completion_percentage
+  });
 
-  // Get status styling
-  const getStatusStyle = (status: ActionStatus) => {
-    switch (status) {
-      case 'open': return 'bg-gray-100 text-gray-800 border-gray-300';
-      case 'pending': return 'bg-blue-100 text-blue-800 border-blue-300';
-      case 'in_progress': return 'bg-yellow-100 text-yellow-800 border-yellow-300';
-      case 'blocked': return 'bg-red-100 text-red-800 border-red-300';
-      case 'escalated': return 'bg-orange-100 text-orange-800 border-orange-300';
-      case 'closed': return 'bg-green-100 text-green-800 border-green-300';
-      default: return 'bg-gray-100 text-gray-800 border-gray-300';
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [touchedFields, setTouchedFields] = useState<Record<string, boolean>>({});
+
+  // Validation rules (exact copy from AddActionForm)
+  const validateField = (field: string, value: any): string => {
+    switch (field) {
+      case 'action_text':
+        if (!value || value.trim().length < 5) {
+          return 'Le texte de l\'action doit contenir au moins 5 caractères';
+        }
+        if (value.length > 500) {
+          return 'Le texte ne peut pas dépasser 500 caractères';
+        }
+        return '';
+      case 'responsible_person':
+        if (!value || value.trim() === '') {
+          return 'Un responsable doit être assigné';
+        }
+        return '';
+      case 'due_date':
+        if (value && new Date(value) < new Date(new Date().toDateString())) {
+          return 'La date d\'échéance ne peut pas être dans le passé';
+        }
+        return '';
+      case 'notes':
+        if (value && value.length > 1000) {
+          return 'Les notes ne peuvent pas dépasser 1000 caractères';
+        }
+        return '';
+      default:
+        return '';
     }
   };
 
-  // Get priority styling
-  const getPriorityStyle = (priority: ActionPriority) => {
-    switch (priority) {
-      case 'low': return 'text-green-600';
-      case 'medium': return 'text-yellow-600';
-      case 'high': return 'text-orange-600';
-      case 'critical': return 'text-red-600';
-      default: return 'text-gray-600';
+  // Validate entire form
+  const validateForm = (): boolean => {
+    const newErrors: Record<string, string> = {};
+    
+    Object.keys(formData).forEach(field => {
+      const error = validateField(field, formData[field as keyof typeof formData]);
+      if (error) {
+        newErrors[field] = error;
+      }
+    });
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  // Handle field change
+  const handleFieldChange = (field: string, value: any) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    setTouchedFields(prev => ({ ...prev, [field]: true }));
+    
+    // Clear error for this field if it becomes valid
+    if (touchedFields[field]) {
+      const error = validateField(field, value);
+      setErrors(prev => ({ ...prev, [field]: error }));
     }
   };
 
-  // Get status icon
-  const getStatusIcon = (status: ActionStatus) => {
-    switch (status) {
-      case 'open': return '⚪';
-      case 'pending': return '⏳';
-      case 'in_progress': return '🟡';
-      case 'blocked': return '⏸️';
-      case 'escalated': return '🔥';
-      case 'closed': return '✅';
-      default: return '⚪';
-    }
+  // Handle field blur
+  const handleFieldBlur = (field: string) => {
+    setTouchedFields(prev => ({ ...prev, [field]: true }));
+    const error = validateField(field, formData[field as keyof typeof formData]);
+    setErrors(prev => ({ ...prev, [field]: error }));
   };
 
-  // Handle drag start
-  const handleDragStart = (e: React.DragEvent) => {
-    if (!isEditable) return;
-    e.dataTransfer.effectAllowed = 'move';
-    onDragStart();
+  // Get field error display
+  const getFieldError = (field: string): string => {
+    return touchedFields[field] ? errors[field] || '' : '';
   };
 
-  // Handle edit mode
-  const startEditing = () => {
-    setIsEditing(true);
-    setEditData({
+  // Check if field has error
+  const hasFieldError = (field: string): boolean => {
+    return touchedFields[field] && !!errors[field];
+  };
+
+  // Handle card click to enter edit mode
+  const handleCardClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!isEditable || isEditing) return;
+    
+    // Reset form data and validation state
+    setFormData({
       action_text: action.action_text,
       responsible_person: action.responsible_person,
-      due_date: action.due_date?.split('T')[0], // Convert to YYYY-MM-DD
-      status: action.status,
       priority: action.priority,
-      notes: action.notes,
+      due_date: action.due_date || '',
+      notes: action.notes || '',
+      status: action.status,
       completion_percentage: action.completion_percentage
     });
+    setErrors({});
+    setTouchedFields({});
+    setIsEditing(true);
   };
 
-  const cancelEditing = () => {
-    setIsEditing(false);
-    setEditData({});
-  };
+  // Handle save changes
+  const handleSave = async () => {
+    if (!validateForm()) {
+      return;
+    }
 
-  const saveChanges = async () => {
-    if (!editData) return;
-    
     setIsLoading(true);
     try {
-      await onUpdate(editData);
+      const updates: FollowUpActionUpdate = {
+        action_text: formData.action_text,
+        responsible_person: formData.responsible_person,
+        priority: formData.priority,
+        due_date: formData.due_date || undefined,
+        notes: formData.notes || undefined,
+        status: formData.status,
+        completion_percentage: formData.completion_percentage
+      };
+      
+      await onUpdate(updates);
       setIsEditing(false);
     } catch (error) {
       console.error('Failed to update action:', error);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Handle cancel editing
+  const handleCancel = () => {
+    setIsEditing(false);
+    setErrors({});
+    setTouchedFields({});
   };
 
   // Handle delete
@@ -122,26 +188,22 @@ export const ActionCard: React.FC<ActionCardProps> = ({
     }
   };
 
-  // Quick status change
-  const quickStatusChange = async (newStatus: ActionStatus) => {
-    if (!isEditable) return;
+  // Handle overflow menu actions
+  const handleMenuAction = (actionType: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowMenu(false);
     
-    setIsLoading(true);
-    try {
-      const updates: FollowUpActionUpdate = { status: newStatus };
-      
-      // Auto-update completion percentage based on status
-      if (newStatus === 'closed') {
-        updates.completion_percentage = 100;
-      } else if (newStatus === 'in_progress' && action.completion_percentage === 0) {
-        updates.completion_percentage = 25;
-      }
-      
-      await onUpdate(updates);
-    } catch (error) {
-      console.error('Failed to update status:', error);
-    } finally {
-      setIsLoading(false);
+    switch (actionType) {
+      case 'edit':
+        handleCardClick(e);
+        break;
+      case 'duplicate':
+        // TODO: Implement duplicate functionality
+        alert('Fonctionnalité de duplication à venir');
+        break;
+      case 'delete':
+        setShowConfirmDelete(true);
+        break;
     }
   };
 
@@ -159,135 +221,100 @@ export const ActionCard: React.FC<ActionCardProps> = ({
   // Check if overdue
   const isOverdue = action.is_overdue && action.status !== 'closed';
 
-  return (
-    <div
-      ref={dragRef}
-      draggable={isEditable && !isEditing}
-      onDragStart={handleDragStart}
-      onDragOver={onDragOver}
-      onDrop={onDrop}
-      className={`
-        action-card relative border rounded-lg bg-white shadow-sm transition-all duration-200
-        ${isDragging ? 'action-card-dragging' : ''}
-        ${isOverdue ? 'overdue-indicator border-red-300 bg-red-50' : 'border-gray-200'}
-        ${isEditable && !isEditing ? 'hover:shadow-md cursor-move' : ''}
-        ${isLoading ? 'opacity-50' : ''}
-      `}
-    >
-      {/* Loading overlay */}
-      {isLoading && (
-        <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-10 rounded-lg">
-          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
-        </div>
-      )}
+  // Handle drag operations
+  const handleDragStart = (e: React.DragEvent) => {
+    e.stopPropagation();
+    onDragStart();
+  };
 
-      {/* Header */}
-      <div className="action-header">
-        <div className="flex items-center space-x-3">
-          {/* Action Number */}
-          <span className="flex-shrink-0 w-8 h-8 bg-blue-100 text-blue-800 rounded-full flex items-center justify-center text-sm font-semibold">
-            {action.action_number}
-          </span>
-          
-          {/* Status Badge */}
-          <span className={`status-badge ${getStatusStyle(action.status)}`}>
-            <span className="mr-1">{getStatusIcon(action.status)}</span>
-            {action.status.replace('_', ' ').toUpperCase()}
-          </span>
-          
-          {/* Priority */}
-          <span className={`text-sm font-medium ${getPriorityStyle(action.priority)}`}>
-            {action.priority.toUpperCase()}
-          </span>
-          
-          {/* Overdue warning */}
-          {isOverdue && (
-            <span className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded-full">
-              ⚠️ En retard
-            </span>
-          )}
-        </div>
+  // Handle checkbox status toggle
+  const handleStatusToggle = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!isEditable) return;
+    
+    setIsLoading(true);
+    try {
+      const newStatus: ActionStatus = action.status === 'closed' ? 'open' : 'closed';
+      const updates: FollowUpActionUpdate = { 
+        status: newStatus,
+        completion_percentage: newStatus === 'closed' ? 100 : 0
+      };
+      
+      await onUpdate(updates);
+    } catch (error) {
+      console.error('Failed to update status:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-        {/* Actions */}
-        {isEditable && (
-          <div className="flex items-center space-x-2">
-            {!isEditing ? (
-              <>
-                <button
-                  onClick={startEditing}
-                  className="text-gray-400 hover:text-gray-600 transition-colors"
-                  title="Modifier"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                  </svg>
-                </button>
-                <button
-                  onClick={() => setShowConfirmDelete(true)}
-                  className="text-gray-400 hover:text-red-600 transition-colors"
-                  title="Supprimer"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                  </svg>
-                </button>
-              </>
-            ) : (
-              <>
-                <button
-                  onClick={saveChanges}
-                  className="text-green-600 hover:text-green-700 transition-colors"
-                  title="Sauvegarder"
-                  disabled={isLoading}
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                </button>
-                <button
-                  onClick={cancelEditing}
-                  className="text-gray-400 hover:text-gray-600 transition-colors"
-                  title="Annuler"
-                  disabled={isLoading}
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </>
-            )}
+  if (isEditing) {
+    // INLINE EDITING MODE - Mirrors exact AddActionForm layout and styling
+    return (
+      <div className="border border-gray-200 rounded-lg bg-white shadow-sm">
+        {/* Header - matches AddActionForm header */}
+        <div className="px-6 py-4 border-b border-gray-200">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-semibold text-gray-900">
+              Modifier l'Action #{action.action_number}
+            </h2>
+            <button
+              onClick={handleCancel}
+              className="text-gray-400 hover:text-gray-600 transition-colors"
+              disabled={isLoading}
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
           </div>
-        )}
-      </div>
+          <p className="mt-1 text-sm text-gray-600">
+            Action #{action.action_number} pour la réclamation #{action.complaint_id}
+          </p>
+        </div>
 
-      {/* Content */}
-      <div className="action-content">
-        {isEditing ? (
-          /* Edit Form */
-          <div className="space-y-4">
-            {/* Action Text */}
+        {/* Form - exact copy of AddActionForm structure */}
+        <div className="px-6 py-4">
+          <div className="space-y-6">
+            {/* Action Text - exact match */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Action
+              <label htmlFor="action_text" className="block text-sm font-medium text-gray-700 mb-2">
+                Description de l'Action *
               </label>
               <textarea
-                value={editData.action_text || ''}
-                onChange={(e) => setEditData(prev => ({ ...prev, action_text: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                rows={3}
-                placeholder="Décrire l'action à réaliser..."
+                id="action_text"
+                value={formData.action_text}
+                onChange={(e) => handleFieldChange('action_text', e.target.value)}
+                onBlur={() => handleFieldBlur('action_text')}
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
+                  hasFieldError('action_text') ? 'border-red-500' : 'border-gray-300'
+                }`}
+                rows={4}
+                placeholder="Décrire précisément l'action à réaliser (ex: Réviser le processus de contrôle qualité pour éviter les défauts similaires)"
+                disabled={isLoading}
               />
+              {getFieldError('action_text') && (
+                <p className="mt-1 text-sm text-red-600">{getFieldError('action_text')}</p>
+              )}
+              <p className="mt-1 text-xs text-gray-500">
+                {formData.action_text.length}/500 caractères
+              </p>
             </div>
 
-            {/* Responsible Person */}
+            {/* Responsible Person - exact match */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Responsable
+              <label htmlFor="responsible_person" className="block text-sm font-medium text-gray-700 mb-2">
+                Responsable *
               </label>
               <select
-                value={editData.responsible_person || ''}
-                onChange={(e) => setEditData(prev => ({ ...prev, responsible_person: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                id="responsible_person"
+                value={formData.responsible_person}
+                onChange={(e) => handleFieldChange('responsible_person', e.target.value)}
+                onBlur={() => handleFieldBlur('responsible_person')}
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
+                  hasFieldError('responsible_person') ? 'border-red-500' : 'border-gray-300'
+                }`}
+                disabled={isLoading}
               >
                 <option value="">Sélectionner un responsable</option>
                 {responsiblePersons.map(person => (
@@ -296,30 +323,67 @@ export const ActionCard: React.FC<ActionCardProps> = ({
                   </option>
                 ))}
               </select>
+              {getFieldError('responsible_person') && (
+                <p className="mt-1 text-sm text-red-600">{getFieldError('responsible_person')}</p>
+              )}
             </div>
 
-            {/* Due Date, Status, Priority Row */}
-            <div className="grid grid-cols-3 gap-3">
+            {/* Due Date and Priority Row - exact match */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Due Date */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Échéance
+                <label htmlFor="due_date" className="block text-sm font-medium text-gray-700 mb-2">
+                  Date d'Échéance
                 </label>
                 <input
                   type="date"
-                  value={editData.due_date || ''}
-                  onChange={(e) => setEditData(prev => ({ ...prev, due_date: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  id="due_date"
+                  value={formData.due_date}
+                  onChange={(e) => handleFieldChange('due_date', e.target.value)}
+                  onBlur={() => handleFieldBlur('due_date')}
+                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
+                    hasFieldError('due_date') ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                  disabled={isLoading}
                 />
+                {getFieldError('due_date') && (
+                  <p className="mt-1 text-sm text-red-600">{getFieldError('due_date')}</p>
+                )}
               </div>
 
+              {/* Priority */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="priority" className="block text-sm font-medium text-gray-700 mb-2">
+                  Priorité
+                </label>
+                <select
+                  id="priority"
+                  value={formData.priority}
+                  onChange={(e) => handleFieldChange('priority', e.target.value as ActionPriority)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  disabled={isLoading}
+                >
+                  <option value="low">🟢 Basse</option>
+                  <option value="medium">🟡 Moyenne</option>
+                  <option value="high">🟠 Haute</option>
+                  <option value="critical">🔴 Critique</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Status and Completion Row */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Status */}
+              <div>
+                <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-2">
                   Statut
                 </label>
                 <select
-                  value={editData.status || ''}
-                  onChange={(e) => setEditData(prev => ({ ...prev, status: e.target.value as ActionStatus }))}
+                  id="status"
+                  value={formData.status}
+                  onChange={(e) => handleFieldChange('status', e.target.value as ActionStatus)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  disabled={isLoading}
                 >
                   <option value="open">Ouvert</option>
                   <option value="pending">En attente</option>
@@ -330,126 +394,233 @@ export const ActionCard: React.FC<ActionCardProps> = ({
                 </select>
               </div>
 
+              {/* Completion Percentage */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Priorité
+                <label htmlFor="completion" className="block text-sm font-medium text-gray-700 mb-2">
+                  Avancement ({formData.completion_percentage}%)
                 </label>
-                <select
-                  value={editData.priority || ''}
-                  onChange={(e) => setEditData(prev => ({ ...prev, priority: e.target.value as ActionPriority }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="low">Basse</option>
-                  <option value="medium">Moyenne</option>
-                  <option value="high">Haute</option>
-                  <option value="critical">Critique</option>
-                </select>
+                <input
+                  type="range"
+                  id="completion"
+                  min="0"
+                  max="100"
+                  step="5"
+                  value={formData.completion_percentage}
+                  onChange={(e) => handleFieldChange('completion_percentage', parseInt(e.target.value))}
+                  className="w-full"
+                  disabled={isLoading}
+                />
               </div>
             </div>
 
-            {/* Completion Percentage */}
+            {/* Notes - exact match */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Avancement ({editData.completion_percentage || 0}%)
-              </label>
-              <input
-                type="range"
-                min="0"
-                max="100"
-                step="5"
-                value={editData.completion_percentage || 0}
-                onChange={(e) => setEditData(prev => ({ ...prev, completion_percentage: parseInt(e.target.value) }))}
-                className="w-full"
-              />
-            </div>
-
-            {/* Notes */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Notes
+              <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-2">
+                Notes (Optionnel)
               </label>
               <textarea
-                value={editData.notes || ''}
-                onChange={(e) => setEditData(prev => ({ ...prev, notes: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                rows={2}
-                placeholder="Notes additionnelles..."
+                id="notes"
+                value={formData.notes}
+                onChange={(e) => handleFieldChange('notes', e.target.value)}
+                onBlur={() => handleFieldBlur('notes')}
+                className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
+                  hasFieldError('notes') ? 'border-red-500' : 'border-gray-300'
+                }`}
+                rows={3}
+                placeholder="Contexte supplémentaire, dépendances, ou informations importantes..."
+                disabled={isLoading}
               />
+              {getFieldError('notes') && (
+                <p className="mt-1 text-sm text-red-600">{getFieldError('notes')}</p>
+              )}
+              <p className="mt-1 text-xs text-gray-500">
+                {(formData.notes || '').length}/1000 caractères
+              </p>
+            </div>
+
+            {/* Form Guidelines - exact match */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <h4 className="text-sm font-semibold text-blue-900 mb-2">
+                💡 Conseils pour une action efficace
+              </h4>
+              <ul className="text-sm text-blue-800 space-y-1">
+                <li>• Utilisez des verbes d'action clairs (réviser, implémenter, vérifier, etc.)</li>
+                <li>• Définissez des objectifs mesurables et réalisables</li>
+                <li>• Indiquez les délais et responsabilités clairement</li>
+                <li>• Mentionnez les ressources nécessaires si applicable</li>
+              </ul>
             </div>
           </div>
-        ) : (
-          /* Display Mode */
-          <div className="space-y-3">
-            {/* Action Text */}
-            <div>
-              <p className="text-gray-900 font-medium">{action.action_text}</p>
-            </div>
-
-            {/* Progress Bar */}
-            <div className="w-full bg-gray-200 rounded-full h-2">
-              <div
-                className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                style={{ width: `${action.completion_percentage}%` }}
-              ></div>
-            </div>
-
-            {/* Notes */}
-            {action.notes && (
-              <div className="bg-gray-50 p-3 rounded border-l-4 border-blue-500">
-                <p className="text-sm text-gray-700">{action.notes}</p>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* Footer */}
-      <div className="action-footer">
-        <div className="flex items-center space-x-4 text-sm text-gray-600">
-          <span>
-            <strong>Responsable:</strong> {action.responsible_person}
-          </span>
-          <span>
-            <strong>Échéance:</strong> {formatDate(action.due_date)}
-          </span>
-          <span>
-            <strong>Avancement:</strong> {action.completion_percentage}%
-          </span>
         </div>
 
-        {/* Quick Action Buttons */}
-        {isEditable && !isEditing && (
-          <div className="flex items-center space-x-2">
-            {action.status === 'open' && (
-              <button
-                onClick={() => quickStatusChange('in_progress')}
-                className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded hover:bg-yellow-200 transition-colors"
-                disabled={isLoading}
-              >
-                🚀 Démarrer
-              </button>
+        {/* Footer - matches AddActionForm footer */}
+        <div className="px-6 py-4 border-t border-gray-200 bg-gray-50 flex justify-end space-x-3">
+          <button
+            type="button"
+            onClick={handleCancel}
+            className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+            disabled={isLoading}
+          >
+            Annuler
+          </button>
+          <button
+            type="button"
+            onClick={handleSave}
+            className="px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={isLoading || Object.values(errors).some(error => !!error)}
+          >
+            {isLoading ? (
+              <>
+                <span className="animate-spin inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full mr-2"></span>
+                Sauvegarde en cours...
+              </>
+            ) : (
+              `Sauvegarder l'Action #${action.action_number}`
             )}
-            {action.status === 'in_progress' && (
-              <button
-                onClick={() => quickStatusChange('closed')}
-                className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded hover:bg-green-200 transition-colors"
-                disabled={isLoading}
-              >
-                ✅ Terminer
-              </button>
-            )}
-            {action.status !== 'blocked' && action.status !== 'closed' && (
-              <button
-                onClick={() => quickStatusChange('blocked')}
-                className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded hover:bg-red-200 transition-colors"
-                disabled={isLoading}
-              >
-                ⏸️ Bloquer
-              </button>
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // DISPLAY MODE - Horizontal row layout
+  return (
+    <div
+      ref={dragRef}
+      draggable={isEditable && !isEditing}
+      onDragStart={handleDragStart}
+      onDragOver={onDragOver}
+      onDrop={onDrop}
+      className={`
+        relative flex items-center p-4 bg-white border border-gray-200 rounded-lg shadow-sm
+        ${isDragging ? 'opacity-50' : ''}
+        ${isOverdue ? 'border-red-300 bg-red-50' : ''}
+        ${isEditable ? 'hover:bg-gray-50 cursor-pointer' : ''}
+        ${isLoading ? 'opacity-50' : ''}
+        transition-all duration-200
+      `}
+      onClick={handleCardClick}
+    >
+      {/* Loading overlay */}
+      {isLoading && (
+        <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-10 rounded-lg">
+          <div className="h-6 w-6 bg-gray-400 rounded-full animate-pulse"></div>
+        </div>
+      )}
+
+      {/* Status Checkbox */}
+      <div className="flex-shrink-0 mr-4">
+        <button
+          onClick={handleStatusToggle}
+          className={`w-5 h-5 rounded border-2 transition-colors ${
+            action.status === 'closed'
+              ? 'bg-green-500 border-green-500 text-white'
+              : 'border-gray-300 hover:border-gray-400'
+          }`}
+          disabled={!isEditable || isLoading}
+        >
+          {action.status === 'closed' && (
+            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+            </svg>
+          )}
+        </button>
+      </div>
+
+      {/* Action Number */}
+      <div className="flex-shrink-0 mr-4">
+        <span className="w-8 h-8 bg-blue-100 text-blue-800 rounded-full flex items-center justify-center text-sm font-semibold">
+          {action.action_number}
+        </span>
+      </div>
+
+      {/* Action Content */}
+      <div className="flex-1 min-w-0">
+        <div className="flex items-start justify-between">
+          <div className="flex-1 min-w-0">
+            <h3 className="text-sm font-medium text-gray-900 truncate">
+              {action.action_text}
+            </h3>
+            {action.notes && (
+              <p className="text-xs text-gray-500 mt-1 truncate">
+                {action.notes}
+              </p>
             )}
           </div>
-        )}
+        </div>
       </div>
+
+      {/* Due Date Badge */}
+      <div className="flex-shrink-0 mx-4">
+        <span className={`px-2 py-1 text-xs font-medium rounded ${
+          isOverdue 
+            ? 'bg-red-100 text-red-800 border border-red-200'
+            : 'bg-gray-100 text-gray-600 border border-gray-200'
+        }`}>
+          {formatDate(action.due_date)}
+        </span>
+      </div>
+
+      {/* Status Dot */}
+      <div className="flex-shrink-0 mr-4">
+        <div className={`w-3 h-3 rounded-full ${
+          action.status === 'closed' ? 'bg-green-500' :
+          action.status === 'in_progress' ? 'bg-blue-500' :
+          action.status === 'blocked' ? 'bg-red-500' :
+          action.status === 'escalated' ? 'bg-orange-500' :
+          'bg-gray-400'
+        }`}></div>
+      </div>
+
+      {/* Overflow Menu */}
+      {isEditable && (
+        <div className="flex-shrink-0 relative">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowMenu(!showMenu);
+            }}
+            className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+            disabled={isLoading}
+          >
+            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+            </svg>
+          </button>
+
+          {/* Dropdown Menu */}
+          {showMenu && (
+            <div className="absolute right-0 mt-2 w-32 bg-white border border-gray-200 rounded-md shadow-lg z-20">
+              <button
+                onClick={(e) => handleMenuAction('edit', e)}
+                className="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
+              >
+                Modifier
+              </button>
+              <button
+                onClick={(e) => handleMenuAction('duplicate', e)}
+                className="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
+              >
+                Dupliquer
+              </button>
+              <button
+                onClick={(e) => handleMenuAction('delete', e)}
+                className="block w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-gray-100"
+              >
+                Supprimer
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Click outside handler for menu */}
+      {showMenu && (
+        <div
+          className="fixed inset-0 z-10"
+          onClick={() => setShowMenu(false)}
+        />
+      )}
 
       {/* Delete Confirmation Modal */}
       {showConfirmDelete && (
@@ -464,14 +635,14 @@ export const ActionCard: React.FC<ActionCardProps> = ({
             <div className="flex justify-end space-x-3">
               <button
                 onClick={() => setShowConfirmDelete(false)}
-                className="px-4 py-2 text-gray-700 bg-gray-100 rounded hover:bg-gray-200 transition-colors"
+                className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
                 disabled={isLoading}
               >
                 Annuler
               </button>
               <button
                 onClick={handleDelete}
-                className="px-4 py-2 text-white bg-red-600 rounded hover:bg-red-700 transition-colors"
+                className="px-4 py-2 text-white bg-red-600 rounded-md hover:bg-red-700 transition-colors"
                 disabled={isLoading}
               >
                 {isLoading ? 'Suppression...' : 'Supprimer'}
