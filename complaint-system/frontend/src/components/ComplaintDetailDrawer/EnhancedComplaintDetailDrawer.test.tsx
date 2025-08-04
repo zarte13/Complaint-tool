@@ -1,4 +1,3 @@
-import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { vi } from 'vitest';
 import EnhancedComplaintDetailDrawer from './EnhancedComplaintDetailDrawer';
@@ -14,20 +13,20 @@ vi.mock('../../contexts/LanguageContext', () => ({
 
 // Mock date-fns
 vi.mock('date-fns', () => ({
-  format: (date: Date, format: string) => 'formatted-date',
+  format: (_date: Date, _format: string) => 'formatted-date',
   enUS: {},
   fr: {},
 }));
 
 const mockComplaint: Complaint = {
   id: 1,
-  company: { 
-    id: 1, 
+  company: {
+    id: 1,
     name: 'Test Company',
     created_at: '2024-01-01T00:00:00Z'
   },
-  part: { 
-    id: 1, 
+  part: {
+    id: 1,
     part_number: 'PART-001',
     created_at: '2024-01-01T00:00:00Z'
   },

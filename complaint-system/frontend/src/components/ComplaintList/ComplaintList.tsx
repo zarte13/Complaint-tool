@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AlertCircle } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { Complaint, ComplaintStatus } from '../../types';
-import api from '../../services/api';
+import { get, put, ensureTrailingSlash } from '../../services/api';
 import EnhancedComplaintDetailDrawer from '../ComplaintDetailDrawer/EnhancedComplaintDetailDrawer';
 import ComplaintTile from './ComplaintTile';
 
@@ -14,7 +14,6 @@ interface ComplaintListProps {
   issueTypeFilter?: string;
   page?: number;
   pageSize?: number;
-  onComplaintClick?: (complaint: Complaint) => void;
 }
 
 export default function ComplaintList({
@@ -24,7 +23,6 @@ export default function ComplaintList({
   issueTypeFilter = '',
   page = 1,
   pageSize = 10,
-  onComplaintClick
 }: ComplaintListProps) {
   const [complaints, setComplaints] = useState<Complaint[]>([]);
   const [loading, setLoading] = useState(true);
@@ -50,13 +48,13 @@ export default function ComplaintList({
       params.append('skip', ((page - 1) * pageSize).toString());
       params.append('limit', pageSize.toString());
       
-      const response = await api.get(`/complaints?${params.toString()}`);
+      const response = await get(`${ensureTrailingSlash('/api/complaints')}?${params.toString()}`);
       // Handle both direct array response and paginated response formats
-      const data = response.data;
+      const data = response.data as Complaint[] | { items: Complaint[] } | unknown;
       if (Array.isArray(data)) {
-        setComplaints(data);
-      } else if (data && Array.isArray(data.items)) {
-        setComplaints(data.items);
+        setComplaints(data as Complaint[]);
+      } else if (data && typeof data === 'object' && Array.isArray((data as any).items)) {
+        setComplaints((data as any).items as Complaint[]);
       } else {
         setComplaints([]);
       }
@@ -68,43 +66,8 @@ export default function ComplaintList({
     }
   };
 
-  const getIssueTypeColor = (issueType: string) => {
-    switch (issueType) {
-      case 'wrong_quantity':
-        return 'bg-blue-100 text-blue-800';
-      case 'wrong_part':
-        return 'bg-purple-100 text-purple-800';
-      case 'damaged':
-        return 'bg-red-100 text-red-800';
-      case 'other':
-        return 'bg-gray-100 text-gray-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
 
-  const getIssueTypeDisplay = (issueType: string) => {
-    const issueTypeMap: Record<string, string> = {
-      'wrong_quantity': 'wrongQuantity',
-      'wrong_part': 'wrongPart',
-      'damaged': 'damaged',
-      'other': 'other'
-    };
-    
-    const key = issueTypeMap[issueType] || 'other';
-    const translated = t(key as any);
-    return translated ? translated.toUpperCase() : issueType.toUpperCase();
-  };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  };
 
   const handleRowClick = (complaint: Complaint) => {
     setDrawerComplaint(complaint);
@@ -120,17 +83,18 @@ export default function ComplaintList({
     if (!drawerComplaint) return;
 
     try {
-      const response = await api.put(`/complaints/${drawerComplaint.id}/`, updatedData);
+      const response = await put(`${ensureTrailingSlash('/api/complaints')}${drawerComplaint.id}/`, updatedData);
+      const payload = response.data as Partial<Complaint>;
       
       // Update the local state
       setComplaints(prevComplaints =>
         prevComplaints.map(c =>
-          c.id === drawerComplaint.id ? { ...c, ...response.data } : c
+          c.id === drawerComplaint.id ? { ...c, ...payload } : c
         )
       );
       
       // Update the drawer complaint
-      setDrawerComplaint(prev => prev ? { ...prev, ...response.data } : null);
+      setDrawerComplaint(prev => (prev ? { ...prev, ...payload } : null));
       
       // Refresh the list
       fetchComplaints();

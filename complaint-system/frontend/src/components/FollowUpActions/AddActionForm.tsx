@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { FollowUpActionCreate, ResponsiblePerson, ActionPriority } from '../../types';
-import { useLanguage } from '../../contexts/LanguageContext';
 
 interface AddActionFormProps {
   complaintId: number;
@@ -19,7 +18,7 @@ export const AddActionForm: React.FC<AddActionFormProps> = ({
   onCancel,
   isCreating
 }) => {
-  const { t } = useLanguage();
+  // i18n hook not used here; left out to avoid TS6133
   const [formData, setFormData] = useState<FollowUpActionCreate>({
     action_text: '',
     responsible_person: '',

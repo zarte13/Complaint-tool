@@ -20,7 +20,7 @@ export function useCompanies() {
       
       try {
         const results = await companiesApi.search(query, 10);
-        setCompanies(results);
+        setCompanies(results as Company[]);
       } catch (err) {
         setError('Failed to search companies');
         console.error(err);
@@ -34,8 +34,8 @@ export function useCompanies() {
   const createCompany = async (name: string): Promise<Company | null> => {
     try {
       const company = await companiesApi.create(name);
-      setCompanies(prev => [...prev, company]);
-      return company;
+      setCompanies(prev => [...prev, company as Company]);
+      return company as Company;
     } catch (err) {
       setError('Failed to create company');
       console.error(err);

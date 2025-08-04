@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Search, Plus } from 'lucide-react';
 import { useCompanies } from '../../hooks/useCompanies';
 import { Company } from '../../types';
@@ -12,7 +12,7 @@ interface CompanySearchProps {
 export default function CompanySearch({ value, onChange, error }: CompanySearchProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [showCreate, setShowCreate] = useState(false);
+  // showCreate is not used; remove to fix TS6133
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { companies, loading, searchCompanies, createCompany } = useCompanies();
 
@@ -44,7 +44,6 @@ export default function CompanySearch({ value, onChange, error }: CompanySearchP
       const newCompany = await createCompany(searchQuery.trim());
       if (newCompany) {
         handleSelect(newCompany);
-        setShowCreate(false);
       }
     }
   };

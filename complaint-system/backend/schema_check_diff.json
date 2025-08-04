@@ -1,0 +1,280 @@
+﻿{
+  "actual": {
+    "tables": {
+      "companies": {
+        "columns": {
+          "id": {
+            "type": "INTEGER",
+            "nullable": false,
+            "default": null
+          },
+          "name": {
+            "type": "VARCHAR(255)",
+            "nullable": false,
+            "default": null
+          },
+          "created_at": {
+            "type": "DATETIME",
+            "nullable": true,
+            "default": "CURRENT_TIMESTAMP"
+          }
+        },
+        "primary_key": [
+          "id"
+        ],
+        "unique_constraints": [
+          [
+            "name"
+          ]
+        ],
+        "foreign_keys": [],
+        "indexes": [
+          {
+            "name": "ix_companies_id",
+            "columns": [
+              "id"
+            ],
+            "unique": false
+          },
+          {
+            "name": "ix_companies_name",
+            "columns": [
+              "name"
+            ],
+            "unique": true
+          }
+        ]
+      },
+      "complaint_attachments": {
+        "columns": {
+          "id": {
+            "type": "INTEGER",
+            "nullable": false,
+            "default": null
+          },
+          "complaint_id": {
+            "type": "INTEGER",
+            "nullable": false,
+            "default": null
+          },
+          "filename": {
+            "type": "VARCHAR(255)",
+            "nullable": false,
+            "default": null
+          },
+          "original_filename": {
+            "type": "VARCHAR(255)",
+            "nullable": false,
+            "default": null
+          },
+          "file_path": {
+            "type": "VARCHAR(500)",
+            "nullable": false,
+            "default": null
+          },
+          "file_size": {
+            "type": "INTEGER",
+            "nullable": false,
+            "default": null
+          },
+          "mime_type": {
+            "type": "VARCHAR(100)",
+            "nullable": false,
+            "default": null
+          },
+          "created_at": {
+            "type": "DATETIME",
+            "nullable": true,
+            "default": "CURRENT_TIMESTAMP"
+          }
+        },
+        "primary_key": [
+          "id"
+        ],
+        "unique_constraints": [],
+        "foreign_keys": [
+          {
+            "columns": [
+              "complaint_id"
+            ],
+            "ref_table": "complaints",
+            "ref_columns": [
+              "id"
+            ],
+            "on_update": "NO ACTION",
+            "on_delete": "NO ACTION"
+          }
+        ],
+        "indexes": [
+          {
+            "name": "ix_complaint_attachments_id",
+            "columns": [
+              "id"
+            ],
+            "unique": false
+          }
+        ]
+      },
+      "complaints": {
+        "columns": {
+          "id": {
+            "type": "INTEGER",
+            "nullable": false,
+            "default": null
+          },
+          "company_id": {
+            "type": "INTEGER",
+            "nullable": false,
+            "default": null
+          },
+          "part_id": {
+            "type": "INTEGER",
+            "nullable": false,
+            "default": null
+          },
+          "issue_type": {
+            "type": "VARCHAR(50)",
+            "nullable": false,
+            "default": null
+          },
+          "details": {
+            "type": "TEXT",
+            "nullable": false,
+            "default": null
+          },
+          "quantity_ordered": {
+            "type": "INTEGER",
+            "nullable": true,
+            "default": null
+          },
+          "quantity_received": {
+            "type": "INTEGER",
+            "nullable": true,
+            "default": null
+          },
+          "status": {
+            "type": "VARCHAR(20)",
+            "nullable": true,
+            "default": null
+          },
+          "has_attachments": {
+            "type": "BOOLEAN",
+            "nullable": true,
+            "default": null
+          },
+          "created_at": {
+            "type": "DATETIME",
+            "nullable": true,
+            "default": "CURRENT_TIMESTAMP"
+          },
+          "updated_at": {
+            "type": "DATETIME",
+            "nullable": true,
+            "default": "CURRENT_TIMESTAMP"
+          },
+          "last_edit": {
+            "type": "DATETIME",
+            "nullable": true,
+            "default": null
+          }
+        },
+        "primary_key": [
+          "id"
+        ],
+        "unique_constraints": [],
+        "foreign_keys": [
+          {
+            "columns": [
+              "part_id"
+            ],
+            "ref_table": "parts",
+            "ref_columns": [
+              "id"
+            ],
+            "on_update": "NO ACTION",
+            "on_delete": "NO ACTION"
+          },
+          {
+            "columns": [
+              "company_id"
+            ],
+            "ref_table": "companies",
+            "ref_columns": [
+              "id"
+            ],
+            "on_update": "NO ACTION",
+            "on_delete": "NO ACTION"
+          }
+        ],
+        "indexes": [
+          {
+            "name": "ix_complaints_id",
+            "columns": [
+              "id"
+            ],
+            "unique": false
+          }
+        ]
+      },
+      "parts": {
+        "columns": {
+          "id": {
+            "type": "INTEGER",
+            "nullable": false,
+            "default": null
+          },
+          "part_number": {
+            "type": "VARCHAR(100)",
+            "nullable": false,
+            "default": null
+          },
+          "description": {
+            "type": "TEXT",
+            "nullable": true,
+            "default": null
+          },
+          "created_at": {
+            "type": "DATETIME",
+            "nullable": true,
+            "default": "CURRENT_TIMESTAMP"
+          }
+        },
+        "primary_key": [
+          "id"
+        ],
+        "unique_constraints": [
+          [
+            "part_number"
+          ]
+        ],
+        "foreign_keys": [],
+        "indexes": [
+          {
+            "name": "ix_parts_id",
+            "columns": [
+              "id"
+            ],
+            "unique": false
+          },
+          {
+            "name": "ix_parts_part_number",
+            "columns": [
+              "part_number"
+            ],
+            "unique": true
+          }
+        ]
+      }
+    }
+  },
+  "diffs": {
+    "missing_tables": [],
+    "extra_tables": [
+      "companies",
+      "complaint_attachments",
+      "complaints",
+      "parts"
+    ],
+    "tables": {}
+  }
+}

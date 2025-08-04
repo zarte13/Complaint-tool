@@ -6,7 +6,10 @@ from app.models.models import Part
 from app.schemas.schemas import PartResponse, PartCreate
 
 router = APIRouter(prefix="/api/parts", tags=["parts"])
+# Register alias routes to support both "/api/parts" and "/api/parts/" without 307 redirects
 
+# Accept both "" and "/" for collection GET
+@router.get("", response_model=List[PartResponse])
 @router.get("/", response_model=List[PartResponse])
 async def search_parts(
     search: str = Query(None, min_length=1, max_length=100),
@@ -25,6 +28,8 @@ async def search_parts(
     parts = query.order_by(Part.part_number).limit(limit).all()
     return parts
 
+# Accept both "" and "/" for collection POST
+@router.post("", response_model=PartResponse)
 @router.post("/", response_model=PartResponse)
 async def create_part(
     part: PartCreate,

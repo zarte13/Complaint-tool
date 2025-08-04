@@ -1,4 +1,3 @@
-import React from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { Complaint } from '../../types';
 
@@ -88,7 +87,7 @@ export default function ComplaintDetailView({ complaint }: ComplaintDetailViewPr
           </div>
           
           <div>
-            <label className="block text-sm font-medium text-gray-700">{t('partReceived')}</label>
+            <label className="block text sm font-medium text-gray-700">{t('partReceived')}</label>
             <p className="mt-1 text-sm text-gray-900">{complaint.part_received || 'N/A'}</p>
           </div>
           

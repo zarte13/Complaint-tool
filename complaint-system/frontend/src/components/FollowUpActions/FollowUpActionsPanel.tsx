@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { FollowUpAction, ResponsiblePerson, ActionStatus, FollowUpActionUpdate } from '../../types';
+import React, { useState } from 'react';
+import { FollowUpAction, FollowUpActionUpdate } from '../../types';
 import { useFollowUpActions } from '../../hooks/useFollowUpActions';
 import { ActionCard } from './ActionCard';
 import { AddActionForm } from './AddActionForm';
@@ -38,7 +38,7 @@ export const FollowUpActionsPanel: React.FC<FollowUpActionsPanelProps> = ({
   const [showAddForm, setShowAddForm] = useState(false);
   const [draggedAction, setDraggedAction] = useState<FollowUpAction | null>(null);
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [selectedAction, setSelectedAction] = useState<FollowUpAction | null>(null);
+  // const [selectedAction, setSelectedAction] = useState<FollowUpAction | null>(null);
 
   // No longer needed - ActionCard handles its own menu state
 
@@ -85,26 +85,22 @@ export const FollowUpActionsPanel: React.FC<FollowUpActionsPanelProps> = ({
   // Action handling now done by ActionCard component
 
   // Toggle action status (checkbox functionality)
-  const toggleActionStatus = async (action: FollowUpAction) => {
+  // Deprecated: handled in ActionCard
+  const toggleActionStatus = async (_action: FollowUpAction) => {
     if (!isEditable) return;
     
-    const newStatus = action.status === 'closed' ? 'open' : 'closed';
-    const updates: any = { status: newStatus };
-    
-    if (newStatus === 'closed') {
-      updates.completion_percentage = 100;
-    } else if (newStatus === 'open') {
-      updates.completion_percentage = 0;
-    }
+    const newStatus = _action.status === 'closed' ? 'open' : 'closed';
+    const updates: FollowUpActionUpdate = { status: newStatus, ...(newStatus === 'closed' ? { completion_percentage: 100 } : { completion_percentage: 0 }) };
     
     try {
-      await updateAction(action.id, updates);
+      await updateAction(_action.id, updates);
     } catch (err) {
       console.error('Failed to toggle action status:', err);
     }
   };
 
   // Format date for display
+  // Deprecated local formatter (kept for reference)
   const formatDate = (dateString?: string) => {
     if (!dateString) return null;
     const date = new Date(dateString);
@@ -211,7 +207,8 @@ export const FollowUpActionsPanel: React.FC<FollowUpActionsPanelProps> = ({
               responsiblePersons={responsiblePersons}
               onStatusFilter={filterByStatus}
               onPersonFilter={filterByPerson}
-              onOverdueFilter={showOverdueOnly}
+              // Not used by ActionFilters UI yet; pass a no-op to satisfy prop type or wire later to a checkbox
+              onOverdueFilter={() => {}}
               className="mb-4"
             />
 
@@ -246,8 +243,8 @@ export const FollowUpActionsPanel: React.FC<FollowUpActionsPanelProps> = ({
                       isEditable={isEditable}
                       isDragging={draggedAction?.id === action.id}
                       responsiblePersons={responsiblePersons}
-                      onUpdate={(updates: FollowUpActionUpdate) => updateAction(action.id, updates)}
-                      onDelete={() => deleteAction(action.id)}
+                      onUpdate={async (updates: FollowUpActionUpdate) => { await updateAction(action.id, updates); }}
+                      onDelete={async () => { await deleteAction(action.id); }}
                       onDragStart={() => handleDragStart(action)}
                       onDragOver={handleDragOver}
                       onDrop={() => handleDrop(action)}

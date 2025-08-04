@@ -10,10 +10,12 @@ import os
 models.Base.metadata.create_all(bind=engine)
 
 # Create FastAPI app
+# Disable automatic trailing-slash redirects to prevent 307 loops between "/path" and "/path/"
 app = FastAPI(
     title="Complaint Management System",
     description="Production-ready complaint management system for part-order issues",
-    version="1.0.0"
+    version="1.0.0",
+    redirect_slashes=False
 )
 
 # Configure CORS

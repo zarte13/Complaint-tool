@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { X, Edit3, Save, AlertCircle, Download, FileText, ChevronDown, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -151,8 +151,6 @@ export default function EnhancedComplaintDetailDrawer({
     setError(null);
     setStatusError(null);
     
-    const startTime = Date.now();
-    
     try {
       // Use PUT for status updates (backend expects PUT)
       const response = await fetch(`/api/complaints/${complaint.id}`, {
@@ -168,26 +166,14 @@ export default function EnhancedComplaintDetailDrawer({
       }
       
       const updatedComplaint = await response.json();
-      const elapsedTime = Date.now() - startTime;
-      
-      // If update took longer than 400ms and this isn't a retry, try once more
-      if (elapsedTime > 400 && retryCount === 0 && !isRetry) {
-        setRetryCount(1);
-        setTimeout(() => {
-          handleStatusChange(newStatus, true);
-        }, 100);
-        return;
-      }
       
       // Update the complaint data and cache
-      const updatedData = { status: updatedComplaint.status };
+      const updatedData = { status: updatedComplaint.status as ComplaintStatus };
       onUpdate(updatedData);
       complaintsStore.updateComplaintInCache({ ...complaint, ...updatedData });
       
     } catch (err) {
-      const elapsedTime = Date.now() - startTime;
-      
-      // Retry once if first attempt failed or took too long
+      // Retry once on error
       if (retryCount === 0 && !isRetry) {
         setRetryCount(1);
         setTimeout(() => {

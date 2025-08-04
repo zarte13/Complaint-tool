@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { Complaint } from '../../types';
 
@@ -11,13 +11,13 @@ interface ComplaintEditFormProps {
   errors?: Record<string, string>;
 }
 
-export default function ComplaintEditForm({ 
-  complaint, 
-  onFieldChange, 
-  onSave, 
-  onCancel, 
-  isSaving,
-  errors = {} 
+export default function ComplaintEditForm({
+  complaint,
+  onFieldChange,
+  onSave: _onSave,
+  onCancel: _onCancel,
+  isSaving: _isSaving,
+  errors = {}
 }: ComplaintEditFormProps) {
   const { t } = useLanguage();
   const [localErrors, setLocalErrors] = useState<Record<string, string>>({});

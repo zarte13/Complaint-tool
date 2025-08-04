@@ -1,7 +1,7 @@
-import React, { useCallback, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Upload, X, FileText, Image, AlertCircle } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
-import api from '../../services/api';
+import { post, del } from '../../services/api';
 
 interface FileUploadProps {
   complaintId: number;
@@ -30,8 +30,8 @@ export default function FileUpload({ complaintId, onUploadComplete }: FileUpload
         const formData = new FormData();
         formData.append('file', file);
 
-        const response = await api.post(
-          `/complaints/${complaintId}/attachments`,
+        const response = await post(
+          `/api/complaints/${complaintId}/attachments`,
           formData,
           {
             headers: {
@@ -39,8 +39,8 @@ export default function FileUpload({ complaintId, onUploadComplete }: FileUpload
             },
           }
         );
-
-        setUploadedFiles(prev => [...prev, response.data]);
+ 
+        setUploadedFiles(prev => [...prev, response.data as UploadedFile]);
       }
       
       onUploadComplete();
@@ -63,7 +63,7 @@ export default function FileUpload({ complaintId, onUploadComplete }: FileUpload
 
   const handleRemove = async (fileId: number) => {
     try {
-      await api.delete(`/complaints/${complaintId}/attachments/${fileId}`);
+      await del(`/api/complaints/${complaintId}/attachments/${fileId}`);
       setUploadedFiles(prev => prev.filter(f => f.id !== fileId));
       onUploadComplete();
     } catch (err) {

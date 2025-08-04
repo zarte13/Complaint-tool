@@ -6,7 +6,10 @@ from app.models.models import Company
 from app.schemas.schemas import CompanyResponse, CompanyCreate
 
 router = APIRouter(prefix="/api/companies", tags=["companies"])
+# Register alias routes to support both "/api/companies" and "/api/companies/" without 307 redirects
 
+# Accept both "" and "/" for collection GET
+@router.get("", response_model=List[CompanyResponse])
 @router.get("/", response_model=List[CompanyResponse])
 async def search_companies(
     search: str = Query(None, min_length=1, max_length=100),
@@ -22,6 +25,8 @@ async def search_companies(
     companies = query.order_by(Company.name).limit(limit).all()
     return companies
 
+# Accept both "" and "/" for collection POST
+@router.post("", response_model=CompanyResponse)
 @router.post("/", response_model=CompanyResponse)
 async def create_company(
     company: CompanyCreate,

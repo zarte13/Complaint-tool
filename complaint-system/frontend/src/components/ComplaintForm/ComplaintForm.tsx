@@ -2,13 +2,13 @@ import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { AlertCircle, Send, Upload } from 'lucide-react';
+import { AlertCircle, Send } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import CompanySearch from '../CompanySearch/CompanySearch';
 import PartAutocomplete from '../PartAutocomplete/PartAutocomplete';
 import Tooltip from '../Tooltip/Tooltip';
 import { Company, Part } from '../../types';
-import api from '../../services/api';
+import { post } from '../../services/api';
 
 const complaintSchema = z.object({
   company_id: z.number().min(1, 'selectCompany'),
@@ -51,8 +51,6 @@ export default function ComplaintForm({ onSuccess }: ComplaintFormProps) {
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
   const [selectedPart, setSelectedPart] = useState<Part | null>(null);
   const [files, setFiles] = useState<File[]>([]);
-  const [uploadProgress, setUploadProgress] = useState<{ [key: string]: number }>({});
-  const [complaintId, setComplaintId] = useState<number | null>(null);
   const { t } = useLanguage();
 
   const {
@@ -83,9 +81,8 @@ export default function ComplaintForm({ onSuccess }: ComplaintFormProps) {
     setError(null);
 
     try {
-      const response = await api.post('/complaints/', data);
-      const newComplaint = response.data;
-      setComplaintId(newComplaint.id);
+      const response = await post('/api/complaints/', data);
+      const newComplaint = response.data as { id: number };
 
       // Upload files if any
       if (files.length > 0) {
@@ -96,7 +93,6 @@ export default function ComplaintForm({ onSuccess }: ComplaintFormProps) {
       setSelectedCompany(null);
       setSelectedPart(null);
       setFiles([]);
-      setComplaintId(null);
       
       if (onSuccess) {
         onSuccess();
@@ -119,15 +115,12 @@ export default function ComplaintForm({ onSuccess }: ComplaintFormProps) {
         const fileFormData = new FormData();
         fileFormData.append('file', file);
         
-        await api.post(`/complaints/${complaintId}/attachments`, fileFormData, {
+        await post(`/api/complaints/${complaintId}/attachments`, fileFormData, {
           headers: {
             'Content-Type': 'multipart/form-data',
           },
           onUploadProgress: (progressEvent) => {
-            const percentCompleted = Math.round(
-              (progressEvent.loaded * 100) / (progressEvent.total || 1)
-            );
-            setUploadProgress(prev => ({ ...prev, [file.name]: percentCompleted }));
+            // upload progress ignored (no UI progress bar)
           },
         });
       }

@@ -1,6 +1,5 @@
 import React, { useState, useRef } from 'react';
 import { FollowUpAction, FollowUpActionUpdate, ResponsiblePerson, ActionStatus, ActionPriority } from '../../types';
-import { useLanguage } from '../../contexts/LanguageContext';
 
 interface ActionCardProps {
   action: FollowUpAction;
@@ -25,7 +24,6 @@ export const ActionCard: React.FC<ActionCardProps> = ({
   onDragOver,
   onDrop
 }) => {
-  const { t } = useLanguage();
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);

@@ -258,6 +258,34 @@ npx tailwindcss init -p
 
 ## Database Configuration
 
+### Schema Validation Status (SQLite)
+
+This section captures the current live database schema vs the target expected schema and enumerates actionable diffs. Source of truth DB: database/complaints.db.
+
+Command used:
+- Text: [`bash.python`](complaint-system/backend/schema_checker.py:1) invocation
+  - python complaint-system/backend/schema_checker.py --format text --expected complaint-system/backend/schema_expected.json --tables complaints,companies,parts,complaint_attachments,follow_up_actions,action_history,responsible_persons,action_dependencies
+
+Current results summary:
+- Present tables: companies, parts, complaints, complaint_attachments
+- Missing tables: follow_up_actions, action_history, responsible_persons, action_dependencies
+- complaints indexes: only ix_complaints_id exists
+- complaint_attachments columns/types differ; FK on_delete is NO ACTION
+
+Actionable diffs vs expected:
+- Missing tables: ['action_dependencies', 'action_history', 'follow_up_actions', 'responsible_persons']
+- complaint_attachments:
+  - Add column size or update expected to standardize on file_size naming
+  - Align types: filename TEXT; mime_type TEXT NULLABLE
+  - FK on_delete CASCADE (requires SQLite table recreate)
+  - Add index idx_attachments_complaint_id(complaint_id)
+- complaints:
+  - Add indexes: idx_complaints_company_id(company_id), idx_complaints_part_id(part_id), idx_complaints_status(status), idx_complaints_created_at(created_at)
+
+CI quality gate:
+- Run schema_checker with --expected; fail build on diffs for both fresh and migrated DBs.
+
+
 ### Database Schema (SQLite)
 
 #### Tables
@@ -640,6 +668,27 @@ frontend/src/components/
 - **Route Updates**: `/second` → `/complaints` for complaint management
 
 ---
+
+## HTTP Routing Policy and 307 Redirect Mitigation
+
+- Backend routing normalization:
+  - FastAPI configured with redirect_slashes=False to prevent automatic 307 redirects between "/path" and "/path/".
+    - See [`python.FastAPI()`](complaint-system/backend/main.py:13)
+  - Collection endpoints accept both "" and "/" to return 200 for both "/api/{resource}" and "/api/{resource}/".
+    - Complaints: [`python.@router.get("", ...)`](complaint-system/backend/app/api/complaints.py:43) and [`python.@router.get("/", ...)`](complaint-system/backend/app/api/complaints.py:43)
+    - Companies: [`python.@router.get("", ...)`](complaint-system/backend/app/api/companies.py:10) and [`python.@router.get("/", ...)`](complaint-system/backend/app/api/companies.py:10)
+    - Parts: [`python.@router.get("", ...)`](complaint-system/backend/app/api/parts.py:10) and [`python.@router.get("/", ...)`](complaint-system/backend/app/api/parts.py:10)
+- Frontend canonicalization:
+  - ensureTrailingSlash helper normalizes collection endpoints to include a trailing slash, avoiding client-triggered 307s.
+    - See [`typescript.export function ensureTrailingSlash()`](complaint-system/frontend/src/services/api.ts:1)
+  - Call sites refactored to axios + canonical paths:
+    - [`typescript.useComplaints`](complaint-system/frontend/src/hooks/useComplaints.ts:1)
+    - [`typescript.ComplaintsPage`](complaint-system/frontend/src/pages/ComplaintsPage.tsx:1)
+    - [`typescript.ComplaintList`](complaint-system/frontend/src/components/ComplaintList/ComplaintList.tsx:1)
+
+Validation/testing plan:
+- Backend tests assert 200 for both '/api/complaints' and '/api/complaints/' with no intermediate 307.
+- Frontend/E2E tests verify no 3xx during list and export actions.
 
 ## Security Policies
 

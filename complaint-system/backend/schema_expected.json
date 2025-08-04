@@ -1,0 +1,194 @@
+{
+  "tables": {
+    "companies": {
+      "columns": {
+        "id": { "type": "INTEGER", "nullable": false, "default": null },
+        "name": { "type": "VARCHAR(255)", "nullable": false, "default": null },
+        "created_at": { "type": "DATETIME", "nullable": true, "default": "CURRENT_TIMESTAMP" }
+      },
+      "primary_key": ["id"],
+      "unique_constraints": [["name"]],
+      "foreign_keys": [],
+      "indexes": [
+        { "name": "ix_companies_id", "columns": ["id"], "unique": false },
+        { "name": "ix_companies_name", "columns": ["name"], "unique": true }
+      ]
+    },
+    "parts": {
+      "columns": {
+        "id": { "type": "INTEGER", "nullable": false, "default": null },
+        "part_number": { "type": "VARCHAR(100)", "nullable": false, "default": null },
+        "description": { "type": "TEXT", "nullable": true, "default": null },
+        "created_at": { "type": "DATETIME", "nullable": true, "default": "CURRENT_TIMESTAMP" }
+      },
+      "primary_key": ["id"],
+      "unique_constraints": [["part_number"]],
+      "foreign_keys": [],
+      "indexes": [
+        { "name": "ix_parts_id", "columns": ["id"], "unique": false },
+        { "name": "ix_parts_part_number", "columns": ["part_number"], "unique": true }
+      ]
+    },
+    "complaints": {
+      "columns": {
+        "id": { "type": "INTEGER", "nullable": false, "default": null },
+        "company_id": { "type": "INTEGER", "nullable": false, "default": null },
+        "part_id": { "type": "INTEGER", "nullable": false, "default": null },
+        "issue_type": { "type": "VARCHAR(50)", "nullable": false, "default": null },
+        "details": { "type": "TEXT", "nullable": false, "default": null },
+        "quantity_ordered": { "type": "INTEGER", "nullable": true, "default": null },
+        "quantity_received": { "type": "INTEGER", "nullable": true, "default": null },
+        "status": { "type": "VARCHAR(20)", "nullable": true, "default": null },
+        "has_attachments": { "type": "BOOLEAN", "nullable": true, "default": null },
+        "created_at": { "type": "DATETIME", "nullable": true, "default": "CURRENT_TIMESTAMP" },
+        "updated_at": { "type": "DATETIME", "nullable": true, "default": "CURRENT_TIMESTAMP" },
+        "last_edit": { "type": "DATETIME", "nullable": true, "default": null }
+      },
+      "primary_key": ["id"],
+      "unique_constraints": [],
+      "foreign_keys": [
+        {
+          "columns": ["part_id"],
+          "ref_table": "parts",
+          "ref_columns": ["id"],
+          "on_update": "NO ACTION",
+          "on_delete": "NO ACTION"
+        },
+        {
+          "columns": ["company_id"],
+          "ref_table": "companies",
+          "ref_columns": ["id"],
+          "on_update": "NO ACTION",
+          "on_delete": "NO ACTION"
+        }
+      ],
+      "indexes": [
+        { "name": "ix_complaints_id", "columns": ["id"], "unique": false },
+        { "name": "idx_complaints_status", "columns": ["status"], "unique": false },
+        { "name": "idx_complaints_created_at", "columns": ["created_at"], "unique": false },
+        { "name": "idx_complaints_company_id", "columns": ["company_id"], "unique": false },
+        { "name": "idx_complaints_part_id", "columns": ["part_id"], "unique": false }
+      ],
+      "constraints": {
+        "status_enum": ["open", "in_progress", "resolved"]
+      }
+    },
+
+    "complaint_attachments": {
+      "columns": {
+        "id": { "type": "INTEGER", "nullable": false, "default": null },
+        "complaint_id": { "type": "INTEGER", "nullable": false, "default": null },
+        "filename": { "type": "TEXT", "nullable": false, "default": null },
+        "mime_type": { "type": "TEXT", "nullable": true, "default": null },
+        "size": { "type": "INTEGER", "nullable": true, "default": null },
+        "created_at": { "type": "DATETIME", "nullable": true, "default": "CURRENT_TIMESTAMP" }
+      },
+      "primary_key": ["id"],
+      "unique_constraints": [],
+      "foreign_keys": [
+        {
+          "columns": ["complaint_id"],
+          "ref_table": "complaints",
+          "ref_columns": ["id"],
+          "on_update": "NO ACTION",
+          "on_delete": "CASCADE"
+        }
+      ],
+      "indexes": [
+        { "name": "idx_attachments_complaint_id", "columns": ["complaint_id"], "unique": false }
+      ]
+    },
+
+    "follow_up_actions": {
+      "columns": {
+        "id": { "type": "INTEGER", "nullable": false, "default": null },
+        "complaint_id": { "type": "INTEGER", "nullable": false, "default": null },
+        "action_type": { "type": "TEXT", "nullable": false, "default": null },
+        "notes": { "type": "TEXT", "nullable": true, "default": null },
+        "due_date": { "type": "DATETIME", "nullable": true, "default": null },
+        "completed_at": { "type": "DATETIME", "nullable": true, "default": null },
+        "created_at": { "type": "DATETIME", "nullable": true, "default": "CURRENT_TIMESTAMP" },
+        "updated_at": { "type": "DATETIME", "nullable": true, "default": "CURRENT_TIMESTAMP" }
+      },
+      "primary_key": ["id"],
+      "unique_constraints": [],
+      "foreign_keys": [
+        {
+          "columns": ["complaint_id"],
+          "ref_table": "complaints",
+          "ref_columns": ["id"],
+          "on_update": "NO ACTION",
+          "on_delete": "CASCADE"
+        }
+      ],
+      "indexes": [
+        { "name": "idx_actions_complaint_id", "columns": ["complaint_id"], "unique": false },
+        { "name": "idx_actions_due_date", "columns": ["due_date"], "unique": false }
+      ]
+    },
+
+    "action_history": {
+      "columns": {
+        "id": { "type": "INTEGER", "nullable": false, "default": null },
+        "action_id": { "type": "INTEGER", "nullable": false, "default": null },
+        "status": { "type": "TEXT", "nullable": false, "default": null },
+        "changed_at": { "type": "DATETIME", "nullable": true, "default": "CURRENT_TIMESTAMP" }
+      },
+      "primary_key": ["id"],
+      "unique_constraints": [],
+      "foreign_keys": [
+        {
+          "columns": ["action_id"],
+          "ref_table": "follow_up_actions",
+          "ref_columns": ["id"],
+          "on_update": "NO ACTION",
+          "on_delete": "CASCADE"
+        }
+      ],
+      "indexes": [
+        { "name": "idx_action_history_action_id", "columns": ["action_id"], "unique": false }
+      ]
+    },
+
+    "responsible_persons": {
+      "columns": {
+        "id": { "type": "INTEGER", "nullable": false, "default": null },
+        "name": { "type": "TEXT", "nullable": false, "default": null }
+      },
+      "primary_key": ["id"],
+      "unique_constraints": [["name"]],
+      "foreign_keys": [],
+      "indexes": []
+    },
+
+    "action_dependencies": {
+      "columns": {
+        "id": { "type": "INTEGER", "nullable": false, "default": null },
+        "action_id": { "type": "INTEGER", "nullable": false, "default": null },
+        "depends_on_action_id": { "type": "INTEGER", "nullable": false, "default": null }
+      },
+      "primary_key": ["id"],
+      "unique_constraints": [],
+      "foreign_keys": [
+        {
+          "columns": ["action_id"],
+          "ref_table": "follow_up_actions",
+          "ref_columns": ["id"],
+          "on_update": "NO ACTION",
+          "on_delete": "CASCADE"
+        },
+        {
+          "columns": ["depends_on_action_id"],
+          "ref_table": "follow_up_actions",
+          "ref_columns": ["id"],
+          "on_update": "NO ACTION",
+          "on_delete": "CASCADE"
+        }
+      ],
+      "indexes": [
+        { "name": "idx_action_dependencies_action_id", "columns": ["action_id"], "unique": false },
+        { "name": "idx_action_dependencies_depends_on", "columns": ["depends_on_action_id"], "unique": false }
+      ]
+    }
+  }
+}

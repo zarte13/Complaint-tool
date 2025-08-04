@@ -17,7 +17,10 @@ import mimetypes
 import os
 
 router = APIRouter(prefix="/api/complaints", tags=["complaints"])
+# Register alias routes to support both "/api/complaints" and "/api/complaints/" without 307 redirects
 
+# Accept both "" and "/" for collection POST
+@router.post("", response_model=ComplaintResponse)
 @router.post("/", response_model=ComplaintResponse)
 async def create_complaint(
     complaint: ComplaintCreate,
@@ -40,6 +43,8 @@ async def create_complaint(
     db.refresh(db_complaint)
     return db_complaint
 
+# Accept both "" and "/" for collection GET
+@router.get("", response_model=ComplaintSearchResponse)
 @router.get("/", response_model=ComplaintSearchResponse)
 async def get_complaints(
     page: int = Query(1, ge=1),

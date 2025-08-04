@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { Complaint, ComplaintStatus, IssueType } from '../types';
-import api from '../services/api';
+import { get, put, ensureTrailingSlash } from '../services/api';
 import ComplaintList from '../components/ComplaintList/ComplaintList';
 import EnhancedComplaintDetailDrawer from '../components/ComplaintDetailDrawer/EnhancedComplaintDetailDrawer';
 import StatusFilter from '../components/StatusFilter/StatusFilter';
@@ -26,11 +26,11 @@ export default function ComplaintsPage() {
       }
       if (issueTypeFilter) params.append('issue_type', issueTypeFilter);
       
-      const response = await api.get(`/complaints/export/${format}?${params.toString()}`, {
+      const response = await get(`${ensureTrailingSlash('/api/complaints')}export/${format}?${params.toString()}`, {
         responseType: 'blob'
       });
       
-      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const url = window.URL.createObjectURL(new Blob([response.data as BlobPart]));
       const link = document.createElement('a');
       link.href = url;
       link.setAttribute('download', `complaints.${format}`);
@@ -56,10 +56,10 @@ export default function ComplaintsPage() {
     if (!selectedComplaint) return;
 
     try {
-      const response = await api.put(`/complaints/${selectedComplaint.id}/`, updatedData);
+      const response = await put(`${ensureTrailingSlash('/api/complaints')}${selectedComplaint.id}/`, updatedData);
       
       // Update the local state
-      setSelectedComplaint(response.data);
+      setSelectedComplaint(response.data as Complaint);
       
       // Trigger refresh of the complaint list
       setRefreshTrigger(prev => prev + 1);
@@ -126,7 +126,6 @@ export default function ComplaintsPage() {
             issueTypeFilter={issueTypeFilter}
             page={page}
             pageSize={pageSize}
-            onComplaintClick={handleComplaintClick}
           />
           
           <EnhancedComplaintDetailDrawer

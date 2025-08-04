@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Complaint, ComplaintStatus, IssueType } from '../types';
-import api from '../services/api';
+import { get, ensureTrailingSlash } from '../services/api';
 import { complaintsStore } from '../stores/complaintsStore';
 
 interface ComplaintFilters {
@@ -144,7 +144,7 @@ export function useComplaints(): UseComplaintsReturn {
       params.append('sort_by', sort.column);
       params.append('sort_order', sort.direction);
       
-      const response = await api.get(`/complaints?${params.toString()}`);
+      const response = await get(`${ensureTrailingSlash('/api/complaints')}?${params.toString()}`);
       
       // Update both local state and cache
       setComplaints(response.data.items);
@@ -247,7 +247,7 @@ export function useComplaints(): UseComplaintsReturn {
     }
     
     try {
-      const response = await api.get(`/complaints/export/${format}?${params.toString()}`, {
+      const response = await get(`${ensureTrailingSlash('/api/complaints')}export/${format}?${params.toString()}`, {
         responseType: 'blob',
       });
       

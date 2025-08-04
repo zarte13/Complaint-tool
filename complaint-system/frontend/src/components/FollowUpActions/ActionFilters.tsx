@@ -1,6 +1,5 @@
 import React from 'react';
 import { ActionStatus, ResponsiblePerson } from '../../types';
-import { useLanguage } from '../../contexts/LanguageContext';
 
 interface ActionFiltersProps {
   filters: {
@@ -23,7 +22,7 @@ export const ActionFilters: React.FC<ActionFiltersProps> = ({
   onOverdueFilter,
   className = ''
 }) => {
-  const { t } = useLanguage();
+  // i18n hook not used here; left out to avoid TS6133
 
   // Get status display name and icon
   const getStatusDisplay = (status: ActionStatus) => {
