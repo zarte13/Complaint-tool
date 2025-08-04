@@ -31,15 +31,55 @@ global.IntersectionObserver = vi.fn().mockImplementation(() => ({
   disconnect: vi.fn(),
 }));
 
-// Mock API calls
-vi.mock('../services/api', () => ({
-  api: {
-    get: vi.fn(),
-    post: vi.fn(),
-    put: vi.fn(),
-    delete: vi.fn(),
-  },
-}));
+// Mock API calls (axios-like) plus named helpers used across app
+const getMock = vi.fn();
+const postMock = vi.fn();
+const putMock = vi.fn();
+const deleteMock = vi.fn();
+
+// Provide default no-op implementations for endpoints that some components call during mount,
+// so tests won't attempt real network I/O (jsdom XHR) when not explicitly mocked in a test.
+// These can be overridden per-test via getMock.mockImplementationOnce(...)
+getMock.mockImplementation((url: string) => {
+  if (typeof url === 'string') {
+    // follow-up actions related endpoints
+    if (url.startsWith('/api/complaints/') && url.endsWith('/actions')) {
+      return Promise.resolve({ data: [] });
+    }
+    if (url.startsWith('/api/complaints/') && url.endsWith('/actions/metrics')) {
+      return Promise.resolve({ data: { total: 0, overdue: 0 } });
+    }
+    if (url.startsWith('/api/complaints/') && url.endsWith('/actions/responsible-persons')) {
+      return Promise.resolve({ data: [] });
+    }
+  }
+  // default empty shape
+  return Promise.resolve({ data: {} });
+});
+
+vi.mock('../services/api', async (importOriginal) => {
+  const mod = await importOriginal<any>();
+  return {
+    ...mod,
+    // expose the same helper names used by code under test
+    get: (...args: any[]) => getMock(...args),
+    post: (...args: any[]) => postMock(...args),
+    put: (...args: any[]) => putMock(...args),
+    del: (...args: any[]) => deleteMock(...args),
+    ensureTrailingSlash: mod.ensureTrailingSlash,
+    // also export a shape similar to axios instance for any legacy usage
+    apiClient: {
+      get: getMock,
+      post: postMock,
+      put: putMock,
+      delete: deleteMock,
+    },
+  };
+});
+
+// expose mocks globally for convenience in tests
+// @ts-ignore
+global.__API_MOCKS__ = { getMock, postMock, putMock, deleteMock };
 
 // Mock react-router-dom
 vi.mock('react-router-dom', () => ({

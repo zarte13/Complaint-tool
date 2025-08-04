@@ -219,6 +219,6 @@ describe('EnhancedComplaintDetailDrawer', () => {
     render(<EnhancedComplaintDetailDrawer {...defaultProps} />);
 
     const grid = screen.getByTestId('responsive-grid');
-    expect(grid).toHaveClass('lg:grid-cols-2');
+    expect(grid).toHaveClass('lg:grid-cols-3');
   });
 });

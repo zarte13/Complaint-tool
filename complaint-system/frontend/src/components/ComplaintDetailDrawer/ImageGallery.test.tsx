@@ -1,18 +1,19 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
+import { vi } from 'vitest';
 import ImageGallery from './ImageGallery';
 import { Attachment } from '../../types';
 import { LanguageProvider } from '../../contexts/LanguageContext';
 
 // Mock date-fns
-jest.mock('date-fns', () => ({
-  format: jest.fn(() => 'mocked-date'),
+vi.mock('date-fns', () => ({
+  format: vi.fn(() => 'mocked-date'),
   enUS: {},
   fr: {},
 }));
 
 // Mock fetch for downloads
-global.fetch = jest.fn();
+(globalThis as any).fetch = vi.fn();
 
 const mockAttachments: Attachment[] = [
   {
@@ -51,69 +52,70 @@ const defaultProps = {
 };
 
 const renderWithLanguageProvider = (component: React.ReactElement) => {
-  return render(
-    <LanguageProvider>{component}</LanguageProvider>
-  );
+  return render(<LanguageProvider>{component}</LanguageProvider>);
 };
 
 describe('ImageGallery', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
+    (globalThis as any).fetch = vi.fn();
   });
 
   it('renders image gallery with correct count', () => {
     renderWithLanguageProvider(<ImageGallery {...defaultProps} />);
-    
+
     // Should show only image files (2 out of 3 attachments)
     expect(screen.getByText(/Image Gallery \(2\)/)).toBeInTheDocument();
   });
 
   it('filters out non-image attachments', () => {
     renderWithLanguageProvider(<ImageGallery {...defaultProps} />);
-    
+
     // Should show image files
     expect(screen.getByText('test-image-1.jpg')).toBeInTheDocument();
     expect(screen.getByText('test-image-2.png')).toBeInTheDocument();
-    
+
     // Should not show PDF file
     expect(screen.queryByText('document.pdf')).not.toBeInTheDocument();
   });
 
   it('displays loading state', () => {
     renderWithLanguageProvider(<ImageGallery {...defaultProps} isLoading={true} />);
-    
+
     expect(screen.getByText('Loading images...')).toBeInTheDocument();
   });
 
   it('can be collapsed and expanded', () => {
     renderWithLanguageProvider(<ImageGallery {...defaultProps} />);
-    
+
     const headerButton = screen.getByRole('button', { name: /Image Gallery/ });
-    
+
     // Should be expanded by default
     expect(screen.getByText('test-image-1.jpg')).toBeInTheDocument();
-    
+
     // Click to collapse
     fireEvent.click(headerButton);
-    
+
     // Images should be hidden when collapsed
     expect(screen.queryByText('test-image-1.jpg')).not.toBeInTheDocument();
-    
+
     // Click to expand again
     fireEvent.click(headerButton);
-    
+
     // Images should be visible again
     expect(screen.getByText('test-image-1.jpg')).toBeInTheDocument();
   });
 
   it('opens modal when thumbnail is clicked', () => {
     renderWithLanguageProvider(<ImageGallery {...defaultProps} />);
-    
-    const thumbnail = screen.getByText('test-image-1.jpg').closest('div');
-    fireEvent.click(thumbnail!);
-    
-    // Modal should open with image filename in header
-    expect(screen.getByText('test-image-1.jpg')).toBeInTheDocument();
+
+    // Click row containing the specific file name (list item area)
+    const row = screen.getByText('test-image-1.jpg').closest('.group');
+    fireEvent.click(row!);
+
+    // Modal should open - assert by role/name that uniquely identifies modal header
+    const modalHeading = screen.getByRole('heading', { name: 'test-image-1.jpg', level: 3 });
+    expect(modalHeading).toBeInTheDocument();
   });
 
   it('does not render when no image attachments exist', () => {
@@ -121,19 +123,20 @@ describe('ImageGallery', () => {
       ...defaultProps,
       attachments: [mockAttachments[2]], // Only PDF
     };
-    
+
     const { container } = renderWithLanguageProvider(<ImageGallery {...propsWithoutImages} />);
-    
+
     // Should not render anything when no image attachments
     expect(container.firstChild).toBeNull();
   });
 
   it('sorts images by newest first', () => {
     renderWithLanguageProvider(<ImageGallery {...defaultProps} />);
-    
-    const imageNames = screen.getAllByText(/test-image-\d\./)
-      .map(el => el.textContent);
-    
+
+    const imageNames = screen
+      .getAllByText(/test-image-\d\./)
+      .map((el) => el.textContent);
+
     // Should show test-image-2.png first (newer date)
     expect(imageNames[0]).toBe('test-image-2.png');
     expect(imageNames[1]).toBe('test-image-1.jpg');
@@ -141,13 +144,11 @@ describe('ImageGallery', () => {
 
   it('handles download button click', () => {
     renderWithLanguageProvider(<ImageGallery {...defaultProps} />);
-    
+
     const downloadButtons = screen.getAllByTitle('Download');
     fireEvent.click(downloadButtons[0]);
-    
+
     // Should trigger download (would normally call fetch)
-    expect(fetch).toHaveBeenCalledWith(
-      expect.stringContaining('/api/complaints/attachments/')
-    );
+    expect(global.fetch).toHaveBeenCalledWith(expect.stringContaining('/api/complaints/attachments/'));
   });
-}); 
+});

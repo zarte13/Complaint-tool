@@ -243,42 +243,37 @@ export default function EnhancedComplaintDetailDrawer({
     }
   }, [complaint?.id, complaint?.has_attachments]);
 
-  // Check session flag and trigger staggered animation once per session
+  // Animation control:
+  // - First ever open per complaint in a session: run animations
+  // - Subsequent opens: no animation (instant), but still visible
+  // This avoids blank-on-first-open while restoring animations only for the very first open.
   useEffect(() => {
-    if (!isOpen || !complaint || hasAnimated) return;
+    if (!isOpen || !complaint) return;
 
     const sessionKey = `complaint-${complaint.id}-animated`;
     const hasAnimatedInSession = sessionStorage.getItem(sessionKey);
-    
+
     if (hasAnimatedInSession) {
+      // Already animated once this session for this complaint -> no animation, but ensure visible
       setHasAnimated(true);
       return;
     }
 
-    // Wait for page to fully load (including images and fonts)
-    const triggerAnimation = () => {
-      if (document.readyState === 'complete') {
-        // Additional delay to ensure fonts are loaded
-        requestAnimationFrame(() => {
-          setTimeout(() => {
-            setHasAnimated(true);
-            sessionStorage.setItem(sessionKey, 'true');
-          }, 100);
-        });
-      } else {
-        window.addEventListener('load', () => {
-          requestAnimationFrame(() => {
-            setTimeout(() => {
-              setHasAnimated(true);
-              sessionStorage.setItem(sessionKey, 'true');
-            }, 100);
-          });
-        });
-      }
-    };
+    // We want to animate on the first time only.
+    // Ensure content is visible and allow motion initial transitions to run.
+    // Flip hasAnimated after a short frame delay so initial props apply once.
+    const timeout = requestAnimationFrame(() => {
+      // Mark as animated for the rest of the session to avoid re-animations
+      sessionStorage.setItem(sessionKey, 'true');
+      setHasAnimated(false); // keep false to allow initial variants
+      // After a tiny timeout, set true so any children that depend on visibility are stable
+      setTimeout(() => setHasAnimated(true), 0);
+    });
 
-    triggerAnimation();
-  }, [isOpen, complaint, hasAnimated]);
+    return () => {
+      cancelAnimationFrame(timeout);
+    };
+  }, [isOpen, complaint]);
 
   const handleFieldChange = (field: keyof Complaint, value: any) => {
     setEditData(prev => ({ ...prev, [field]: value }));
@@ -559,11 +554,11 @@ export default function EnhancedComplaintDetailDrawer({
                <div className="lg:col-span-1 space-y-6">
                  {/* Image Gallery */}
                  <motion.div
-                   initial={hasAnimated ? false : { opacity: 0, y: 20 }}
-                   animate={hasAnimated ? {} : { opacity: 1, y: 0 }}
+                   initial={{ opacity: 0, y: 20 }}
+                   animate={{ opacity: 1, y: 0 }}
                    transition={{
                      duration: 0.4,
-                     delay: hasAnimated ? 0 : 0,
+                     delay: 0,
                      ease: "easeOut"
                    }}
                  >
@@ -575,13 +570,13 @@ export default function EnhancedComplaintDetailDrawer({
                  </motion.div>
 
                  {/* Basic Information */}
-                 <motion.div 
+                 <motion.div
                    className="bg-white border border-gray-200 rounded-lg p-4"
-                   initial={hasAnimated ? false : { opacity: 0, y: 20 }}
-                   animate={hasAnimated ? {} : { opacity: 1, y: 0 }}
+                   initial={{ opacity: 0, y: 20 }}
+                   animate={{ opacity: 1, y: 0 }}
                    transition={{
                      duration: 0.4,
-                     delay: hasAnimated ? 0 : 0.1,
+                     delay: 0.1,
                      ease: "easeOut"
                    }}
                  >
@@ -599,13 +594,13 @@ export default function EnhancedComplaintDetailDrawer({
                  </motion.div>
 
                  {/* Order Details */}
-                 <motion.div 
+                 <motion.div
                    className="bg-white border border-gray-200 rounded-lg p-4"
-                   initial={hasAnimated ? false : { opacity: 0, y: 20 }}
-                   animate={hasAnimated ? {} : { opacity: 1, y: 0 }}
+                   initial={{ opacity: 0, y: 20 }}
+                   animate={{ opacity: 1, y: 0 }}
                    transition={{
                      duration: 0.4,
-                     delay: hasAnimated ? 0 : 0.2,
+                     delay: 0.2,
                      ease: "easeOut"
                    }}
                  >
@@ -626,13 +621,13 @@ export default function EnhancedComplaintDetailDrawer({
                  </motion.div>
 
                  {/* Issue Details */}
-                 <motion.div 
+                 <motion.div
                    className="bg-white border border-gray-200 rounded-lg p-4"
-                   initial={hasAnimated ? false : { opacity: 0, y: 20 }}
-                   animate={hasAnimated ? {} : { opacity: 1, y: 0 }}
+                   initial={{ opacity: 0, y: 20 }}
+                   animate={{ opacity: 1, y: 0 }}
                    transition={{
                      duration: 0.4,
-                     delay: hasAnimated ? 0 : 0.3,
+                     delay: 0.3,
                      ease: "easeOut"
                    }}
                  >
@@ -648,13 +643,13 @@ export default function EnhancedComplaintDetailDrawer({
                  </motion.div>
 
                  {/* System Information */}
-                 <motion.div 
+                 <motion.div
                    className="bg-white border border-gray-200 rounded-lg p-4"
-                   initial={hasAnimated ? false : { opacity: 0, y: 20 }}
-                   animate={hasAnimated ? {} : { opacity: 1, y: 0 }}
+                   initial={{ opacity: 0, y: 20 }}
+                   animate={{ opacity: 1, y: 0 }}
                    transition={{
                      duration: 0.4,
-                     delay: hasAnimated ? 0 : 0.4,
+                     delay: 0.4,
                      ease: "easeOut"
                    }}
                  >
@@ -674,11 +669,11 @@ export default function EnhancedComplaintDetailDrawer({
                <div className="lg:col-span-2 space-y-6">
                  {/* Follow-up Actions Panel - Full width for better usability */}
                  <motion.div
-                   initial={hasAnimated ? false : { opacity: 0, y: 20 }}
-                   animate={hasAnimated ? {} : { opacity: 1, y: 0 }}
+                   initial={{ opacity: 0, y: 20 }}
+                   animate={{ opacity: 1, y: 0 }}
                    transition={{
                      duration: 0.4,
-                     delay: hasAnimated ? 0 : 0.5,
+                     delay: 0.5,
                      ease: "easeOut"
                    }}
                  >
@@ -692,13 +687,13 @@ export default function EnhancedComplaintDetailDrawer({
 
                  {/* Attached Files */}
                  {complaint.has_attachments && (
-                   <motion.div 
+                   <motion.div
                      className="bg-white border border-gray-200 rounded-lg p-4"
-                     initial={hasAnimated ? false : { opacity: 0, y: 20 }}
-                     animate={hasAnimated ? {} : { opacity: 1, y: 0 }}
+                     initial={{ opacity: 0, y: 20 }}
+                     animate={{ opacity: 1, y: 0 }}
                      transition={{
                        duration: 0.4,
-                       delay: hasAnimated ? 0 : 0.6,
+                       delay: 0.6,
                        ease: "easeOut"
                      }}
                    >

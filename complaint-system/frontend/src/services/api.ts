@@ -12,10 +12,16 @@ const apiClient: AxiosInstance = axios.create({
 });
 
 // Add request interceptor for trailing slash normalization
+// IMPORTANT: Only normalize when there is no query string.
+// Normalizing URLs that already include ? can produce "/endpoint/?query"
+// which may be treated differently by strict routers or proxies.
 apiClient.interceptors.request.use(
   (config) => {
     if (config.url) {
-      config.url = ensureTrailingSlash(config.url);
+      const hasQuery = config.url.includes('?') || config.url.includes('#');
+      if (!hasQuery) {
+        config.url = ensureTrailingSlash(config.url);
+      }
     }
     return config;
   },
@@ -90,8 +96,8 @@ export function ensureTrailingSlash(path: string): string {
   const base = match[1];
   const rest = match[2] ?? "";
 
-  // If base already ends with slash, leave as-is
-  if (base.endsWith("/")) return path;
+  // If base already ends with slash, simply recombine parts to avoid double slashes
+  if (base.endsWith("/")) return `${base}${rest}`;
 
   // Heuristic: if base appears to target a resource item like "/api/complaints/123",
   // do not append a slash; only append for collection roots without trailing slash.
@@ -100,7 +106,7 @@ export function ensureTrailingSlash(path: string): string {
   const last = segments[segments.length - 1] ?? "";
   const isLikelyItem = /^\d+$/.test(last);
 
-  if (isLikelyItem) return path;
+  if (isLikelyItem) return `${base}${rest}`;
 
   return `${base}/${rest}`;
 }

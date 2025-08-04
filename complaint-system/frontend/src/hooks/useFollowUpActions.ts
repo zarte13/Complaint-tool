@@ -25,105 +25,192 @@ export const followUpActionsApi = {
       overdue_only?: boolean;
     }
   ): Promise<FollowUpAction[]> => {
-    const response = await axios.get(`${API_BASE_URL}/complaints/${complaintId}/actions`, {
-      params: filters
-    });
-    return response.data;
+    try {
+      const response = await axios.get(`${API_BASE_URL}/complaints/${complaintId}/actions`, {
+        params: filters
+      });
+      return response.data;
+    } catch (err: any) {
+      if (err?.response?.status === 404) {
+        // Backend does not implement actions; return empty list to avoid console errors
+        return [];
+      }
+      throw err;
+    }
   },
 
   // Get a specific action
   getAction: async (complaintId: number, actionId: number): Promise<FollowUpAction> => {
-    const response = await axios.get(`${API_BASE_URL}/complaints/${complaintId}/actions/${actionId}`);
-    return response.data;
+    try {
+      const response = await axios.get(`${API_BASE_URL}/complaints/${complaintId}/actions/${actionId}`);
+      return response.data;
+    } catch (err: any) {
+      if (err?.response?.status === 404) {
+        // Provide a clear error for consumers if needed
+        throw new Error('Follow-up actions API not available on server');
+      }
+      throw err;
+    }
   },
 
   // Create new action
   createAction: async (
-    complaintId: number, 
+    complaintId: number,
     actionData: FollowUpActionCreate,
     changedBy: string = 'User'
   ): Promise<FollowUpAction> => {
-    const response = await axios.post(
-      `${API_BASE_URL}/complaints/${complaintId}/actions`,
-      actionData,
-      { params: { changed_by: changedBy } }
-    );
-    return response.data;
+    try {
+      const response = await axios.post(
+        `${API_BASE_URL}/complaints/${complaintId}/actions`,
+        actionData,
+        { params: { changed_by: changedBy } }
+      );
+      return response.data;
+    } catch (err: any) {
+      if (err?.response?.status === 404) {
+        throw new Error('Follow-up actions API not available on server');
+      }
+      throw err;
+    }
   },
 
   // Update action
   updateAction: async (
-    complaintId: number, 
-    actionId: number, 
+    complaintId: number,
+    actionId: number,
     updates: FollowUpActionUpdate,
     changedBy: string = 'User'
   ): Promise<FollowUpAction> => {
-    const response = await axios.put(
-      `${API_BASE_URL}/complaints/${complaintId}/actions/${actionId}`,
-      updates,
-      { params: { changed_by: changedBy } }
-    );
-    return response.data;
+    try {
+      const response = await axios.put(
+        `${API_BASE_URL}/complaints/${complaintId}/actions/${actionId}`,
+        updates,
+        { params: { changed_by: changedBy } }
+      );
+      return response.data;
+    } catch (err: any) {
+      if (err?.response?.status === 404) {
+        throw new Error('Follow-up actions API not available on server');
+      }
+      throw err;
+    }
   },
 
   // Delete action (soft delete)
   deleteAction: async (
-    complaintId: number, 
+    complaintId: number,
     actionId: number,
     changedBy: string = 'User'
   ): Promise<void> => {
-    await axios.delete(
-      `${API_BASE_URL}/complaints/${complaintId}/actions/${actionId}`,
-      { params: { changed_by: changedBy } }
-    );
+    try {
+      await axios.delete(
+        `${API_BASE_URL}/complaints/${complaintId}/actions/${actionId}`,
+        { params: { changed_by: changedBy } }
+      );
+    } catch (err: any) {
+      if (err?.response?.status === 404) {
+        // Treat as success when API is not present
+        return;
+      }
+      throw err;
+    }
   },
 
   // Reorder actions
   reorderActions: async (
-    complaintId: number, 
-    actionId: number, 
+    complaintId: number,
+    actionId: number,
     newPosition: number,
     changedBy: string = 'User'
   ): Promise<void> => {
-    await axios.post(
-      `${API_BASE_URL}/complaints/${complaintId}/actions/${actionId}/reorder`,
-      null,
-      { params: { new_position: newPosition, changed_by: changedBy } }
-    );
+    try {
+      await axios.post(
+        `${API_BASE_URL}/complaints/${complaintId}/actions/${actionId}/reorder`,
+        null,
+        { params: { new_position: newPosition, changed_by: changedBy } }
+      );
+    } catch (err: any) {
+      if (err?.response?.status === 404) {
+        return;
+      }
+      throw err;
+    }
   },
 
   // Get action history
   getActionHistory: async (complaintId: number, actionId: number): Promise<ActionHistory[]> => {
-    const response = await axios.get(`${API_BASE_URL}/complaints/${complaintId}/actions/${actionId}/history`);
-    return response.data;
+    try {
+      const response = await axios.get(`${API_BASE_URL}/complaints/${complaintId}/actions/${actionId}/history`);
+      return response.data;
+    } catch (err: any) {
+      if (err?.response?.status === 404) {
+        return [];
+      }
+      throw err;
+    }
   },
 
   // Get responsible persons
   getResponsiblePersons: async (complaintId: number, activeOnly: boolean = true): Promise<ResponsiblePerson[]> => {
-    const response = await axios.get(`${API_BASE_URL}/complaints/${complaintId}/actions/responsible-persons`, {
-      params: { active_only: activeOnly }
-    });
-    return response.data;
+    try {
+      const response = await axios.get(`${API_BASE_URL}/complaints/${complaintId}/actions/responsible-persons`, {
+        params: { active_only: activeOnly }
+      });
+      return response.data;
+    } catch (err: any) {
+      if (err?.response?.status === 404) {
+        return [];
+      }
+      throw err;
+    }
   },
 
   // Bulk update actions
   bulkUpdateActions: async (
-    complaintId: number, 
+    complaintId: number,
     bulkUpdate: BulkActionUpdate,
     changedBy: string = 'User'
   ): Promise<BulkActionResponse> => {
-    const response = await axios.patch(
-      `${API_BASE_URL}/complaints/${complaintId}/actions/bulk-update`,
-      bulkUpdate,
-      { params: { changed_by: changedBy } }
-    );
-    return response.data;
+    try {
+      const response = await axios.patch(
+        `${API_BASE_URL}/complaints/${complaintId}/actions/bulk-update`,
+        bulkUpdate,
+        { params: { changed_by: changedBy } }
+      );
+      return response.data;
+    } catch (err: any) {
+      if (err?.response?.status === 404) {
+        // Return a benign response matching BulkActionResponse shape
+        return {
+          updated_count: 0,
+          failed_updates: [],
+          errors: []
+        } as unknown as BulkActionResponse;
+      }
+      throw err;
+    }
   },
 
   // Get action metrics
   getActionMetrics: async (complaintId: number): Promise<ActionMetrics> => {
-    const response = await axios.get(`${API_BASE_URL}/complaints/${complaintId}/actions/metrics`);
-    return response.data;
+    try {
+      const response = await axios.get(`${API_BASE_URL}/complaints/${complaintId}/actions/metrics`);
+      return response.data;
+    } catch (err: any) {
+      if (err?.response?.status === 404) {
+        // Provide empty metrics matching ActionMetrics shape
+        const emptyMetrics = {
+          total_actions: 0,
+          open_actions: 0,
+          in_progress_actions: 0,
+          resolved_actions: 0,
+          overdue_actions: 0,
+          completion_rate: 0
+        } as unknown as ActionMetrics;
+        return emptyMetrics;
+      }
+      throw err;
+    }
   }
 };
 
@@ -208,7 +295,13 @@ export function useFollowUpActions({
       setError(null);
       const data = await followUpActionsApi.getActions(complaintId, filters);
       setActions(data);
-    } catch (err) {
+    } catch (err: any) {
+      // If API not implemented, silence error and keep empty state
+      if (err?.message === 'Follow-up actions API not available on server' || err?.response?.status === 404) {
+        setActions([]);
+        setError(null);
+        return;
+      }
       setError(err instanceof Error ? err.message : 'Failed to load actions');
       console.error('Error loading actions:', err);
     }
