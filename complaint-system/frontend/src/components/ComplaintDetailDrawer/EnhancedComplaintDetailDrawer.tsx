@@ -529,290 +529,299 @@ export default function EnhancedComplaintDetailDrawer({
 
   return (
     <>
-      <div className="fixed inset-0 bg-black bg-opacity-50 z-40" onClick={onClose} data-testid="drawer-overlay" />
-      <div className="fixed right-0 top-0 h-full w-full max-w-7xl bg-gray-50 shadow-xl z-50 flex flex-col">
-        {/* Header */}
-        <div className="bg-white border-b border-gray-200 px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-semibold text-gray-900">
-                Complaint #{complaint.id}
-              </h2>
-              <p className="text-sm text-gray-500">
-                {formatRelativeDate(complaint.last_edit)}
-              </p>
-            </div>
-            <div className="flex items-center space-x-2">
-              {isEditing ? (
-                <>
-                  <button
-                    onClick={handleSave}
-                    disabled={isSaving}
-                    className="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
-                  >
-                    {isSaving ? (
-                      <>
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
-                        Saving...
-                      </>
-                    ) : (
-                      <>
-                        <Save className="h-4 w-4 mr-1" />
-                        Save
-                      </>
-                    )}
-                  </button>
-                  <button
-                    onClick={handleCancel}
-                    className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
-                  >
-                    Cancel
-                  </button>
-                </>
-              ) : (
-                <button
-                  onClick={handleEdit}
-                  className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
-                >
-                  <Edit3 className="h-4 w-4 mr-1" />
-                  Edit
-                </button>
-              )}
-              <button
-                onClick={onClose}
-                className="p-2 text-gray-400 hover:text-gray-500"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-          </div>
-        </div>
+      {/* Backdrop */}
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            key="overlay"
+            className="fixed inset-0 bg-black bg-opacity-50 z-40"
+            onClick={onClose}
+            data-testid="drawer-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.25, ease: 'easeOut' }}
+          />
+        )}
+      </AnimatePresence>
 
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto">
-          <div className="p-6">
-            {error && (
-              <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-md">
-                <div className="flex">
-                  <AlertCircle className="h-5 w-5 text-red-400" />
-                  <div className="ml-3">
-                    <h3 className="text-sm font-medium text-red-800">Error</h3>
-                    <p className="mt-1 text-sm text-red-700">{error}</p>
+      {/* Sliding Panel */}
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            key={`drawer-${complaint.id}`}
+            className="fixed right-0 top-0 h-full w-full max-w-7xl bg-gray-50 shadow-xl z-50 flex flex-col will-change-transform"
+            initial={{ x: '100%' }}
+            animate={{ x: 0 }}
+            exit={{ x: '100%' }}
+            transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}  /* easeOutQuint-like */
+            onAnimationComplete={() => {
+              // no-op placeholder to ensure timing consistency
+            }}
+          >
+            {/* Header */}
+            <div className="bg-white border-b border-gray-200 px-6 py-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900">
+                    Complaint #{complaint.id}
+                  </h2>
+                  <p className="text-sm text-gray-500">
+                    {formatRelativeDate(complaint.last_edit)}
+                  </p>
+                </div>
+                <div className="flex items-center space-x-2">
+                  {isEditing ? (
+                    <>
+                      <button
+                        onClick={handleSave}
+                        disabled={isSaving}
+                        className="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
+                      >
+                        {isSaving ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                            Saving...
+                          </>
+                        ) : (
+                          <>
+                            <Save className="h-4 w-4 mr-1" />
+                            Save
+                          </>
+                        )}
+                      </button>
+                      <button
+                        onClick={handleCancel}
+                        className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+                      >
+                        Cancel
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      onClick={handleEdit}
+                      className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+                    >
+                      <Edit3 className="h-4 w-4 mr-1" />
+                      Edit
+                    </button>
+                  )}
+                  <button
+                    onClick={onClose}
+                    className="p-2 text-gray-400 hover:text-gray-500"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto">
+              <div className="p-6">
+                {error && (
+                  <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-md">
+                    <div className="flex">
+                      <AlertCircle className="h-5 w-5 text-red-400" />
+                      <div className="ml-3">
+                        <h3 className="text-sm font-medium text-red-800">Error</h3>
+                        <p className="mt-1 text-sm text-red-700">{error}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Two-Column Responsive Layout */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6" data-testid="responsive-grid" ref={tilesContainerRef}>
+                  {/* Left Column - Information Sections */}
+                  <div className="lg:col-span-1 space-y-6">
+                    {/* Image Gallery */}
+                    <motion.div
+                      initial={{ opacity: 0, x: 24 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: 24 }}
+                      transition={{ duration: 0.25, ease: 'easeOut', delay: 0.0 }}
+                    >
+                      <ImageGallery
+                        complaintId={complaint.id}
+                        attachments={attachments}
+                        isLoading={isLoadingAttachments}
+                      />
+                    </motion.div>
+
+                    {/* Basic Information */}
+                    <motion.div
+                      className="bg-white border border-gray-200 rounded-lg p-4"
+                      initial={{ opacity: 0, x: 24 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: 24 }}
+                      transition={{ duration: 0.25, ease: 'easeOut', delay: 0.08 }}
+                    >
+                      <h3 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                        <div className="w-1 h-4 bg-blue-600 rounded-full" />
+                        {t('basicInformation')}
+                      </h3>
+                      <div className="space-y-4">
+                        {renderField('ID', complaint.id)}
+                        {renderField('Customer Company', complaint.company.name)}
+                        {renderField('Part Number', complaint.part.part_number)}
+                        {renderField('Issue Type', getIssueTypeDisplay(complaint.issue_type))}
+                        {renderStatusDropdown()}
+                      </div>
+                    </motion.div>
+
+                    {/* Order Details */}
+                    <motion.div
+                      className="bg-white border border-gray-200 rounded-lg p-4"
+                      initial={{ opacity: 0, x: 24 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: 24 }}
+                      transition={{ duration: 0.25, ease: 'easeOut', delay: 0.12 }}
+                    >
+                      <h3 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                        <div className="w-1 h-4 bg-green-600 rounded-full" />
+                        {t('orderDetails')}
+                      </h3>
+                      <div className="space-y-4">
+                        {renderField('Work Order Number', complaint.work_order_number, 'work_order_number')}
+                        {(complaint.issue_type === 'wrong_quantity' || complaint.issue_type === 'wrong_part') && (
+                          <>
+                            {renderField('Quantity Ordered', complaint.quantity_ordered, 'quantity_ordered', 'number')}
+                            {renderField('Quantity Received', complaint.quantity_received, 'quantity_received', 'number')}
+                          </>
+                        )}
+                        {renderField('Part Received', complaint.part_received, 'part_received')}
+                      </div>
+                    </motion.div>
+
+                    {/* Issue Details */}
+                    <motion.div
+                      className="bg-white border border-gray-200 rounded-lg p-4"
+                      initial={{ opacity: 0, x: 24 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: 24 }}
+                      transition={{ duration: 0.25, ease: 'easeOut', delay: 0.18 }}
+                    >
+                      <h3 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                        <div className="w-1 h-4 bg-amber-600 rounded-full" />
+                        {t('issueDetails')}
+                      </h3>
+                      <div className="space-y-4">
+                        {renderField('Occurrence', complaint.occurrence, 'occurrence')}
+                        {renderField('Human Factor', complaint.human_factor, 'human_factor', 'toggle')}
+                        {renderField('Details', complaint.details, 'details', 'textarea')}
+                      </div>
+                    </motion.div>
+
+                    {/* System Information */}
+                    <motion.div
+                      className="bg-white border border-gray-200 rounded-lg p-4"
+                      initial={{ opacity: 0, x: 24 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: 24 }}
+                      transition={{ duration: 0.25, ease: 'easeOut', delay: 0.24 }}
+                    >
+                      <h3 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                        <div className="w-1 h-4 bg-gray-600 rounded-full" />
+                        {t('systemInformation')}
+                      </h3>
+                      <div className="space-y-4">
+                        {renderField('Created', formatDate(complaint.created_at))}
+                        {renderField('Updated', formatDate(complaint.updated_at))}
+                        {renderField('Last Edit', formatRelativeDate(complaint.last_edit))}
+                      </div>
+                    </motion.div>
+                  </div>
+
+                  {/* Right Column - Actions & Attachments (Spans 2 columns) */}
+                  <div className="lg:col-span-2 space-y-6">
+                    {/* Follow-up Actions Panel - Full width for better usability */}
+                    <motion.div
+                      initial={{ opacity: 0, x: 24 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: 24 }}
+                      transition={{ duration: 0.25, ease: 'easeOut', delay: 0.36 }}
+                    >
+                      <FollowUpActionsPanel
+                        complaintId={complaint.id}
+                        isEditable={!isEditing}
+                        className="bg-white border border-gray-200 rounded-lg"
+                        onFirstActionCreated={handleFirstActionCreated}
+                      />
+                    </motion.div>
+
+                    {/* Attached Files */}
+                    {complaint.has_attachments && (
+                      <motion.div
+                        className="bg-white border border-gray-200 rounded-lg p-4"
+                        initial={{ opacity: 0, x: 24 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: 24 }}
+                        transition={{ duration: 0.25, ease: 'easeOut', delay: 0.36 }}
+                      >
+                        <h3 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                          <div className="w-1 h-4 bg-purple-600 rounded-full" />
+                          {t('attachedFiles')}
+                        </h3>
+                        <div className="space-y-3">
+                          {isLoadingAttachments ? (
+                            <div className="flex items-center justify-center py-4">
+                              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-600"></div>
+                              <span className="ml-2 text-sm text-gray-600">{t('loadingFiles') || 'Loading files...'}</span>
+                            </div>
+                          ) : attachments.length > 0 ? (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                              {attachments.map((attachment) => (
+                                <div
+                                  key={attachment.id}
+                                  className="flex items-center justify-between p-3 bg-gray-50 rounded-md hover:bg-gray-100 transition-colors"
+                                >
+                                  <div className="flex items-center space-x-3 min-w-0 flex-1">
+                                    <FileText className="h-5 w-5 text-gray-400 flex-shrink-0" />
+                                    <div className="min-w-0 flex-1">
+                                      <p className="text-sm font-medium text-gray-900 truncate">
+                                        {attachment.original_filename}
+                                      </p>
+                                      <p className="text-xs text-gray-500">
+                                        {Math.round(attachment.file_size / 1024)} KB • {attachment.mime_type}
+                                      </p>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-2 flex-shrink-0">
+                                    <button
+                                      onClick={() => handleDownloadFile(attachment)}
+                                      className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-purple-600 bg-purple-50 rounded-md hover:bg-purple-100 transition-colors"
+                                      title={t('downloadAttachment') || `Download ${attachment.original_filename}`}
+                                    >
+                                      <Download className="h-3 w-3 mr-1" />
+                                      {t('download') || 'Download'}
+                                    </button>
+                                    <button
+                                      onClick={() => handleDeleteAttachment(attachment)}
+                                      className="inline-flex items-center px-2 py-1.5 text-xs font-medium text-red-600 bg-red-50 rounded-md hover:bg-red-100 transition-colors"
+                                      title={t('deleteAttachment') || 'Delete attachment'}
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-sm text-gray-500 text-center py-4">
+                              {t('noFilesAttached') || 'No files attached'}
+                            </p>
+                          )}
+                        </div>
+                      </motion.div>
+                    )}
                   </div>
                 </div>
               </div>
-            )}
-
-                         {/* Two-Column Responsive Layout */}
-             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6" data-testid="responsive-grid" ref={tilesContainerRef}>
-               {/* Left Column - Information Sections */}
-               <div className="lg:col-span-1 space-y-6">
-                 {/* Image Gallery */}
-                 <motion.div
-                   initial={{ opacity: 0, y: 20 }}
-                   animate={{ opacity: 1, y: 0 }}
-                   transition={{
-                     duration: 0.4,
-                     delay: 0,
-                     ease: "easeOut"
-                   }}
-                 >
-                   <ImageGallery
-                     complaintId={complaint.id}
-                     attachments={attachments}
-                     isLoading={isLoadingAttachments}
-                   />
-                 </motion.div>
-
-                 {/* Basic Information */}
-                 <motion.div
-                   className="bg-white border border-gray-200 rounded-lg p-4"
-                   initial={{ opacity: 0, y: 20 }}
-                   animate={{ opacity: 1, y: 0 }}
-                   transition={{
-                     duration: 0.4,
-                     delay: 0.1,
-                     ease: "easeOut"
-                   }}
-                 >
-                   <h3 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                     <div className="w-1 h-4 bg-blue-600 rounded-full" />
-                     {t('basicInformation')}
-                   </h3>
-                   <div className="space-y-4">
-                     {renderField('ID', complaint.id)}
-                     {renderField('Customer Company', complaint.company.name)}
-                     {renderField('Part Number', complaint.part.part_number)}
-                     {renderField('Issue Type', getIssueTypeDisplay(complaint.issue_type))}
-                     {renderStatusDropdown()}
-                   </div>
-                 </motion.div>
-
-                 {/* Order Details */}
-                 <motion.div
-                   className="bg-white border border-gray-200 rounded-lg p-4"
-                   initial={{ opacity: 0, y: 20 }}
-                   animate={{ opacity: 1, y: 0 }}
-                   transition={{
-                     duration: 0.4,
-                     delay: 0.2,
-                     ease: "easeOut"
-                   }}
-                 >
-                   <h3 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                     <div className="w-1 h-4 bg-green-600 rounded-full" />
-                     {t('orderDetails')}
-                   </h3>
-                   <div className="space-y-4">
-                     {renderField('Work Order Number', complaint.work_order_number, 'work_order_number')}
-                     {(complaint.issue_type === 'wrong_quantity' || complaint.issue_type === 'wrong_part') && (
-                       <>
-                         {renderField('Quantity Ordered', complaint.quantity_ordered, 'quantity_ordered', 'number')}
-                         {renderField('Quantity Received', complaint.quantity_received, 'quantity_received', 'number')}
-                       </>
-                     )}
-                     {renderField('Part Received', complaint.part_received, 'part_received')}
-                   </div>
-                 </motion.div>
-
-                 {/* Issue Details */}
-                 <motion.div
-                   className="bg-white border border-gray-200 rounded-lg p-4"
-                   initial={{ opacity: 0, y: 20 }}
-                   animate={{ opacity: 1, y: 0 }}
-                   transition={{
-                     duration: 0.4,
-                     delay: 0.3,
-                     ease: "easeOut"
-                   }}
-                 >
-                   <h3 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                     <div className="w-1 h-4 bg-amber-600 rounded-full" />
-                     {t('issueDetails')}
-                   </h3>
-                   <div className="space-y-4">
-                     {renderField('Occurrence', complaint.occurrence, 'occurrence')}
-                     {renderField('Human Factor', complaint.human_factor, 'human_factor', 'toggle')}
-                     {renderField('Details', complaint.details, 'details', 'textarea')}
-                   </div>
-                 </motion.div>
-
-                 {/* System Information */}
-                 <motion.div
-                   className="bg-white border border-gray-200 rounded-lg p-4"
-                   initial={{ opacity: 0, y: 20 }}
-                   animate={{ opacity: 1, y: 0 }}
-                   transition={{
-                     duration: 0.4,
-                     delay: 0.4,
-                     ease: "easeOut"
-                   }}
-                 >
-                   <h3 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                     <div className="w-1 h-4 bg-gray-600 rounded-full" />
-                     {t('systemInformation')}
-                   </h3>
-                   <div className="space-y-4">
-                     {renderField('Created', formatDate(complaint.created_at))}
-                     {renderField('Updated', formatDate(complaint.updated_at))}
-                     {renderField('Last Edit', formatRelativeDate(complaint.last_edit))}
-                   </div>
-                 </motion.div>
-               </div>
-
-               {/* Right Column - Actions & Attachments (Spans 2 columns) */}
-               <div className="lg:col-span-2 space-y-6">
-                 {/* Follow-up Actions Panel - Full width for better usability */}
-                 <motion.div
-                   initial={{ opacity: 0, y: 20 }}
-                   animate={{ opacity: 1, y: 0 }}
-                   transition={{
-                     duration: 0.4,
-                     delay: 0.5,
-                     ease: "easeOut"
-                   }}
-                 >
-                   <FollowUpActionsPanel
-                   complaintId={complaint.id}
-                   isEditable={!isEditing} // Disable editing when complaint is being edited
-                   className="bg-white border border-gray-200 rounded-lg"
-                   onFirstActionCreated={handleFirstActionCreated}
-                 />
-                 </motion.div>
-
-                 {/* Attached Files */}
-                 {complaint.has_attachments && (
-                   <motion.div
-                     className="bg-white border border-gray-200 rounded-lg p-4"
-                     initial={{ opacity: 0, y: 20 }}
-                     animate={{ opacity: 1, y: 0 }}
-                     transition={{
-                       duration: 0.4,
-                       delay: 0.6,
-                       ease: "easeOut"
-                     }}
-                   >
-                     <h3 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                       <div className="w-1 h-4 bg-purple-600 rounded-full" />
-                       {t('attachedFiles')}
-                     </h3>
-                     <div className="space-y-3">
-                       {isLoadingAttachments ? (
-                         <div className="flex items-center justify-center py-4">
-                           <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-600"></div>
-                           <span className="ml-2 text-sm text-gray-600">{t('loadingFiles') || 'Loading files...'}</span>
-                         </div>
-                       ) : attachments.length > 0 ? (
-                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                           {attachments.map((attachment) => (
-                             <div
-                               key={attachment.id}
-                               className="flex items-center justify-between p-3 bg-gray-50 rounded-md hover:bg-gray-100 transition-colors"
-                             >
-                               <div className="flex items-center space-x-3 min-w-0 flex-1">
-                                 <FileText className="h-5 w-5 text-gray-400 flex-shrink-0" />
-                                 <div className="min-w-0 flex-1">
-                                   <p className="text-sm font-medium text-gray-900 truncate">
-                                     {attachment.original_filename}
-                                   </p>
-                                   <p className="text-xs text-gray-500">
-                                     {Math.round(attachment.file_size / 1024)} KB • {attachment.mime_type}
-                                   </p>
-                                 </div>
-                               </div>
-                               <div className="flex items-center gap-2 flex-shrink-0">
-                                 <button
-                                   onClick={() => handleDownloadFile(attachment)}
-                                   className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-purple-600 bg-purple-50 rounded-md hover:bg-purple-100 transition-colors"
-                                   title={t('downloadAttachment') || `Download ${attachment.original_filename}`}
-                                 >
-                                   <Download className="h-3 w-3 mr-1" />
-                                   {t('download') || 'Download'}
-                                 </button>
-                                 <button
-                                   onClick={() => handleDeleteAttachment(attachment)}
-                                   className="inline-flex items-center px-2 py-1.5 text-xs font-medium text-red-600 bg-red-50 rounded-md hover:bg-red-100 transition-colors"
-                                   title={t('deleteAttachment') || 'Delete attachment'}
-                                 >
-                                   <Trash2 className="h-4 w-4" />
-                                 </button>
-                               </div>
-                             </div>
-                           ))}
-                         </div>
-                       ) : (
-                         <p className="text-sm text-gray-500 text-center py-4">
-                           {t('noFilesAttached') || 'No files attached'}
-                         </p>
-                       )}
-                     </div>
-                   </motion.div>
-                 )}
-               </div>
-             </div>
-          </div>
-        </div>
-      </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </>
   );
 }
