@@ -119,7 +119,9 @@ export default function ComplaintList({
     if (!drawerComplaint) return;
 
     try {
-      const response = await put(`${ensureTrailingSlash('/api/complaints')}${drawerComplaint.id}/`, updatedData);
+      // Item endpoints must not include trailing slash due to redirect_slashes=false
+      const url = `/api/complaints/${drawerComplaint.id}`;
+      const response = await put(url, updatedData);
       const payload = response.data as Partial<Complaint>;
       
       // Update the local state

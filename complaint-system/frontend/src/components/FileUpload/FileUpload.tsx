@@ -79,10 +79,12 @@ export default function FileUpload({ complaintId, onUploadComplete }: FileUpload
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
-  const getFileIcon = (fileType: string) => {
-    if (fileType.startsWith('image/')) {
+  const getFileIcon = (fileType?: string) => {
+    const safeType = (fileType || '').toLowerCase();
+    if (safeType.startsWith('image/')) {
       return <Image className="h-5 w-5 text-gray-400" />;
     }
+    // Default generic file icon for unknown/undefined types
     return <FileText className="h-5 w-5 text-gray-400" />;
   };
 
@@ -133,8 +135,8 @@ export default function FileUpload({ complaintId, onUploadComplete }: FileUpload
               <div className="flex items-center space-x-3">
                 {getFileIcon(file.file_type)}
                 <div>
-                  <p className="text-sm font-medium text-gray-900">{file.filename}</p>
-                  <p className="text-xs text-gray-500">{formatFileSize(file.file_size)}</p>
+                  <p className="text-sm font-medium text-gray-900">{file.filename || file.id}</p>
+                  <p className="text-xs text-gray-500">{formatFileSize(Number(file.file_size) || 0)}</p>
                 </div>
               </div>
               <button

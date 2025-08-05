@@ -224,6 +224,7 @@ async def update_complaint(
     return complaint
 
 @router.post("/{complaint_id}/attachments", response_model=AttachmentUploadResponse)
+@router.post("/{complaint_id}/attachments/", response_model=AttachmentUploadResponse)
 async def upload_attachment(
     complaint_id: int,
     file: UploadFile = File(...),
@@ -274,6 +275,7 @@ async def upload_attachment(
     return attachment
 
 @router.get("/{complaint_id}/attachments", response_model=List[AttachmentResponse])
+@router.get("/{complaint_id}/attachments/", response_model=List[AttachmentResponse])
 async def get_attachments(
     complaint_id: int,
     db: Session = Depends(get_db)
@@ -290,6 +292,7 @@ async def get_attachments(
     return attachments
 
 @router.get("/attachments/{attachment_id}/download")
+@router.get("/attachments/{attachment_id}/download/")
 async def download_attachment(
     attachment_id: int,
     db: Session = Depends(get_db)

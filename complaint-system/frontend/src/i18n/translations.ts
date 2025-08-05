@@ -188,6 +188,14 @@ export interface Translations {
   rarTotalComplaints: string;
   trendsTitle: string;
   failureModesTitle: string;
+
+  // Attachments (Detail view)
+  loadingFiles: string;
+  downloadAttachment: string;
+  download: string;
+  deleteAttachment: string;
+  confirmDeleteAttachment: string;
+  noFilesAttached: string;
 }
 
 // Relax type to avoid requiring all keys during iteration; runtime access stays the same

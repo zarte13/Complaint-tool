@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { X, Edit3, Save, AlertCircle, Download, FileText, ChevronDown, Loader2 } from 'lucide-react';
+import { X, Edit3, Save, AlertCircle, Download, FileText, ChevronDown, Loader2, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { Complaint, Attachment, ComplaintStatus } from '../../types';
@@ -33,8 +33,8 @@ export default function EnhancedComplaintDetailDrawer({
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const [statusError, setStatusError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
-  // Removed unused hasAnimated state to satisfy TS6133
-  // const [hasAnimated, setHasAnimated] = useState(false);
+  // Local UI status state normalized to canonical values
+  const [uiStatus, setUiStatus] = useState<ComplaintStatus | null>(null);
   const tilesContainerRef = useRef<HTMLDivElement>(null);
 
   const dateLocale = language === 'fr' ? fr : enUS;
@@ -122,6 +122,8 @@ export default function EnhancedComplaintDetailDrawer({
         last_edit: new Date().toISOString(),
       };
       await onUpdate(updatedData);
+      // IMPORTANT: do not overwrite status coming from server optimistically here.
+      // Only update fields from editData to avoid resetting status UI.
       complaintsStore.updateComplaintInCache({ ...complaint, ...updatedData });
       setIsEditing(false);
       setEditData({});
@@ -142,39 +144,49 @@ export default function EnhancedComplaintDetailDrawer({
 
   const handleStatusChange = async (newStatus: ComplaintStatus, isRetry: boolean = false) => {
     if (!complaint || complaint.status === newStatus) return;
-    
+
+    // Optimistically reflect the new status in the dropdown immediately
+    setUiStatus(newStatus);
+
     if (!isRetry) {
       setRetryCount(0);
       setStatusError(null);
     }
-    
+
     setIsUpdatingStatus(true);
     setError(null);
     setStatusError(null);
-    
+
     try {
-      // Use PUT for status updates (backend expects PUT)
       const response = await fetch(`/api/complaints/${complaint.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
+        // Always send canonical values
         body: JSON.stringify({ status: newStatus }),
       });
-      
+
       if (!response.ok) {
         throw new Error(`Failed to update status: ${response.statusText}`);
       }
-      
+
       const updatedComplaint = await response.json();
-      
-      // Update the complaint data and cache
-      const updatedData = { status: updatedComplaint.status as ComplaintStatus };
+
+      // Normalize any outward 'closed' to 'resolved' for UI state
+      const canonical = (updatedComplaint.status === 'closed' ? 'resolved' : updatedComplaint.status) as ComplaintStatus;
+
+      // Push the confirmed status to the parent and cache
+      const updatedData = { status: canonical as ComplaintStatus };
       onUpdate(updatedData);
       complaintsStore.updateComplaintInCache({ ...complaint, ...updatedData });
-      
+
+      // Ensure local UI matches server-confirmed value (prevents flicker back to previous)
+      setUiStatus(canonical);
     } catch (err) {
-      // Retry once on error
+      // Rollback optimistic selection on failure
+      setUiStatus(complaint.status as ComplaintStatus);
+
       if (retryCount === 0 && !isRetry) {
         setRetryCount(1);
         setTimeout(() => {
@@ -182,8 +194,7 @@ export default function EnhancedComplaintDetailDrawer({
         }, 100);
         return;
       }
-      
-      // Show inline error after retry failure
+
       setStatusError(err instanceof Error ? err.message : 'Failed to update status');
     } finally {
       setIsUpdatingStatus(false);
@@ -238,11 +249,48 @@ export default function EnhancedComplaintDetailDrawer({
     }
   };
 
+  const handleDeleteAttachment = async (attachment: Attachment) => {
+    try {
+      // Confirm with i18n
+      const message = t('confirmDeleteAttachment') || 'Delete this attachment?';
+      if (!window.confirm(message)) return;
+
+      const res = await fetch(`/api/complaints/attachments/${attachment.id}`, {
+        method: 'DELETE',
+      });
+
+      if (!res.ok) {
+        throw new Error(`Failed to delete attachment: ${res.statusText}`);
+      }
+
+      // Remove from local list
+      setAttachments(prev => prev.filter(a => a.id !== attachment.id));
+      // If none left, update complaint store so UI reacts
+      if (attachments.length - 1 <= 0 && complaint) {
+        complaintsStore.updateComplaintInCache({ ...complaint, has_attachments: false });
+        onUpdate({ has_attachments: false as any });
+      }
+    } catch (err) {
+      console.error('Failed to delete attachment:', err);
+      setError(err instanceof Error ? err.message : 'Failed to delete attachment');
+    }
+  };
+
   useEffect(() => {
     if (complaint?.has_attachments) {
       fetchAttachments();
     }
   }, [complaint?.id, complaint?.has_attachments]);
+
+  // Keep local UI status in sync with complaint prop (normalize any 'closed' -> 'resolved')
+  useEffect(() => {
+    if (complaint?.status) {
+      const incoming = complaint.status as ComplaintStatus;
+      setUiStatus(incoming);
+    } else {
+      setUiStatus(null);
+    }
+  }, [complaint?.status]);
 
   // Animation control:
   // - First ever open per complaint in a session: run animations
@@ -285,8 +333,10 @@ export default function EnhancedComplaintDetailDrawer({
     return issueTypes[issueType] || issueType;
   };
 
-  const getStatusDisplay = (status: ComplaintStatus) => {
-    switch (status) {
+  // Accept string to avoid TS literal mismatch when server might surface "closed"
+  const getStatusDisplay = (status: string) => {
+    const normalized = (status === 'closed' ? 'resolved' : status) as ComplaintStatus;
+    switch (normalized) {
       case 'open':
         return { label: 'Open', color: 'text-blue-800', bgColor: 'bg-blue-100', icon: '⚪' };
       case 'in_progress':
@@ -294,14 +344,19 @@ export default function EnhancedComplaintDetailDrawer({
       case 'resolved':
         return { label: 'Resolved', color: 'text-green-800', bgColor: 'bg-green-100', icon: '✅' };
       default:
-        return { label: status, color: 'text-gray-800', bgColor: 'bg-gray-100', icon: '⚪' };
+        return { label: normalized, color: 'text-gray-800', bgColor: 'bg-gray-100', icon: '⚪' };
     }
   };
 
   const renderStatusDropdown = () => {
     if (!complaint) return null;
-    
-    const currentStatus = getStatusDisplay(complaint.status);
+
+    // If a status update is in-flight, lock the dropdown to uiStatus (optimistic),
+    // else use latest from props with normalization.
+    const raw = (uiStatus ?? complaint.status) as any;
+    const normalizedDisplay = (raw === 'closed' ? 'resolved' : raw) as ComplaintStatus;
+
+    const currentStatus = getStatusDisplay(normalizedDisplay);
     const statusOptions: ComplaintStatus[] = ['open', 'in_progress', 'resolved'];
     
     return (
@@ -309,10 +364,14 @@ export default function EnhancedComplaintDetailDrawer({
         <label className="text-xs font-medium text-gray-600">Status</label>
         <div className="relative">
           <select
-            value={complaint.status}
+            value={normalizedDisplay}
             onChange={(e) => {
               e.preventDefault();
-              handleStatusChange(e.target.value as ComplaintStatus);
+              const next = e.target.value as ComplaintStatus;
+              // Optimistically update and prevent immediate prop overwrite flicker
+              setUiStatus(next);
+              // Make the network call; the success handler will persist the same value
+              handleStatusChange(next);
             }}
             disabled={isUpdatingStatus}
             className={`
@@ -330,6 +389,8 @@ export default function EnhancedComplaintDetailDrawer({
                 </option>
               );
             })}
+            {/* Also handle potential outward "closed" status from API by mapping in UI */}
+            <option value="resolved" hidden>Resolved</option>
           </select>
           
           {/* Animated caret/spinner */}
@@ -369,7 +430,7 @@ export default function EnhancedComplaintDetailDrawer({
           <div className="mt-2">
             <AnimatePresence mode="wait">
               <motion.div
-                key={complaint.status}
+                key={normalizedDisplay}
                 initial={{ opacity: 0, y: -4 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 4 }}
@@ -699,7 +760,7 @@ export default function EnhancedComplaintDetailDrawer({
                        {isLoadingAttachments ? (
                          <div className="flex items-center justify-center py-4">
                            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-600"></div>
-                           <span className="ml-2 text-sm text-gray-600">Loading files...</span>
+                           <span className="ml-2 text-sm text-gray-600">{t('loadingFiles') || 'Loading files...'}</span>
                          </div>
                        ) : attachments.length > 0 ? (
                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -719,20 +780,29 @@ export default function EnhancedComplaintDetailDrawer({
                                    </p>
                                  </div>
                                </div>
-                               <button
-                                 onClick={() => handleDownloadFile(attachment)}
-                                 className="ml-3 inline-flex items-center px-3 py-1.5 text-xs font-medium text-purple-600 bg-purple-50 rounded-md hover:bg-purple-100 transition-colors flex-shrink-0"
-                                 title={`Download ${attachment.original_filename}`}
-                               >
-                                 <Download className="h-3 w-3 mr-1" />
-                                 Download
-                               </button>
+                               <div className="flex items-center gap-2 flex-shrink-0">
+                                 <button
+                                   onClick={() => handleDownloadFile(attachment)}
+                                   className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-purple-600 bg-purple-50 rounded-md hover:bg-purple-100 transition-colors"
+                                   title={t('downloadAttachment') || `Download ${attachment.original_filename}`}
+                                 >
+                                   <Download className="h-3 w-3 mr-1" />
+                                   {t('download') || 'Download'}
+                                 </button>
+                                 <button
+                                   onClick={() => handleDeleteAttachment(attachment)}
+                                   className="inline-flex items-center px-2 py-1.5 text-xs font-medium text-red-600 bg-red-50 rounded-md hover:bg-red-100 transition-colors"
+                                   title={t('deleteAttachment') || 'Delete attachment'}
+                                 >
+                                   <Trash2 className="h-4 w-4" />
+                                 </button>
+                               </div>
                              </div>
                            ))}
                          </div>
                        ) : (
                          <p className="text-sm text-gray-500 text-center py-4">
-                           No files attached
+                           {t('noFilesAttached') || 'No files attached'}
                          </p>
                        )}
                      </div>

@@ -12,14 +12,25 @@ const apiClient: AxiosInstance = axios.create({
 });
 
 // Add request interceptor for trailing slash normalization
-// IMPORTANT: Only normalize when there is no query string.
-// Normalizing URLs that already include ? can produce "/endpoint/?query"
-// which may be treated differently by strict routers or proxies.
+// IMPORTANT:
+// - Only normalize when there is no query string.
+// - Do NOT normalize multipart/form-data requests (file uploads), because
+//   strict routers that disable redirect_slashes will not redirect and will 404.
+//   Also, some proxies may reset connections on POST redirects/rewrites.
 apiClient.interceptors.request.use(
   (config) => {
     if (config.url) {
       const hasQuery = config.url.includes('?') || config.url.includes('#');
-      if (!hasQuery) {
+
+      // Detect multipart/form-data to skip normalization (uploads)
+      const contentType =
+        (config.headers && (config.headers as any)['Content-Type']) ||
+        (config.headers && (config.headers as any)['content-type']) ||
+        '';
+
+      const isMultipart = typeof contentType === 'string' && contentType.toLowerCase().includes('multipart/form-data');
+
+      if (!hasQuery && !isMultipart) {
         config.url = ensureTrailingSlash(config.url);
       }
     }
