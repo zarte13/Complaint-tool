@@ -3,6 +3,7 @@ import axios from 'axios';
 import { motion } from 'framer-motion';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import { TrendingUp, AlertTriangle, CheckCircle, XCircle } from 'lucide-react';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface RARMetrics {
   returnRate: number;
@@ -23,6 +24,7 @@ interface Trends {
 }
 
 const DashboardPage: React.FC = () => {
+  const { t } = useLanguage();
   const { data: rarMetrics, isLoading: loadingRAR } = useQuery<RARMetrics>(
     'rarMetrics',
     () => axios.get('/api/analytics/rar-metrics').then(res => res.data),
@@ -41,26 +43,26 @@ const DashboardPage: React.FC = () => {
 
   if (loadingRAR || loadingFailure || loadingTrends) {
     return (
-      <motion.div 
+      <motion.div
         className="min-h-screen bg-gray-50 flex items-center justify-center"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5 }}
       >
         <div className="text-center">
-          <motion.div 
+          <motion.div
             className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             transition={{ duration: 0.3 }}
           />
-          <motion.p 
+          <motion.p
             className="mt-4 text-gray-600"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3, delay: 0.2 }}
           >
-            Loading dashboard...
+            {t('loadingDashboard')}
           </motion.p>
         </div>
       </motion.div>
@@ -86,7 +88,7 @@ const DashboardPage: React.FC = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          Command Center Dashboard
+          {t('dashboardTitle')}
         </motion.h1>
         
         {/* RAR Metrics Cards */}
@@ -106,7 +108,7 @@ const DashboardPage: React.FC = () => {
                 <AlertTriangle className="h-6 w-6 text-red-600" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Return Rate</p>
+                <p className="text-sm font-medium text-gray-600">{t('rarReturnRate')}</p>
                 <p className="text-2xl font-bold text-gray-900">{rarMetrics?.returnRate.toFixed(1)}%</p>
               </div>
             </div>
@@ -122,7 +124,7 @@ const DashboardPage: React.FC = () => {
                 <CheckCircle className="h-6 w-6 text-green-600" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Authorization Rate</p>
+                <p className="text-sm font-medium text-gray-600">{t('rarAuthorizationRate')}</p>
                 <p className="text-2xl font-bold text-gray-900">{rarMetrics?.authorizationRate.toFixed(1)}%</p>
               </div>
             </div>
@@ -138,7 +140,7 @@ const DashboardPage: React.FC = () => {
                 <XCircle className="h-6 w-6 text-orange-600" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Rejection Rate</p>
+                <p className="text-sm font-medium text-gray-600">{t('rarRejectionRate')}</p>
                 <p className="text-2xl font-bold text-gray-900">{rarMetrics?.rejectionRate.toFixed(1)}%</p>
               </div>
             </div>
@@ -154,7 +156,7 @@ const DashboardPage: React.FC = () => {
                 <TrendingUp className="h-6 w-6 text-blue-600" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Total Complaints</p>
+                <p className="text-sm font-medium text-gray-600">{t('rarTotalComplaints')}</p>
                 <p className="text-2xl font-bold text-gray-900">{rarMetrics?.totalComplaints}</p>
               </div>
             </div>
@@ -169,7 +171,7 @@ const DashboardPage: React.FC = () => {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5, delay: 0.4 }}
           >
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Complaint Trends (30 Days)</h2>
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('trendsTitle')}</h2>
             <ResponsiveContainer width="100%" height={300}>
               <LineChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" />
@@ -188,7 +190,7 @@ const DashboardPage: React.FC = () => {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5, delay: 0.4 }}
           >
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Top 3 Failure Modes</h2>
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('failureModesTitle')}</h2>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={failureModes}>
                 <CartesianGrid strokeDasharray="3 3" />

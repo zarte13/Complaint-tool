@@ -173,6 +173,16 @@ export interface Translations {
   resetZoom: string;
   downloadImage: string;
   failedToLoadImage: string;
+
+  // Dashboard
+  dashboardTitle: string;
+  loadingDashboard: string;
+  rarReturnRate: string;
+  rarAuthorizationRate: string;
+  rarRejectionRate: string;
+  rarTotalComplaints: string;
+  trendsTitle: string;
+  failureModesTitle: string;
 }
 
 // Relax type to avoid requiring all keys during iteration; runtime access stays the same
@@ -316,7 +326,17 @@ export const translations: Record<'en' | 'fr', Partial<Translations>> = {
     zoomOut: 'Zoom Out',
     resetZoom: 'Reset Zoom',
     downloadImage: 'Download',
-    failedToLoadImage: 'Failed to load image'
+    failedToLoadImage: 'Failed to load image',
+
+    // Dashboard
+    dashboardTitle: 'Command Center Dashboard',
+    loadingDashboard: 'Loading dashboard...',
+    rarReturnRate: 'Return Rate',
+    rarAuthorizationRate: 'Authorization Rate',
+    rarRejectionRate: 'Rejection Rate',
+    rarTotalComplaints: 'Total Complaints',
+    trendsTitle: 'Complaint Trends (30 Days)',
+    failureModesTitle: 'Top 3 Failure Modes'
   },
   fr: {
     navHome: 'Accueil',
@@ -457,6 +477,16 @@ export const translations: Record<'en' | 'fr', Partial<Translations>> = {
     zoomOut: 'Réduire',
     resetZoom: 'Réinitialiser le zoom',
     downloadImage: 'Télécharger',
-    failedToLoadImage: 'Impossible de charger l\'image'
+    failedToLoadImage: 'Impossible de charger l\'image',
+
+    // Dashboard
+    dashboardTitle: 'Tableau de bord du centre de commande',
+    loadingDashboard: 'Chargement du tableau de bord...',
+    rarReturnRate: 'Taux de retour',
+    rarAuthorizationRate: 'Taux d\'autorisation',
+    rarRejectionRate: 'Taux de rejet',
+    rarTotalComplaints: 'Nombre total de plaintes',
+    trendsTitle: 'Tendances des plaintes (30 jours)',
+    failureModesTitle: 'Top 3 des modes de défaillance'
   },
 };
