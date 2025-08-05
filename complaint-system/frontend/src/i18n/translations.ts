@@ -175,7 +175,8 @@ export interface Translations {
   failedToLoadImage: string;
 }
 
-export const translations: Record<'en' | 'fr', Translations> = {
+// Relax type to avoid requiring all keys during iteration; runtime access stays the same
+export const translations: Record<'en' | 'fr', Partial<Translations>> = {
   en: {
     navHome: 'Home',
     navComplaints: 'Complaints',

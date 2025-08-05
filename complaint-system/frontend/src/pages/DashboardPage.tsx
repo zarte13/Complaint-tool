@@ -1,7 +1,6 @@
-import React from 'react';
 import { useQuery } from 'react-query';
 import axios from 'axios';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import { TrendingUp, AlertTriangle, CheckCircle, XCircle } from 'lucide-react';
 

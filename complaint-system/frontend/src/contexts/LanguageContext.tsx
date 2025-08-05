@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { translations, Translations } from '../i18n/translations';
 
 type Language = 'en' | 'fr';
@@ -27,7 +27,8 @@ export function LanguageProvider({ children }: LanguageProviderProps) {
   }, [language]);
 
   const t = (key: keyof Translations): string => {
-    return translations[language][key] || translations.en[key];
+    const val = (translations[language] as Partial<Translations>)[key] ?? (translations.en as Partial<Translations>)[key];
+    return (val as string) ?? '';
   };
 
   const setLanguageWithValidation = (lang: Language) => {

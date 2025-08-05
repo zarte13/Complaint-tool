@@ -1,6 +1,6 @@
-import React from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useComplaints } from '../hooks/useComplaints';
+import { Calendar, User, Package, Paperclip } from 'lucide-react';
 import { ComplaintStatus, IssueType } from '../types';
 import StatusFilter from '../components/StatusFilter/StatusFilter';
 
@@ -239,6 +239,7 @@ export default function ComplaintListView() {
 
                         <div className="flex items-center space-x-4 text-sm text-gray-500">
                           <div className="flex items-center">
+                            {/* icons */}
                             <Calendar className="h-4 w-4 mr-1" />
                             {formatDate(complaint.created_at)}
                           </div>
@@ -272,35 +273,32 @@ export default function ComplaintListView() {
     </div>
   );
 }
+// Helper functions (unused helpers commented cleanly to avoid TS errors)
+// const getIssueTypeColor = (issueType: string) => {
+//   switch (issueType) {
+//     case 'wrong_quantity':
+//       return 'bg-blue-100 text-blue-800';
+//     case 'wrong_part':
+//       return 'bg-purple-100 text-purple-800';
+//     case 'damaged':
+//       return 'bg-red-100 text-red-800';
+//     case 'other':
+//       return 'bg-gray-100 text-gray-800';
+//     default:
+//       return 'bg-gray-100 text-gray-800';
+//   }
+// };
 
-// Helper functions
-const getIssueTypeColor = (issueType: string) => {
-  switch (issueType) {
-    case 'wrong_quantity':
-      return 'bg-blue-100 text-blue-800';
-    case 'wrong_part':
-      return 'bg-purple-100 text-purple-800';
-    case 'damaged':
-      return 'bg-red-100 text-red-800';
-    case 'other':
-      return 'bg-gray-100 text-gray-800';
-    default:
-      return 'bg-gray-100 text-gray-800';
-  }
-};
-
-const getIssueTypeDisplay = (issueType: string) => {
-  const issueTypeMap: Record<string, string> = {
-    wrong_quantity: 'wrongQuantity',
-    wrong_part: 'wrongPart',
-    damaged: 'damaged',
-    other: 'other',
-  };
-
-  const key = issueTypeMap[issueType] || 'other';
-  const translated = key; // This will use the translation system
-  return translated ? translated.toUpperCase() : issueType.toUpperCase();
-};
+// const getIssueTypeDisplay = (issueType: string) => {
+//   const issueTypeMap: Record<string, string> = {
+//     wrong_quantity: 'wrongQuantity',
+//     wrong_part: 'wrongPart',
+//     damaged: 'damaged',
+//     other: 'other',
+//   };
+//   const key = issueTypeMap[issueType] || 'other';
+//   return key.toUpperCase();
+// };
 
 const formatDate = (dateString: string) => {
   return new Date(dateString).toLocaleDateString('en-US', {
@@ -313,4 +311,3 @@ const formatDate = (dateString: string) => {
 };
 
 // Import necessary icons
-import { Calendar, User, Package, Paperclip } from 'lucide-react';

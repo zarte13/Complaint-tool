@@ -88,18 +88,39 @@ async def get_complaints(
             )
         )
     
-    # Status filter - support both single status and multiple statuses
+    # Status filter - support both single status and multiple statuses (comma-separated or repeated)
     if status:
+        def _normalize_status_value(s: str) -> Optional[str]:
+            s_lower = s.strip().lower()
+            if not s_lower:
+                return None
+            if s_lower == "closed":
+                return "resolved"
+            if s_lower in {"open", "in_progress", "resolved"}:
+                return s_lower
+            return None
+
         if isinstance(status, str):
-            # Handle comma-separated status values
-            if ',' in status:
-                status_list = [s.strip() for s in status.split(',')]
-                query = query.filter(Complaint.status.in_(status_list))
-            else:
-                query = query.filter(Complaint.status == status)
+            raw_list = [seg for seg in (status.split(",") if "," in status else [status])]
         elif isinstance(status, list):
-            # Handle list of statuses
-            query = query.filter(Complaint.status.in_(status))
+            raw_list = status
+        else:
+            raw_list = []
+
+        norm_list: List[str] = []
+        for seg in raw_list:
+            norm = _normalize_status_value(str(seg))
+            if norm:
+                norm_list.append(norm)
+
+        # Deduplicate while preserving order
+        norm_list = list(dict.fromkeys(norm_list))
+
+        if len(norm_list) == 1:
+            query = query.filter(Complaint.status == norm_list[0])
+        elif len(norm_list) > 1:
+            query = query.filter(Complaint.status.in_(norm_list))
+        # If no valid statuses after normalization, leave query unchanged
     
     # Issue type filter
     if issue_type:
@@ -185,8 +206,18 @@ async def update_complaint(
         raise HTTPException(status_code=404, detail="Complaint not found")
     
     update_data = complaint_update.dict(exclude_unset=True)
+    # ComplaintUpdate.status is normalized in schema to canonical values ("open", "in_progress", "resolved")
+    # Still defensively handle legacy "closed" if it appears
+    if "status" in update_data and isinstance(update_data["status"], str):
+        status_val = update_data["status"].strip().lower()
+        if status_val == "closed":
+            update_data["status"] = "resolved"
     for field, value in update_data.items():
         setattr(complaint, field, value)
+
+    # Ensure default status is "open" if not explicitly set on creation elsewhere
+    if not complaint.status:
+        complaint.status = "open"
     
     db.commit()
     db.refresh(complaint)
@@ -366,7 +397,11 @@ async def export_csv(
         )
     
     if status:
-        query = query.filter(Complaint.status == status)
+        # Normalize "closed" synonym to canonical "resolved"
+        norm_status = status.lower()
+        if norm_status == "closed":
+            norm_status = "resolved"
+        query = query.filter(Complaint.status == norm_status)
     
     if issue_type:
         query = query.filter(Complaint.issue_type == issue_type)
@@ -463,7 +498,11 @@ async def export_excel(
         )
     
     if status:
-        query = query.filter(Complaint.status == status)
+        # Normalize "closed" synonym to canonical "resolved"
+        norm_status = status.lower()
+        if norm_status == "closed":
+            norm_status = "resolved"
+        query = query.filter(Complaint.status == norm_status)
     
     if issue_type:
         query = query.filter(Complaint.issue_type == issue_type)

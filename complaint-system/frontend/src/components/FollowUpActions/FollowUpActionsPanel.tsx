@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { FollowUpAction, FollowUpActionUpdate } from '../../types';
 import { useFollowUpActions } from '../../hooks/useFollowUpActions';
 import { ActionCard } from './ActionCard';
@@ -31,7 +31,7 @@ export const FollowUpActionsPanel: React.FC<FollowUpActionsPanelProps> = ({
     reorderActions,
     filterByStatus,
     filterByPerson,
-    showOverdueOnly,
+    // showOverdueOnly, // not used directly in this component
     filters
   } = useFollowUpActions({ complaintId });
 
@@ -84,36 +84,10 @@ export const FollowUpActionsPanel: React.FC<FollowUpActionsPanelProps> = ({
 
   // Action handling now done by ActionCard component
 
-  // Toggle action status (checkbox functionality)
-  // Deprecated: handled in ActionCard
-  const toggleActionStatus = async (_action: FollowUpAction) => {
-    if (!isEditable) return;
-    
-    const newStatus = _action.status === 'closed' ? 'open' : 'closed';
-    const updates: FollowUpActionUpdate = { status: newStatus, ...(newStatus === 'closed' ? { completion_percentage: 100 } : { completion_percentage: 0 }) };
-    
-    try {
-      await updateAction(_action.id, updates);
-    } catch (err) {
-      console.error('Failed to toggle action status:', err);
-    }
-  };
+  // Toggle action status is handled within ActionCard; legacy helper removed to satisfy TS6133
+  // const toggleActionStatus = async (_action: FollowUpAction) => { ... }
 
-  // Format date for display
-  // Deprecated local formatter (kept for reference)
-  const formatDate = (dateString?: string) => {
-    if (!dateString) return null;
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffTime = date.getTime() - now.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
-    if (diffDays < 0) return `${Math.abs(diffDays)}j retard`;
-    if (diffDays === 0) return "Aujourd'hui";
-    if (diffDays === 1) return "Demain";
-    if (diffDays <= 7) return `${diffDays}j`;
-    return date.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
-  };
+  // Local date formatter removed (unused) to satisfy TS6133
 
   if (loading) {
     return (

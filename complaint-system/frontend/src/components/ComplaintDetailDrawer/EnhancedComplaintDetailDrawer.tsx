@@ -33,7 +33,8 @@ export default function EnhancedComplaintDetailDrawer({
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const [statusError, setStatusError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
-  const [hasAnimated, setHasAnimated] = useState(false);
+  // Removed unused hasAnimated state to satisfy TS6133
+  // const [hasAnimated, setHasAnimated] = useState(false);
   const tilesContainerRef = useRef<HTMLDivElement>(null);
 
   const dateLocale = language === 'fr' ? fr : enUS;
@@ -254,20 +255,13 @@ export default function EnhancedComplaintDetailDrawer({
     const hasAnimatedInSession = sessionStorage.getItem(sessionKey);
 
     if (hasAnimatedInSession) {
-      // Already animated once this session for this complaint -> no animation, but ensure visible
-      setHasAnimated(true);
+      // Already animated once this session for this complaint -> skip animation
       return;
     }
 
-    // We want to animate on the first time only.
-    // Ensure content is visible and allow motion initial transitions to run.
-    // Flip hasAnimated after a short frame delay so initial props apply once.
+    // Mark as animated for the rest of the session to avoid re-animations
     const timeout = requestAnimationFrame(() => {
-      // Mark as animated for the rest of the session to avoid re-animations
       sessionStorage.setItem(sessionKey, 'true');
-      setHasAnimated(false); // keep false to allow initial variants
-      // After a tiny timeout, set true so any children that depend on visibility are stable
-      setTimeout(() => setHasAnimated(true), 0);
     });
 
     return () => {

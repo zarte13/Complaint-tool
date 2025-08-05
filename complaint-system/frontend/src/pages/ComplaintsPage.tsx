@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { Complaint, ComplaintStatus, IssueType } from '../types';
 import { get, put, ensureTrailingSlash } from '../services/api';
@@ -11,8 +11,8 @@ export default function ComplaintsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<ComplaintStatus[]>([]);
   const [issueTypeFilter, setIssueTypeFilter] = useState<IssueType | ''>('');
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [page] = useState(1);
+  const [pageSize] = useState(10);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [selectedComplaint, setSelectedComplaint] = useState<Complaint | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -42,10 +42,10 @@ export default function ComplaintsPage() {
     }
   };
 
-  const handleComplaintClick = (complaint: Complaint) => {
-    setSelectedComplaint(complaint);
-    setIsDrawerOpen(true);
-  };
+  // const handleComplaintClick = (complaint: Complaint) => {
+  //   setSelectedComplaint(complaint);
+  //   setIsDrawerOpen(true);
+  // };
 
   const handleDrawerClose = () => {
     setIsDrawerOpen(false);

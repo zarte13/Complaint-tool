@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Search, Plus } from 'lucide-react';
 import { useParts } from '../../hooks/useParts';
 import { Part } from '../../types';

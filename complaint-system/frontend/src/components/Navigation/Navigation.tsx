@@ -1,4 +1,3 @@
-import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Home, FileText, BarChart3 } from 'lucide-react';
 import LanguageToggle from '../LanguageToggle/LanguageToggle';

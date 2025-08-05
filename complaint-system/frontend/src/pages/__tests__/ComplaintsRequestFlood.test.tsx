@@ -1,4 +1,3 @@
-import React from 'react';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, waitFor, screen, act } from '../../test/test-utils';
 import HomePage from '../../pages/HomePage';

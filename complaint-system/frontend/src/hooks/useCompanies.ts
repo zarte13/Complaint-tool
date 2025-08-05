@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { companiesApi } from '../services/api';
 import { Company } from '../types';
 import { debounce } from '../utils';

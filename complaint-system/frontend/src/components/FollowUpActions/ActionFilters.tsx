@@ -1,4 +1,3 @@
-import React from 'react';
 import { ActionStatus, ResponsiblePerson } from '../../types';
 
 interface ActionFiltersProps {
@@ -19,7 +18,7 @@ export const ActionFilters: React.FC<ActionFiltersProps> = ({
   responsiblePersons,
   onStatusFilter,
   onPersonFilter,
-  onOverdueFilter,
+  // onOverdueFilter, // currently not used in UI
   className = ''
 }) => {
   // i18n hook not used here; left out to avoid TS6133

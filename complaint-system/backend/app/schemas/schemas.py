@@ -74,8 +74,23 @@ class ComplaintCreate(ComplaintBase):
     pass
 
 class ComplaintUpdate(BaseModel):
-    status: Optional[ComplaintStatus] = None
+    # Accept broader inputs for status to support legacy synonyms like "closed"
+    status: Optional[str] = None
     details: Optional[str] = Field(None, min_length=10)
+
+    @validator('status')
+    def normalize_status(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return v
+        s = v.strip().lower()
+        # Map external synonym "closed" to canonical internal "resolved"
+        if s == "closed":
+            return "resolved"
+        # Allow only known canonical values
+        allowed = {"open", "in_progress", "resolved"}
+        if s not in allowed:
+            raise ValueError(f"Invalid status '{v}'. Allowed: open, in_progress, resolved (or 'closed' synonym).")
+        return s
 
 class ComplaintResponse(BaseModel):
     id: int
@@ -89,7 +104,8 @@ class ComplaintResponse(BaseModel):
     occurrence: Optional[str]
     part_received: Optional[str]
     human_factor: bool
-    status: ComplaintStatus
+    # Present-friendly: expose "closed" instead of canonical "resolved"
+    status: str
     has_attachments: bool
     created_at: datetime
     updated_at: datetime
@@ -97,6 +113,14 @@ class ComplaintResponse(BaseModel):
     
     class Config:
         from_attributes = True
+
+    @validator("status", pre=True)
+    def present_status_alias(cls, v):
+        # v may be enum or string
+        sval = str(v).lower() if v is not None else v
+        if sval == "resolved":
+            return "closed"
+        return sval
 
 # Attachment schemas
 class AttachmentResponse(BaseModel):

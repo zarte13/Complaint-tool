@@ -144,17 +144,22 @@ export function useComplaints(): UseComplaintsReturn {
       params.append('sort_by', sort.column);
       params.append('sort_order', sort.direction);
       
-      const response = await get(`${ensureTrailingSlash('/api/complaints')}?${params.toString()}`);
+      type ComplaintSearchResponse = {
+        items: Complaint[];
+        pagination: { page: number; size: number; total: number; total_pages: number };
+      };
+      const response = await get<ComplaintSearchResponse>(`${ensureTrailingSlash('/api/complaints')}?${params.toString()}`);
+      const data = response.data as ComplaintSearchResponse;
       
       // Update both local state and cache
-      setComplaints(response.data.items);
-      setTotal(response.data.pagination.total);
-      setTotalPages(response.data.pagination.total_pages);
+      setComplaints(data.items);
+      setTotal(data.pagination.total);
+      setTotalPages(data.pagination.total_pages);
       
       complaintsStore.setCachedData(
         query,
-        response.data.items,
-        response.data.pagination
+        data.items,
+        data.pagination
       );
     } catch (err: any) {
       const errorMsg = err.response?.data?.detail || 'Failed to load complaints';
@@ -247,11 +252,11 @@ export function useComplaints(): UseComplaintsReturn {
     }
     
     try {
-      const response = await get(`${ensureTrailingSlash('/api/complaints')}export/${format}?${params.toString()}`, {
+      const response = await get<Blob>(`${ensureTrailingSlash('/api/complaints')}export/${format}?${params.toString()}`, {
         responseType: 'blob',
       });
       
-      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const url = window.URL.createObjectURL(new Blob([response.data as unknown as BlobPart]));
       const link = document.createElement('a');
       link.href = url;
       link.setAttribute('download', `complaints.${format}`);
