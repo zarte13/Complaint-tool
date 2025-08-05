@@ -57,6 +57,11 @@ export interface Translations {
   wrongPart: string;
   damaged: string;
   other: string;
+
+  // Status display (complaint)
+  statusOpenLabel: string;
+  statusInProgressLabel: string;
+  statusClosedLabel: string;
   
   // Fields
   workOrderNumber: string;
@@ -241,6 +246,11 @@ export const translations: Record<'en' | 'fr', Partial<Translations>> = {
     wrongPart: 'Wrong Part',
     damaged: 'Damaged',
     other: 'Other',
+
+    // Status display (complaint)
+    statusOpenLabel: 'Open',
+    statusInProgressLabel: 'In Progress',
+    statusClosedLabel: 'Closed',
     
     // Fields
     workOrderNumber: 'Work Order Number *',
@@ -388,10 +398,15 @@ export const translations: Record<'en' | 'fr', Partial<Translations>> = {
     
     // Form Options
     selectIssueType: 'Sélectionner le type de problème',
-    wrongQuantity: 'Mauvaise Quantité',
-    wrongPart: 'Mauvaise Pièce',
+    wrongQuantity: 'Mauvaise quantité',
+    wrongPart: 'Mauvaise pièce',
     damaged: 'Endommagé',
     other: 'Autre',
+
+    // Status display (complaint)
+    statusOpenLabel: 'Ouverte',
+    statusInProgressLabel: 'En cours',
+    statusClosedLabel: 'Fermée',
     
     // Fields
     workOrderNumber: 'Numéro de bon de travail (BT) *',

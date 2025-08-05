@@ -104,10 +104,10 @@ export default function ComplaintsPage() {
                 className="px-3 py-2 border border-gray-300 rounded-md"
               >
                 <option value="">{t('allIssueTypes')}</option>
-                <option value="wrong_quantity">Wrong Quantity</option>
-                <option value="wrong_part">Wrong Part</option>
-                <option value="damaged">Damaged</option>
-                <option value="other">Other</option>
+                <option value="wrong_quantity">{t('wrongQuantity')}</option>
+                <option value="wrong_part">{t('wrongPart')}</option>
+                <option value="damaged">{t('damaged')}</option>
+                <option value="other">{t('other')}</option>
               </select>
 
               <button
