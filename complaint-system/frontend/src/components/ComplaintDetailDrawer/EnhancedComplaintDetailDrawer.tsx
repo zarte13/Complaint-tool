@@ -566,9 +566,6 @@ export default function EnhancedComplaintDetailDrawer({
                   <h2 className="text-lg font-semibold text-gray-900">
                     Complaint #{complaint.id}
                   </h2>
-                  <p className="text-sm text-gray-500">
-                    {formatRelativeDate(complaint.last_edit)}
-                  </p>
                 </div>
                 <div className="flex items-center space-x-2">
                   {isEditing ? (
@@ -728,7 +725,6 @@ export default function EnhancedComplaintDetailDrawer({
                       <div className="space-y-4">
                         {renderField('Created', formatDate(complaint.created_at))}
                         {renderField('Updated', formatDate(complaint.updated_at))}
-                        {renderField('Last Edit', formatRelativeDate(complaint.last_edit))}
                       </div>
                     </motion.div>
                   </div>

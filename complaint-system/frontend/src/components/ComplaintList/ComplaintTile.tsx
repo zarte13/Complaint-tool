@@ -81,7 +81,7 @@ export default function ComplaintTile({ complaint, onClick, onFileUploadComplete
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
           <span className="font-semibold text-gray-900">#{complaint.id}</span>
           {complaint.work_order_number && (
-            <span className="text-gray-600">WO: {complaint.work_order_number}</span>
+            <span className="text-gray-600">{t('workOrderAbbrev') || 'WO'}: {complaint.work_order_number}</span>
           )}
           <span className="text-gray-600">{complaint.company.name}</span>
         </div>

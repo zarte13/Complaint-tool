@@ -8,6 +8,7 @@ export default function HomePage() {
   const { t } = useLanguage();
 
   const handleComplaintSubmitted = () => {
+    // Increment to force refresh of the Recent Complaints list
     setRefreshTrigger(prev => prev + 1);
   };
 
@@ -20,12 +21,14 @@ export default function HomePage() {
         </p>
       </div>
 
+      {/* Two-column layout: form (left) and recent complaints (right) */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div>
           <ComplaintForm onSuccess={handleComplaintSubmitted} />
         </div>
-        
+
         <div>
+          {/* Pass only refreshTrigger so list refetches when a new complaint is created */}
           <ComplaintList refreshTrigger={refreshTrigger} />
         </div>
       </div>
