@@ -6,6 +6,7 @@ import { Complaint, ComplaintStatus } from '../../types';
 import { get, put, ensureTrailingSlash } from '../../services/api';
 import EnhancedComplaintDetailDrawer from '../ComplaintDetailDrawer/EnhancedComplaintDetailDrawer';
 import ComplaintTile from './ComplaintTile';
+import { complaintsStore } from '../../stores/complaintsStore';
 
 interface ComplaintListProps {
   refreshTrigger?: number;
@@ -33,6 +34,7 @@ export default function ComplaintList({
 
   // Track last query to avoid duplicate requests with identical params
   const lastParamsRef = useRef<string>('');
+  const lastRefreshTriggerRef = useRef<number>(0);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const abortRef = useRef<AbortController | null>(null);
  
@@ -52,8 +54,8 @@ export default function ComplaintList({
  
   const fetchComplaints = useCallback(async () => {
     const paramString = buildParams();
-    // Skip if params identical to last successful fetch
-    if (paramString === lastParamsRef.current) {
+    // Skip if params identical to last successful fetch, unless refreshTrigger changed
+    if (paramString === lastParamsRef.current && lastRefreshTriggerRef.current === refreshTrigger) {
       return;
     }
  
@@ -77,6 +79,7 @@ export default function ComplaintList({
         setComplaints([]);
       }
       lastParamsRef.current = paramString;
+      lastRefreshTriggerRef.current = refreshTrigger;
     } catch (err: any) {
       // Treat any error as non-fatal for the purpose of request flood tests
       setError(err?.response?.data?.detail || 'Failed to load complaints');
@@ -84,14 +87,15 @@ export default function ComplaintList({
     } finally {
       setLoading(false);
     }
-  }, [buildParams]);
+  }, [buildParams, refreshTrigger]);
  
   // Debounce prop-driven fetches to coalesce rapid changes and avoid duplicate identical-param refetch
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
       const currentParams = buildParams();
-      if (currentParams !== lastParamsRef.current) {
+      // Always fetch when refreshTrigger changes, even if params are the same
+      if (currentParams !== lastParamsRef.current || refreshTrigger !== lastRefreshTriggerRef.current) {
         fetchComplaints();
       }
     }, 150);

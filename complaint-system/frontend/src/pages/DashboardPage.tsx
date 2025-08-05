@@ -6,11 +6,18 @@ import { TrendingUp, AlertTriangle, CheckCircle, XCircle } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 
 interface RARMetrics {
+  // Keeping original fields in case other parts still use them
   returnRate: number;
   authorizationRate: number;
   rejectionRate: number;
   totalComplaints: number;
   period: string;
+}
+
+interface StatusCounts {
+  open: number;
+  in_progress: number;
+  resolved: number;
 }
 
 interface FailureMode {
@@ -28,7 +35,14 @@ const DashboardPage: React.FC = () => {
   const { data: rarMetrics, isLoading: loadingRAR } = useQuery<RARMetrics>(
     'rarMetrics',
     () => axios.get('/api/analytics/rar-metrics').then(res => res.data),
-    { refetchInterval: 30000 } // Refresh every 30 seconds
+    { refetchInterval: 30000 }
+  );
+
+  // New query for complaint status counts
+  const { data: statusCounts, isLoading: loadingStatusCounts } = useQuery<StatusCounts>(
+    'statusCounts',
+    () => axios.get('/api/analytics/status-counts').then(res => res.data),
+    { refetchInterval: 30000 }
   );
 
   const { data: failureModes, isLoading: loadingFailure } = useQuery<FailureMode[]>(
@@ -41,7 +55,7 @@ const DashboardPage: React.FC = () => {
     () => axios.get('/api/analytics/trends').then(res => res.data)
   );
 
-  if (loadingRAR || loadingFailure || loadingTrends) {
+  if (loadingRAR || loadingFailure || loadingTrends || loadingStatusCounts) {
     return (
       <motion.div
         className="min-h-screen bg-gray-50 flex items-center justify-center"
@@ -91,30 +105,46 @@ const DashboardPage: React.FC = () => {
           {t('dashboardTitle')}
         </motion.h1>
         
-        {/* RAR Metrics Cards */}
-        <motion.div 
-          className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8"
+        {/* KPI Cards: Complaint status counts */}
+        <motion.div
+          className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
         >
-          <motion.div 
+          <motion.div
             className="bg-white rounded-lg shadow p-6"
             whileHover={{ scale: 1.02 }}
             transition={{ type: "spring", stiffness: 300 }}
           >
             <div className="flex items-center">
-              <div className="p-2 bg-red-100 rounded-lg">
-                <AlertTriangle className="h-6 w-6 text-red-600" />
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <AlertTriangle className="h-6 w-6 text-blue-600" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">{t('rarReturnRate')}</p>
-                <p className="text-2xl font-bold text-gray-900">{rarMetrics?.returnRate.toFixed(1)}%</p>
+                <p className="text-sm font-medium text-gray-600">{t('kpiOpenCount')}</p>
+                <p className="text-2xl font-bold text-gray-900">{statusCounts?.open ?? 0}</p>
               </div>
             </div>
           </motion.div>
-          
-          <motion.div 
+
+          <motion.div
+            className="bg-white rounded-lg shadow p-6"
+            whileHover={{ scale: 1.02 }}
+            transition={{ type: "spring", stiffness: 300 }}
+          >
+            <div className="flex items-center">
+              <div className="p-2 bg-yellow-100 rounded-lg">
+                <TrendingUp className="h-6 w-6 text-yellow-600" />
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-600">{t('kpiInProgressCount')}</p>
+                <p className="text-2xl font-bold text-gray-900">{statusCounts?.in_progress ?? 0}</p>
+              </div>
+            </div>
+          </motion.div>
+
+          <motion.div
             className="bg-white rounded-lg shadow p-6"
             whileHover={{ scale: 1.02 }}
             transition={{ type: "spring", stiffness: 300 }}
@@ -124,40 +154,8 @@ const DashboardPage: React.FC = () => {
                 <CheckCircle className="h-6 w-6 text-green-600" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">{t('rarAuthorizationRate')}</p>
-                <p className="text-2xl font-bold text-gray-900">{rarMetrics?.authorizationRate.toFixed(1)}%</p>
-              </div>
-            </div>
-          </motion.div>
-          
-          <motion.div 
-            className="bg-white rounded-lg shadow p-6"
-            whileHover={{ scale: 1.02 }}
-            transition={{ type: "spring", stiffness: 300 }}
-          >
-            <div className="flex items-center">
-              <div className="p-2 bg-orange-100 rounded-lg">
-                <XCircle className="h-6 w-6 text-orange-600" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">{t('rarRejectionRate')}</p>
-                <p className="text-2xl font-bold text-gray-900">{rarMetrics?.rejectionRate.toFixed(1)}%</p>
-              </div>
-            </div>
-          </motion.div>
-          
-          <motion.div 
-            className="bg-white rounded-lg shadow p-6"
-            whileHover={{ scale: 1.02 }}
-            transition={{ type: "spring", stiffness: 300 }}
-          >
-            <div className="flex items-center">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <TrendingUp className="h-6 w-6 text-blue-600" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">{t('rarTotalComplaints')}</p>
-                <p className="text-2xl font-bold text-gray-900">{rarMetrics?.totalComplaints}</p>
+                <p className="text-sm font-medium text-gray-600">{t('kpiResolvedCount')}</p>
+                <p className="text-2xl font-bold text-gray-900">{statusCounts?.resolved ?? 0}</p>
               </div>
             </div>
           </motion.div>

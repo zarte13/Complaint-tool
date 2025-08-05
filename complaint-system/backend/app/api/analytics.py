@@ -60,3 +60,17 @@ def get_trends(db: Session = Depends(get_db)) -> Dict[str, Any]:
         "labels": [str(result.date) for result in daily_counts],
         "data": [result.count for result in daily_counts]
     }
+
+@router.get("/status-counts")
+def get_status_counts(db: Session = Depends(get_db)) -> Dict[str, Any]:
+    """Get complaint counts by status (open, in_progress, resolved)."""
+    # Count complaints by status
+    open_count = db.query(Complaint).filter(Complaint.status == "open").count()
+    in_progress_count = db.query(Complaint).filter(Complaint.status == "in_progress").count()
+    resolved_count = db.query(Complaint).filter(Complaint.status == "resolved").count()
+    
+    return {
+        "open": open_count,
+        "in_progress": in_progress_count,
+        "resolved": resolved_count
+    }

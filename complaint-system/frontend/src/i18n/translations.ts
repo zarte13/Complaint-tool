@@ -185,10 +185,9 @@ export interface Translations {
   // Dashboard
   dashboardTitle: string;
   loadingDashboard: string;
-  rarReturnRate: string;
-  rarAuthorizationRate: string;
-  rarRejectionRate: string;
-  rarTotalComplaints: string;
+  kpiOpenCount: string;
+  kpiInProgressCount: string;
+  kpiResolvedCount: string;
   trendsTitle: string;
   failureModesTitle: string;
 
@@ -355,10 +354,9 @@ export const translations: Record<'en' | 'fr', Partial<Translations>> = {
     // Dashboard
     dashboardTitle: 'Command Center Dashboard',
     loadingDashboard: 'Loading dashboard...',
-    rarReturnRate: 'Return Rate',
-    rarAuthorizationRate: 'Authorization Rate',
-    rarRejectionRate: 'Rejection Rate',
-    rarTotalComplaints: 'Total Complaints',
+    kpiOpenCount: 'Number of open complaints',
+    kpiInProgressCount: 'Number of in progress complaints',
+    kpiResolvedCount: 'Number of resolved complaints',
     trendsTitle: 'Complaint Trends (30 Days)',
     failureModesTitle: 'Top 3 Failure Modes'
   },
@@ -514,10 +512,9 @@ export const translations: Record<'en' | 'fr', Partial<Translations>> = {
     // Dashboard
     dashboardTitle: 'Tableau de bord du centre de commande',
     loadingDashboard: 'Chargement du tableau de bord...',
-    rarReturnRate: 'Taux de retour',
-    rarAuthorizationRate: 'Taux d\'autorisation',
-    rarRejectionRate: 'Taux de rejet',
-    rarTotalComplaints: 'Nombre total de plaintes',
+    kpiOpenCount: 'Nombre de réclamations ouvertes',
+    kpiInProgressCount: 'Nombre de réclamations en cours',
+    kpiResolvedCount: 'Nombre de réclamations résolues',
     trendsTitle: 'Tendances des plaintes (30 jours)',
     failureModesTitle: 'Top 3 des modes de défaillance'
   },

@@ -72,6 +72,7 @@ export default function ComplaintForm({ onSuccess }: ComplaintFormProps) {
   };
 
   const handlePartChange = (part: Part) => {
+    if (!part) return;
     setSelectedPart(part);
     setValue('part_id', part.id);
   };

@@ -564,7 +564,7 @@ export default function EnhancedComplaintDetailDrawer({
               <div className="flex items-center justify-between">
                 <div>
                   <h2 className="text-lg font-semibold text-gray-900">
-                    Complaint #{complaint.id}
+                    {t('complaintDetails') || 'Complaint Details'} #{complaint.id}
                   </h2>
                 </div>
                 <div className="flex items-center space-x-2">
@@ -659,10 +659,9 @@ export default function EnhancedComplaintDetailDrawer({
                         {t('basicInformation')}
                       </h3>
                       <div className="space-y-4">
-                        {renderField('ID', complaint.id)}
-                        {renderField('Customer Company', complaint.company.name)}
-                        {renderField('Part Number', complaint.part.part_number)}
-                        {renderField('Issue Type', getIssueTypeDisplay(complaint.issue_type))}
+                        {renderField(t('customerCompany') || 'Customer Company', complaint.company.name)}
+                        {renderField(t('partNumber') || 'Part Number', complaint.part.part_number)}
+                        {renderField(t('issueType') || 'Issue Type', getIssueTypeDisplay(complaint.issue_type))}
                         {renderStatusDropdown()}
                       </div>
                     </motion.div>
@@ -680,14 +679,14 @@ export default function EnhancedComplaintDetailDrawer({
                         {t('orderDetails')}
                       </h3>
                       <div className="space-y-4">
-                        {renderField('Work Order Number', complaint.work_order_number, 'work_order_number')}
+                        {renderField(t('workOrderNumber') || 'Work Order Number', complaint.work_order_number, 'work_order_number')}
                         {(complaint.issue_type === 'wrong_quantity' || complaint.issue_type === 'wrong_part') && (
                           <>
-                            {renderField('Quantity Ordered', complaint.quantity_ordered, 'quantity_ordered', 'number')}
-                            {renderField('Quantity Received', complaint.quantity_received, 'quantity_received', 'number')}
+                            {renderField(t('quantityOrdered') || 'Quantity Ordered', complaint.quantity_ordered, 'quantity_ordered', 'number')}
+                            {renderField(t('quantityReceived') || 'Quantity Received', complaint.quantity_received, 'quantity_received', 'number')}
                           </>
                         )}
-                        {renderField('Part Received', complaint.part_received, 'part_received')}
+                        {renderField(t('partReceived') || 'Part Received', complaint.part_received, 'part_received')}
                       </div>
                     </motion.div>
 
@@ -704,9 +703,9 @@ export default function EnhancedComplaintDetailDrawer({
                         {t('issueDetails')}
                       </h3>
                       <div className="space-y-4">
-                        {renderField('Occurrence', complaint.occurrence, 'occurrence')}
-                        {renderField('Human Factor', complaint.human_factor, 'human_factor', 'toggle')}
-                        {renderField('Details', complaint.details, 'details', 'textarea')}
+                        {renderField(t('occurrence') || 'Occurrence', complaint.occurrence, 'occurrence')}
+                        {renderField(t('humanFactor') || 'Human Factor', complaint.human_factor, 'human_factor', 'toggle')}
+                        {renderField(t('details') || 'Details', complaint.details, 'details', 'textarea')}
                       </div>
                     </motion.div>
 
@@ -723,8 +722,8 @@ export default function EnhancedComplaintDetailDrawer({
                         {t('systemInformation')}
                       </h3>
                       <div className="space-y-4">
-                        {renderField('Created', formatDate(complaint.created_at))}
-                        {renderField('Updated', formatDate(complaint.updated_at))}
+                        {renderField(t('createdAt') || 'Created At', formatDate(complaint.created_at))}
+                        {renderField(t('updatedAt') || 'Updated At', formatDate(complaint.updated_at))}
                       </div>
                     </motion.div>
                   </div>
