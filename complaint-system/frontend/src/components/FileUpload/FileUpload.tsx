@@ -6,6 +6,8 @@ import { post, del } from '../../services/api';
 interface FileUploadProps {
   complaintId: number;
   onUploadComplete: () => void;
+  // Optional: force a one-shot list refresh without causing loops
+  refreshTrigger?: number;
 }
 
 interface UploadedFile {
@@ -16,10 +18,12 @@ interface UploadedFile {
   thumbnail_url?: string;
 }
 
-export default function FileUpload({ complaintId, onUploadComplete }: FileUploadProps) {
+export default function FileUpload({ complaintId, onUploadComplete, refreshTrigger = 0 }: FileUploadProps) {
   const [uploading, setUploading] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [error, setError] = useState<string | null>(null);
+  // Track last refreshTrigger we used to avoid rapid repeat refreshes
+  const lastRefreshRef = useState<number>(refreshTrigger)[0];
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     setUploading(true);
@@ -39,10 +43,12 @@ export default function FileUpload({ complaintId, onUploadComplete }: FileUpload
             },
           }
         );
- 
+
         setUploadedFiles(prev => [...prev, response.data as UploadedFile]);
       }
-      
+
+      // One-shot refresh: call parent completion handler to bump refreshTrigger upstream.
+      // Parent (e.g., ComplaintList consumer) should increment a state number and pass as prop.
       onUploadComplete();
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Upload failed');
@@ -65,6 +71,8 @@ export default function FileUpload({ complaintId, onUploadComplete }: FileUpload
     try {
       await del(`/api/complaints/${complaintId}/attachments/${fileId}`);
       setUploadedFiles(prev => prev.filter(f => f.id !== fileId));
+
+      // Trigger the same one-shot refresh path
       onUploadComplete();
     } catch (err) {
       setError('Failed to remove file');

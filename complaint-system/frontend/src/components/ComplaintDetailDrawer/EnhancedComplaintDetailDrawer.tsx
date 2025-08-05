@@ -564,7 +564,7 @@ export default function EnhancedComplaintDetailDrawer({
               <div className="flex items-center justify-between">
                 <div>
                   <h2 className="text-lg font-semibold text-gray-900">
-                    {t('complaintDetails') || 'Complaint Details'} #{complaint.id}
+                    {`Complaint #${complaint.id}`}
                   </h2>
                 </div>
                 <div className="flex items-center space-x-2">

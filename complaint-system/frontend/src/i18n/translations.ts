@@ -318,6 +318,22 @@ export const translations: Record<'en' | 'fr', Partial<Translations>> = {
     noFiles: 'No files',
     extraInfo: 'Additional Information',
     
+    // Follow-up Actions Extended
+    actionsPanel: 'Follow-up Actions',
+    createNewAction: 'Add New Action',
+    actionNumber: 'Action #',
+    responsiblePerson: 'Responsible Person',
+    priority: 'Priority',
+    notes: 'Notes',
+    progress: 'Progress',
+    actionsOpen: 'open',
+    actionsOverdue: 'overdue',
+    actionsCompleted: 'completed',
+    completionRate: 'completed',
+    createFirstAction: 'Create the first action to organize the action plan',
+    actionLimit: 'Warning: You are approaching the 10 actions per complaint limit',
+    actionLimitReached: 'Limit reached: Maximum 10 actions per complaint',
+    
     // Validation
     requiredField: 'This field is required',
     minCharacters: 'Details must be at least 10 characters',
@@ -492,6 +508,22 @@ export const translations: Record<'en' | 'fr', Partial<Translations>> = {
     lastEdit: 'Dernière modification',
     editableFields: 'Champs modifiables',
     readOnlyInformation: 'Informations en lecture seule',
+    
+    // Follow-up Actions Extended
+    actionsPanel: 'Actions de Suivi',
+    createNewAction: 'Ajouter une action',
+    actionNumber: 'Action #',
+    responsiblePerson: 'Personne responsable',
+    priority: 'Priorité',
+    notes: 'Notes',
+    progress: 'Progression',
+    actionsOpen: 'ouvertes',
+    actionsOverdue: 'en retard',
+    actionsCompleted: 'complétées',
+    completionRate: 'complétées',
+    createFirstAction: 'Créez votre première action pour organiser le plan d\'action',
+    actionLimit: 'Attention: Vous approchez de la limite de 10 actions par réclamation',
+    actionLimitReached: 'Limite atteinte: Maximum 10 actions par réclamation',
     
     // Enhanced Details
     orderDetails: 'Détails de la commande',

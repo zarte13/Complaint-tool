@@ -160,6 +160,22 @@ const DashboardPage: React.FC = () => {
             </div>
           </motion.div>
         </motion.div>
+{/* RAR Metric Card */}
+<motion.div
+  className="bg-white rounded-lg shadow p-6"
+  whileHover={{ scale: 1.02 }}
+  transition={{ type: "spring", stiffness: 300 }}
+>
+  <div className="flex items-center">
+    <div className="p-2 bg-purple-100 rounded-lg">
+      <TrendingUp className="h-6 w-6 text-purple-600" />
+    </div>
+    <div className="ml-4">
+      <p className="text-sm font-medium text-gray-600">{t('returnRate') || 'Return Rate'}</p>
+      <p className="text-2xl font-bold text-gray-900">{rarMetrics?.returnRate ?? 0}%</p>
+    </div>
+  </div>
+</motion.div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Complaint Trends */}

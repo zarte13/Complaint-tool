@@ -196,12 +196,14 @@ export default function ComplaintTile({ complaint, onClick, onFileUploadComplete
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.3 }}
           >
-            <FileUpload 
-              complaintId={complaint.id} 
+            <FileUpload
+              complaintId={complaint.id}
               onUploadComplete={() => {
+                // Bubble completion to parent so ComplaintList does a one-shot refetch
                 onFileUploadComplete();
+                // Collapse the section after successful upload for clear UX
                 setIsExpanded(false);
-              }} 
+              }}
             />
           </motion.div>
         )}

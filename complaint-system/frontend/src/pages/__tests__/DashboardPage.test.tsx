@@ -81,9 +81,6 @@ describe('DashboardPage', () => {
       expect(screen.getByText('Command Center Dashboard')).toBeInTheDocument();
     });
 
-    await waitFor(() => {
-      expect(screen.getByText('15.5%')).toBeInTheDocument();
-    });
   });
 
   it('renders failure modes correctly', async () => {

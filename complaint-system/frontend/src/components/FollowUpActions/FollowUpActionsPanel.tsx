@@ -4,6 +4,7 @@ import { useFollowUpActions } from '../../hooks/useFollowUpActions';
 import { ActionCard } from './ActionCard';
 import { AddActionForm } from './AddActionForm';
 import { ActionFilters } from './ActionFilters';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 interface FollowUpActionsPanelProps {
   complaintId: number;
@@ -34,6 +35,8 @@ export const FollowUpActionsPanel: React.FC<FollowUpActionsPanelProps> = ({
     // showOverdueOnly, // not used directly in this component
     filters
   } = useFollowUpActions({ complaintId });
+
+  const { t } = useLanguage();
 
   const [showAddForm, setShowAddForm] = useState(false);
   const [draggedAction, setDraggedAction] = useState<FollowUpAction | null>(null);
@@ -98,7 +101,7 @@ export const FollowUpActionsPanel: React.FC<FollowUpActionsPanelProps> = ({
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
             </svg>
             <h3 className="text-sm font-semibold text-gray-900">
-              Actions de Suivi
+              {t('actionsPanel')}
             </h3>
           </div>
         </div>
@@ -124,7 +127,7 @@ export const FollowUpActionsPanel: React.FC<FollowUpActionsPanelProps> = ({
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
             </svg>
             <h3 className="text-sm font-semibold text-gray-900">
-              Actions de Suivi ({actions.length})
+              {t('actionsPanel')} ({actions.length})
             </h3>
           </div>
           {isCollapsed ? (
@@ -152,18 +155,18 @@ export const FollowUpActionsPanel: React.FC<FollowUpActionsPanelProps> = ({
                 {creating ? (
                   <>
                     <span className="inline-block w-4 h-4 bg-gray-400 rounded-full mr-2"></span>
-                    Création...
+                    {t('saving')}
                   </>
                 ) : (
-                  'Ajouter une action'
+                  t('createNewAction') ?? t('addAction')
                 )}
               </button>
 
               {metrics && (
                 <div className="flex items-center space-x-4 text-sm text-gray-600">
-                  <span>{metrics.open_actions} ouvertes</span>
+                  <span>{metrics.open_actions} {t('actionsOpen') ?? t('open')}</span>
                   <span>•</span>
-                  <span>{metrics.completion_rate}% complétées</span>
+                  <span>{metrics.completion_rate}% {t('completionRate')}</span>
                 </div>
               )}
             </div>
@@ -193,9 +196,9 @@ export const FollowUpActionsPanel: React.FC<FollowUpActionsPanelProps> = ({
                   <div className="mb-4">
                     <span className="text-4xl">📋</span>
                   </div>
-                  <p className="text-lg font-medium mb-2">Aucune action de suivi</p>
+                  <p className="text-lg font-medium mb-2">{t('noActionsFound')}</p>
                   <p className="text-sm mb-4">
-                    Créez votre première action pour organiser le plan d'action
+                    {t('createFirstAction')}
                   </p>
                   {isEditable && (
                     <button
@@ -204,7 +207,7 @@ export const FollowUpActionsPanel: React.FC<FollowUpActionsPanelProps> = ({
                       style={{ fontSize: '14px', fontWeight: '500', boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)' }}
                       disabled={creating}
                     >
-                      Créer la première action
+                      {t('createFirstAction')}
                     </button>
                   )}
                 </div>
@@ -232,8 +235,7 @@ export const FollowUpActionsPanel: React.FC<FollowUpActionsPanelProps> = ({
             {actions.length >= 8 && actions.length < 10 && (
               <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                 <p className="text-sm text-yellow-700">
-                  ⚠️ Attention: Vous approchez de la limite de 10 actions par réclamation 
-                  ({actions.length}/10)
+                  ⚠️ {t('actionLimit')} ({actions.length}/10)
                 </p>
               </div>
             )}
@@ -241,7 +243,7 @@ export const FollowUpActionsPanel: React.FC<FollowUpActionsPanelProps> = ({
             {actions.length >= 10 && (
               <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
                 <p className="text-sm text-red-700">
-                  🚫 Limite atteinte: Maximum 10 actions par réclamation
+                  🚫 {t('actionLimitReached')}
                 </p>
               </div>
             )}
