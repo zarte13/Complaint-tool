@@ -1,8 +1,8 @@
 # Complaint Management System - Complete Architecture Guide
 
-**Last Updated**: 2025-07-17
-**Commit Hash**: Comprehensive Code Review and Security Analysis
-**Version**: 2.1.1
+**Last Updated**: 2025-08-06
+**Commit Hash**: Auth, Routing, i18n updates, tests stabilized
+**Version**: 2.2.0
 
 ## Table of Contents
 1. [System Overview](#system-overview)
@@ -33,14 +33,16 @@
 
 The Complaint Management System is a full-stack web application for tracking part-order complaints with the following specifications:
 
-- **Backend**: FastAPI with SQLite database
-- **Frontend**: React + TypeScript with Tailwind CSS
-- **File Upload**: Local storage with validation and MIME type checking
-- **Real-time Updates**: Automatic refresh after submissions
-- **Internationalization**: English/French language support with persistent toggle
-- **Routing**: React Router with multi-page navigation
-- **Web Port**: **3000** (frontend development server)
-- **API Port**: **8000** (backend FastAPI server)
+- Backend: FastAPI with SQLite databases
+  - Domain DB: complaints.db
+  - Auth DB: users.db (separate engine/metadata)
+- Frontend: React + TypeScript with Tailwind CSS
+- AuthN/AuthZ: JWT (HS256), bcrypt, access/refresh tokens, role-based guards
+- File Upload: Local storage with validation and MIME type checking
+- Real-time-ish UX: Optimistic updates and debounced loads
+- Internationalization: English/French language support with persistent toggle
+- Routing: React Router with multi-page navigation
+- Ports: Frontend 3000 (vite), API 8000 (uvicorn)
 
 ---
 
@@ -258,9 +260,18 @@ npx tailwindcss init -p
 
 ## Database Configuration
 
-### Schema Validation Status (SQLite)
+### Databases
 
-This section captures the current live database schema vs the target expected schema and enumerates actionable diffs. Source of truth DB: database/complaints.db.
+- Domain DB (SQLite): complaint-system/backend/database/complaints.db
+- Users/Auth DB (SQLite): complaint-system/backend/database/users.db
+
+Users DB path resolution:
+- Default absolute path is computed relative to backend folder and directory auto-created if missing.
+- Override with env: USERS_DATABASE_URL or USERS_DB_URL (example: sqlite:///./database/users.db)
+- See [`python.app/database/users_db.py`](complaint-system/backend/app/database/users_db.py:1)
+
+### Schema Validation Status (SQLite) — Domain DB
+This section captures the current live domain database schema vs the target expected schema and enumerates actionable diffs. Source of truth DB: database/complaints.db.
 
 Command used:
 - Text: [`bash.python`](complaint-system/backend/schema_checker.py:1) invocation
@@ -367,11 +378,15 @@ CREATE INDEX idx_attachments_complaint_id ON attachments(complaint_id);
 ## API Endpoints
 
 ### Authentication
-- POST `/auth/login` — Body: { username, password }
-  - Validates password policy on create via CLI; at login verifies bcrypt hash
-  - Returns: { access_token, refresh_token, token_type: "bearer", expires_in }
-- POST `/auth/refresh` — Body: { refresh_token }
+- POST `/auth/login` and `/auth/login/` — Body: { username, password }
+  - Bcrypt verify, returns: { access_token, refresh_token, token_type: "bearer", expires_in }
+- POST `/auth/refresh` and `/auth/refresh/` — Body: { refresh_token }
   - Verifies and rotates refresh token, returns new access/refresh pair
+- Notes:
+  - FastAPI app has redirect_slashes=False; endpoints are explicitly registered with and without trailing slash.
+  - CORS allows http://localhost:3000 and http://localhost:5173. See [`python.FastAPI()`](complaint-system/backend/main.py:13) and CORS config.
+  - Users DB models: User and RefreshToken. See [`python.app/auth/models.py`](complaint-system/backend/app/auth/models.py:1)
+  - CLI user creation: [`python.backend/scripts/create_user.py`](complaint-system/backend/scripts/create_user.py:1)
 
 ### Follow-up Actions and Responsables (in progress)
 - GET `/api/responsible-persons/` — Auth required; supports search and active filter
@@ -611,53 +626,16 @@ uploads/
 ## Internationalization
 
 ### Language Support
-- **Languages**: English (EN) and French (FR)
-- **Implementation**: React Context API with persistent language preference
-- **Storage**: localStorage for language persistence across sessions
-- **Toggle**: Top-right corner navigation with EN/FR buttons
+- Languages: English (EN) and French (FR)
+- Implementation: React Context API with persistent language preference in localStorage
+- Toggle: Top-right corner navigation with EN/FR buttons
 
 ### Translation Structure
-```
-frontend/src/i18n/
-└── translations.ts          # EN/FR translation strings
-```
-
-### Translation Keys (Updated for Enhanced Drawer)
-```typescript
-// Navigation
-navHome: string;
-navComplaints: string;
-navDashboard: string;
-systemTitle: string;
-
-// Enhanced Drawer
-edit: string;
-save: string;
-cancel: string;
-close: string;
-workOrderNumber: string;
-occurrence: string;
-quantityOrdered: string;
-quantityReceived: string;
-partReceived: string;
-humanFactor: string;
-additionalDetails: string;
-orderInformation: string;
-partInformation: string;
-issueDetails: string;
-validation: string;
-fieldRequired: string;
-invalidFormat: string;
-undo: string;
-redo: string;
-unsavedChanges: string;
-```
+- File: [`typescript.translations.ts`](complaint-system/frontend/src/i18n/translations.ts:1)
+- Includes keys for Navigation, Drawer, Lists, Forms, Dashboard, Attachments, and Authentication (loginTitle, loginUsername, loginPassword, loginPasswordHelp, loginSubmit, loginSubmitting, loginFailed, loginLink, logoutButton).
 
 ### Language Context
-```
-frontend/src/contexts/
-└── LanguageContext.tsx     # Global language state management
-```
+- Provider: [`typescript.LanguageContext`](complaint-system/frontend/src/contexts/LanguageContext.tsx:1)
 
 ---
 
@@ -686,24 +664,22 @@ frontend/src/components/
 
 ## HTTP Routing Policy and 307 Redirect Mitigation
 
-- Backend routing normalization:
+- Backend:
   - FastAPI configured with redirect_slashes=False to prevent automatic 307 redirects between "/path" and "/path/".
     - See [`python.FastAPI()`](complaint-system/backend/main.py:13)
-  - Collection endpoints accept both "" and "/" to return 200 for both "/api/{resource}" and "/api/{resource}/".
-    - Complaints: [`python.@router.get("", ...)`](complaint-system/backend/app/api/complaints.py:43) and [`python.@router.get("/", ...)`](complaint-system/backend/app/api/complaints.py:43)
-    - Companies: [`python.@router.get("", ...)`](complaint-system/backend/app/api/companies.py:10) and [`python.@router.get("/", ...)`](complaint-system/backend/app/api/companies.py:10)
-    - Parts: [`python.@router.get("", ...)`](complaint-system/backend/app/api/parts.py:10) and [`python.@router.get("/", ...)`](complaint-system/backend/app/api/parts.py:10)
-- Frontend canonicalization:
-  - ensureTrailingSlash helper normalizes collection endpoints to include a trailing slash, avoiding client-triggered 307s.
-    - See [`typescript.export function ensureTrailingSlash()`](complaint-system/frontend/src/services/api.ts:1)
-  - Call sites refactored to axios + canonical paths:
-    - [`typescript.useComplaints`](complaint-system/frontend/src/hooks/useComplaints.ts:1)
-    - [`typescript.ComplaintsPage`](complaint-system/frontend/src/pages/ComplaintsPage.tsx:1)
-    - [`typescript.ComplaintList`](complaint-system/frontend/src/components/ComplaintList/ComplaintList.tsx:1)
+  - For critical routes (e.g., auth), both variants are explicitly registered: `/auth/login` and `/auth/login/`, `/auth/refresh` and `/auth/refresh/`.
+- Frontend axios client:
+  - Base URL comes from Vite env (VITE_API_BASE_URL) or window.__API_BASE_URL__, defaulting to http://127.0.0.1:8000.
+  - Request interceptor:
+    - Adds Authorization header from store if present.
+    - Normalizes trailing slashes on collection URLs except multipart uploads.
+    - Rewrites accidental absolute URLs pointing to localhost:3000 to the backend base URL.
+  - Helper ensureTrailingSlash is used to avoid 307s where appropriate.
+  - See [`typescript.apiClient and helpers`](complaint-system/frontend/src/services/api.ts:1)
 
-Validation/testing plan:
-- Backend tests assert 200 for both '/api/complaints' and '/api/complaints/' with no intermediate 307.
-- Frontend/E2E tests verify no 3xx during list and export actions.
+Testing:
+- Backend tests include routing-with-slashes checks: [`python.test_routing_slashes`](complaint-system/backend/tests/test_routing_slashes.py:1)
+- Frontend unit test asserting login POSTS to backend origin: [`typescript.LoginPage.api.test.tsx`](complaint-system/frontend/src/pages/__tests__/LoginPage.api.test.tsx:1)
 
 ## Security Policies
 
@@ -721,7 +697,7 @@ Validation/testing plan:
 
 ### Authentication & Authorization
 
-Auth is implemented with FastAPI + JWT and a separate users database.
+Auth is implemented with FastAPI + JWT and a separate users database (users.db).
 
 Backend auth modules:
 - [`python.app/database/users_db.py`](complaint-system/backend/app/database/users_db.py:1) — separate SQLite engine (users.db), session factory, UsersBase metadata
@@ -757,8 +733,9 @@ Environment variables:
 
 Frontend auth:
 - Persisted auth store using Zustand with tokens in localStorage
-- Axios interceptor injects Authorization header and auto-refreshes on 401
-- Protected routes wrapper to gate access, with redirect to /login
+- Axios interceptor injects Authorization header and auto-refreshes on 401 (refresh rotates tokens)
+- Login page at /login, redirects to /dashboard on success
+- Navigation shows Login/Logout based on auth state, with i18n strings
 
 ---
 
