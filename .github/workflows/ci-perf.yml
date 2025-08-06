@@ -16,6 +16,8 @@ on:
         required: false
         default: "2m"
 
+# Soft-disabled: no push or pull_request triggers to prevent automatic runs
+
 jobs:
   locust:
     runs-on: ubuntu-latest

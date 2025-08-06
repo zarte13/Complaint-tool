@@ -1,14 +1,7 @@
 name: Frontend CI (Vitest + coverage)
 
 on:
-  push:
-    paths:
-      - "complaint-system/frontend/**"
-      - ".github/workflows/ci-frontend.yml"
-  pull_request:
-    paths:
-      - "complaint-system/frontend/**"
-      - ".github/workflows/ci-frontend.yml"
+  workflow_dispatch:
 
 jobs:
   test-frontend:

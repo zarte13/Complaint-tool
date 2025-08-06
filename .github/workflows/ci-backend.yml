@@ -1,14 +1,7 @@
 name: Backend CI (pytest + coverage)
 
 on:
-  push:
-    paths:
-      - "complaint-system/backend/**"
-      - ".github/workflows/ci-backend.yml"
-  pull_request:
-    paths:
-      - "complaint-system/backend/**"
-      - ".github/workflows/ci-backend.yml"
+  workflow_dispatch:
 
 jobs:
   test-backend:
