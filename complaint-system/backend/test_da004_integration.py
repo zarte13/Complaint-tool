@@ -20,7 +20,9 @@ from typing import Dict, Any
 import sys
 
 # Configuration
-BASE_URL = "http://localhost:8000"
+# Allow overriding base URL via environment for CI; default to local dev
+import os
+BASE_URL = os.getenv("BASE_URL_BACKEND", "http://127.0.0.1:8000")
 API_BASE = f"{BASE_URL}/api"
 
 def make_request(method: str, url: str, **kwargs) -> Dict[Any, Any]:
@@ -77,8 +79,13 @@ def test_complaints_endpoint():
         print(f"❌ Failed to get complaints: {result['error']}")
         return None
 
-def test_responsible_persons(complaint_id: int):
+def test_responsible_persons():
     """Test responsible persons endpoint"""
+    # Fetch a complaint id first, as this is not a pytest fixture-based test file
+    complaint = test_complaints_endpoint()
+    assert complaint is not None, "No complaints available to test responsible persons"
+    complaint_id = complaint["id"]
+
     print(f"👤 Testing responsible persons for complaint {complaint_id}...")
     result = make_request("GET", f"{API_BASE}/complaints/{complaint_id}/actions/responsible-persons")
     if result["success"]:

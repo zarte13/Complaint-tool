@@ -14,6 +14,11 @@ jobs:
   e2e:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      BASE_URL_BACKEND: http://127.0.0.1:8000
+      BASE_URL_FRONTEND: http://127.0.0.1:3000
+      ENV: dev
+      JWT_SECRET: test-secret
 
     steps:
       - name: Checkout
@@ -54,11 +59,8 @@ jobs:
       # Start backend API
       - name: Launch backend
         working-directory: complaint-system/backend
-        env:
-          ENV: dev
-          JWT_SECRET: test-secret
         run: |
-          nohup python -m uvicorn main:app --host 127.0.0.1 --port 8000 --log-level warning &
+          nohup python -m uvicorn main:app --host 127.0.0.1 --port 8000 --log-level warning > ../backend.log 2>&1 &
 
       # Install Playwright browsers
       - name: Install Playwright
@@ -69,21 +71,38 @@ jobs:
       - name: Launch frontend
         working-directory: complaint-system/frontend
         run: |
-          nohup npm run dev -- --host --port 5173 &
+          nohup npm run dev -- --host --port 3000 > ../frontend.log 2>&1 &
 
       # Wait for services
       - name: Wait for services
         run: |
+          echo "Waiting for backend ${BASE_URL_BACKEND}/health ..."
           for i in {1..60}; do
-            if curl -sSf http://127.0.0.1:8000/health >/dev/null; then echo "Backend up"; break; fi; sleep 1;
+            if curl -sSf "${BASE_URL_BACKEND}/health" >/dev/null; then echo "Backend up"; ready_backend=1; break; fi; sleep 2;
           done
+          if [ -z "${ready_backend}" ]; then
+            echo "::error::Backend did not become ready"; exit 1;
+          fi
+          echo "Waiting for frontend ${BASE_URL_FRONTEND} ..."
           for i in {1..60}; do
-            if curl -sSf http://127.0.0.1:5173 >/dev/null; then echo "Frontend up"; break; fi; sleep 1;
+            if curl -sSf "${BASE_URL_FRONTEND}" >/dev/null; then echo "Frontend up"; ready_frontend=1; break; fi; sleep 2;
           done
+          if [ -z "${ready_frontend}" ]; then
+            echo "::error::Frontend did not become ready"; exit 1;
+          fi
+
+      # Seed admin user for E2E
+      - name: Seed admin user
+        working-directory: complaint-system/backend
+        run: |
+          python scripts/create_user.py --username admin --password YourPass123 --role admin || true
 
       # Run Playwright tests
       - name: Run Playwright tests
         working-directory: complaint-system/frontend
+        env:
+          BASE_URL_BACKEND: ${{ env.BASE_URL_BACKEND }}
+          BASE_URL_FRONTEND: ${{ env.BASE_URL_FRONTEND }}
         run: npx playwright test --reporter=line
 
       - name: Upload Playwright report

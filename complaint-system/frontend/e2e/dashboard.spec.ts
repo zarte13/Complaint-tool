@@ -1,8 +1,22 @@
 import { test, expect } from '@playwright/test';
 
+// Safely read env-like values without relying on Node typings for `process`
+declare const BASE_URL_BACKEND: string | undefined;
+declare const BASE_URL_FRONTEND: string | undefined;
+
+const backendBase: string =
+  (typeof BASE_URL_BACKEND !== 'undefined' && BASE_URL_BACKEND) ||
+  ((test.info().project as any)?.use?.BASE_URL_BACKEND as string | undefined) ||
+  'http://127.0.0.1:8000';
+
+const frontendBase: string =
+  (typeof BASE_URL_FRONTEND !== 'undefined' && BASE_URL_FRONTEND) ||
+  ((test.info().project as any)?.use?.BASE_URL_FRONTEND as string | undefined) ||
+  'http://localhost:5173';
+
 async function primeAuth(page: any) {
   // Obtain tokens using known CI test user seeded by workflow or local dev
-  const resp = await page.request.post('http://127.0.0.1:8000/auth/login', {
+  const resp = await page.request.post(`${backendBase}/auth/login`, {
     data: { username: 'admin', password: 'YourPass123' },
   });
   expect(resp.ok()).toBeTruthy();
@@ -24,7 +38,7 @@ async function primeAuth(page: any) {
 test.describe('Dashboard E2E Tests (authenticated)', () => {
   test.beforeEach(async ({ page }) => {
     await primeAuth(page);
-    await page.goto('http://localhost:5173/dashboard');
+    await page.goto(`${frontendBase}/dashboard`);
   });
 
   test('should display dashboard title', async ({ page }) => {
@@ -46,9 +60,9 @@ test.describe('Dashboard E2E Tests (authenticated)', () => {
   });
 
   test('should navigate to dashboard from navigation', async ({ page }) => {
-    await page.goto('http://localhost:5173/');
+    await page.goto(`${frontendBase}/`);
     await page.click('text=Dashboard');
-    await expect(page).toHaveURL('http://localhost:5173/dashboard');
+    await expect(page).toHaveURL(`${frontendBase}/dashboard`);
   });
 
   test('should display real-time updates', async ({ page }) => {
