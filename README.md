@@ -33,10 +33,10 @@ This repository includes GitHub Actions workflows for automated quality checks:
 
 Badges (replace OWNER/REPO with your GitHub org/repo):
 ```
-![Backend CI](https://github.com/OWNER/REPO/actions/workflows/ci-backend.yml/badge.svg)
-![Frontend CI](https://github.com/OWNER/REPO/actions/workflows/ci-frontend.yml/badge.svg)
-![E2E CI](https://github.com/OWNER/REPO/actions/workflows/ci-e2e.yml/badge.svg)
-![Perf (Locust)](https://github.com/OWNER/REPO/actions/workflows/ci-perf.yml/badge.svg)
+![Backend CI](https://github.com/zarte13/Complaint-tool/actions/workflows/ci-backend.yml/badge.svg)
+![Frontend CI](https://github.com/zarte13/Complaint-tool/actions/workflows/ci-frontend.yml/badge.svg)
+![E2E CI](https://github.com/zarte13/Complaint-tool/actions/workflows/ci-e2e.yml/badge.svg)
+![Perf (Locust)](https://github.com/zarte13/Complaint-tool/actions/workflows/ci-perf.yml/badge.svg)
 ```
 
 How CI runs:
@@ -97,7 +97,7 @@ To adjust thresholds:
 ## Development
 
 Backend runs on http://localhost:8000  
-Frontend runs on http://localhost:5173
+Frontend runs on http://localhost:3000
 
 ## Troubleshooting
 
