@@ -33,7 +33,7 @@ jobs:
         run: npm ci
 
       - name: Unit/Integration tests with coverage (Vitest)
-        run: npm run test -- --coverage --run
+        run: npm run test -- --run --coverage --coverage.provider=v8 --coverage.reporter=json-summary --coverage.reporter=text
 
       - name: Summarize and enforce coverage
         run: node scripts/ci_frontend_coverage.js

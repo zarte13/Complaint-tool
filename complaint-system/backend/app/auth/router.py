@@ -16,9 +16,8 @@ from app.auth.security import (
     decode_token,
 )
 
-# Ensure auth tables exist
-UsersBase.metadata.create_all(bind=users_engine)
-
+# NOTE: Avoid creating tables at import time to prevent DB errors during test collection
+# Tables are created by app startup scripts or explicit migrations/tests.
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
 
