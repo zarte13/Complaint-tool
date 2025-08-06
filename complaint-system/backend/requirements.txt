@@ -7,7 +7,12 @@ python-multipart
 aiofiles
 pillow
 python-magic
+python-jose
+passlib
+bcrypt
+pyjwt
 pytest
 pytest-asyncio
 httpx
-bcrypt
+requests
+starlette

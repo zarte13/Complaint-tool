@@ -1,6 +1,12 @@
 /* eslint-disable no-console */
-const fs = require('fs');
-const path = require('path');
+// ESM-compatible script because package.json has "type": "module"
+import fs from 'node:fs';
+import path from 'node:path';
+import process from 'node:process';
+import { fileURLToPath } from 'node:url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const summaryPath = path.join(process.cwd(), 'coverage', 'coverage-summary.json');
 const stepSummary = process.env.GITHUB_STEP_SUMMARY;
