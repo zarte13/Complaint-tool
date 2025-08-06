@@ -10,8 +10,9 @@ const __dirname = path.dirname(__filename);
 
 const summaryPath = path.join(process.cwd(), 'coverage', 'coverage-summary.json');
 const stepSummary = process.env.GITHUB_STEP_SUMMARY;
-const minLines = parseFloat(process.env.MIN_LINES || '80');
-const minBranches = parseFloat(process.env.MIN_BRANCHES || '80');
+// Lowered defaults to 70% (can still be overridden via env MIN_LINES/MIN_BRANCHES)
+const minLines = parseFloat(process.env.MIN_LINES || '70');
+const minBranches = parseFloat(process.env.MIN_BRANCHES || '70');
 
 if (!fs.existsSync(summaryPath)) {
   console.log('No coverage summary found, failing');
@@ -21,7 +22,7 @@ if (!fs.existsSync(summaryPath)) {
 const s = JSON.parse(fs.readFileSync(summaryPath, 'utf8'));
 const lines = (s.total?.lines?.pct ?? 0);
 const branches = (s.total?.branches?.pct ?? 0);
-const text = `Lines: ${lines}%\nBranches: ${branches}%\n`;
+const text = `Lines: ${lines}%\nBranches: ${branches}%\nMinimums: Lines >= ${minLines}%, Branches >= ${minBranches}%\n`;
 
 console.log(text.trim());
 

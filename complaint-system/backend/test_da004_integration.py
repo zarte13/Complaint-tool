@@ -20,15 +20,48 @@ from typing import Dict, Any
 import sys
 
 # Configuration
-# Allow overriding base URL via environment for CI; default to local dev
+# Prefer direct app testing in CI; fall back to HTTP only when explicitly enabled.
 import os
+USE_HTTP = os.getenv("USE_HTTP_INTEGRATION", "0") == "1"
 BASE_URL = os.getenv("BASE_URL_BACKEND", "http://127.0.0.1:8000")
 API_BASE = f"{BASE_URL}/api"
 
-def make_request(method: str, url: str, **kwargs) -> Dict[Any, Any]:
-    """Make HTTP request with error handling"""
+# Lazy import test client when not using HTTP
+client = None
+if not USE_HTTP:
     try:
-        response = requests.request(method, url, **kwargs)
+        from fastapi.testclient import TestClient
+        # Import the FastAPI app
+        # Supports both "backend.main:app" and "main:app" layouts
+        try:
+            from main import app as _app  # if pytest -k runs inside backend folder
+        except Exception:
+            from backend.main import app as _app  # if run from repo root
+        client = TestClient(_app)
+    except Exception:
+        # If anything goes wrong, fall back to HTTP mode
+        USE_HTTP = True
+
+def make_request(method: str, url: str, **kwargs) -> Dict[Any, Any]:
+    """Make request using in-process TestClient when available, else real HTTP."""
+    try:
+        if not USE_HTTP and client is not None:
+            # Map requests semantics to TestClient
+            json_kw = {}
+            if "json" in kwargs:
+                json_kw["json"] = kwargs["json"]
+            if "params" in kwargs:
+                json_kw["params"] = kwargs["params"]
+            resp = client.request(method, url.replace(BASE_URL, ""), **json_kw)
+            ok = 200 <= resp.status_code < 300
+            return {
+                "success": ok,
+                "data": resp.json() if ok and resp.content else None,
+                "status": resp.status_code,
+                "error": None if ok else resp.text,
+            }
+        # Fallback to real HTTP
+        response = requests.request(method, url, timeout=5, **kwargs)
         response.raise_for_status()
         return {"success": True, "data": response.json(), "status": response.status_code}
     except requests.exceptions.RequestException as e:
@@ -42,7 +75,8 @@ def test_server_health():
         print(f"✅ Server is healthy: {result['data']}")
         return True
     else:
-        print(f"❌ Server health check failed: {result['error']}")
+        mode = "HTTP" if USE_HTTP else "in-process"
+        print(f"❌ Server health check failed in {mode} mode: {result['error']}")
         return False
 
 def test_api_documentation():
@@ -254,10 +288,11 @@ def run_comprehensive_test():
     """Run all tests in sequence"""
     print("🧪 Starting DA-004 Comprehensive Integration Test")
     print("=" * 60)
+    print(f"Mode: {'HTTP' if USE_HTTP else 'in-process TestClient'}")
     
     # Test 1: Server Health
     if not test_server_health():
-        print("❌ Server not running. Please start the server first.")
+        print("❌ API not responsive.")
         return False
     
     # Test 2: API Documentation
