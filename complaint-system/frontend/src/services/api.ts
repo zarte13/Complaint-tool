@@ -5,11 +5,100 @@
  * - Enhanced axios instance with retry logic and rate limiting
  */
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
+import { useAuthStore } from '../stores/authStore';
 
 // Create enhanced axios instance with timeout
 const apiClient: AxiosInstance = axios.create({
   timeout: 10000, // 10 second timeout
 });
+
+// Attach Authorization header if access token exists
+apiClient.interceptors.request.use(
+  (config) => {
+    try {
+      const { accessToken } = useAuthStore.getState();
+      if (accessToken) {
+        config.headers = config.headers ?? {};
+        (config.headers as any).Authorization = `Bearer ${accessToken}`;
+      }
+    } catch {
+      // noop
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+// Auto-refresh on 401 using refresh token, then retry original request once
+let isRefreshing = false;
+let pendingQueue: Array<(token: string | null) => void> = [];
+
+async function handle401Error(error: any) {
+  const originalRequest = error.config;
+  const store = useAuthStore.getState();
+
+  if (!store.refreshToken) {
+    // No refresh token available; logout
+    useAuthStore.getState().logout();
+    return Promise.reject(error);
+  }
+
+  if (isRefreshing) {
+    // Queue the request until refresh finishes
+    return new Promise((resolve, reject) => {
+      pendingQueue.push((newToken) => {
+        if (newToken) {
+          originalRequest.headers = originalRequest.headers ?? {};
+          originalRequest.headers['Authorization'] = `Bearer ${newToken}`;
+          resolve(apiClient(originalRequest));
+        } else {
+          reject(error);
+        }
+      });
+    });
+  }
+
+  isRefreshing = true;
+
+  try {
+    const refreshResp = await apiClient.post<{ access_token: string; refresh_token: string; expires_in: number }>(
+      ensureTrailingSlash('/auth/refresh'),
+      { refresh_token: store.refreshToken }
+    );
+
+    const newAccess = refreshResp.data.access_token;
+    // Update store
+    useAuthStore.getState().setAccessToken(newAccess);
+
+    // Retry queued requests
+    pendingQueue.forEach((cb) => cb(newAccess));
+    pendingQueue = [];
+
+    // Retry original request
+    originalRequest.headers = originalRequest.headers ?? {};
+    originalRequest.headers['Authorization'] = `Bearer ${newAccess}`;
+    return apiClient(originalRequest);
+  } catch (refreshErr) {
+    // Refresh failed; logout and reject all
+    useAuthStore.getState().logout();
+    pendingQueue.forEach((cb) => cb(null));
+    pendingQueue = [];
+    return Promise.reject(refreshErr);
+  } finally {
+    isRefreshing = false;
+  }
+}
+
+apiClient.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    if (error?.response?.status === 401 && !error.config?._retry) {
+      error.config._retry = true;
+      return handle401Error(error);
+    }
+    return Promise.reject(error);
+  }
+);
 
 // Add request interceptor for trailing slash normalization
 // IMPORTANT:

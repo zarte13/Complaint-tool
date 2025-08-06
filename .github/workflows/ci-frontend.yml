@@ -1,0 +1,64 @@
+name: Frontend CI (Vitest + coverage)
+
+on:
+  push:
+    paths:
+      - "complaint-system/frontend/**"
+      - ".github/workflows/ci-frontend.yml"
+  pull_request:
+    paths:
+      - "complaint-system/frontend/**"
+      - ".github/workflows/ci-frontend.yml"
+
+jobs:
+  test-frontend:
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: complaint-system/frontend
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: complaint-system/frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Unit/Integration tests with coverage (Vitest)
+        run: |
+          npm run test -- --coverage --run
+
+      - name: Upload coverage summary
+        if: always()
+        run: |
+          echo "## Frontend Coverage Summary" >> $GITHUB_STEP_SUMMARY
+          if [ -f coverage/coverage-summary.json ]; then
+            node -e "const s=require('./coverage/coverage-summary.json'); const l=s.total.lines.pct; const b=s.total.branches.pct; console.log('Lines:',l,'Branches:',b);" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "No coverage summary found" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Enforce coverage thresholds
+        run: |
+          node - <<'NODE'
+const fs = require('fs');
+const path = 'coverage/coverage-summary.json';
+if (!fs.existsSync(path)) { console.log('No coverage summary found, failing'); process.exit(1); }
+const s = JSON.parse(fs.readFileSync(path, 'utf8'));
+const lines = s.total.lines.pct || 0;
+const branches = s.total.branches.pct || 0;
+const minLines = 80, minBranches = 80;
+if (lines < minLines || branches < minBranches) {
+  console.log(`Coverage threshold not met: lines ${lines}% (min ${minLines}%), branches ${branches}% (min ${minBranches}%)`);
+  process.exit(1);
+}
+console.log('Coverage thresholds met');
+NODE

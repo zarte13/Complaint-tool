@@ -1,13 +1,23 @@
-import { Link, useLocation } from 'react-router-dom';
-import { Home, FileText, BarChart3 } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Home, FileText, BarChart3, LogOut } from 'lucide-react';
 import LanguageToggle from '../LanguageToggle/LanguageToggle';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useAuthStore } from '../../stores/authStore';
 
 export default function Navigation() {
   const location = useLocation();
+  const navigate = useNavigate();
   const { t } = useLanguage();
 
   const isActive = (path: string) => location.pathname === path;
+
+  const isAuthenticated = useAuthStore((s: ReturnType<typeof useAuthStore.getState>) => s.isAuthenticated);
+  const logout = useAuthStore((s: ReturnType<typeof useAuthStore.getState>) => s.logout);
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login', { replace: true });
+  };
 
   return (
     <nav className="bg-white shadow-sm border-b">
@@ -56,6 +66,30 @@ export default function Navigation() {
             <div className="ml-4">
               <LanguageToggle />
             </div>
+
+            {isAuthenticated ? (
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="inline-flex items-center px-3 py-2 rounded-md text-sm font-medium text-white bg-red-500 hover:bg-red-600 transition-colors"
+                aria-label="Logout"
+                title="Logout"
+              >
+                <LogOut className="h-4 w-4 mr-2" />
+                Logout
+              </button>
+            ) : (
+              <Link
+                to="/login"
+                className={`inline-flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                  isActive('/login')
+                    ? 'bg-blue-100 text-blue-700'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                }`}
+              >
+                Login
+              </Link>
+            )}
           </div>
         </div>
       </div>

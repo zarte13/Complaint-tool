@@ -4,9 +4,10 @@ from fastapi.staticfiles import StaticFiles
 from app.database.database import engine
 from app.models import models
 from app.api import companies, parts, complaints, analytics, follow_up_actions
+from app.auth import router as auth_router  # NEW
 import os
 
-# Create database tables
+# Create database tables for domain data
 models.Base.metadata.create_all(bind=engine)
 
 # Create FastAPI app
@@ -33,6 +34,10 @@ if not os.path.exists("uploads"):
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 # Include routers
+# Auth endpoints (tokens issued from separate users.db)
+app.include_router(auth_router.router)
+
+# Domain endpoints
 app.include_router(companies.router)
 app.include_router(parts.router)
 app.include_router(complaints.router)

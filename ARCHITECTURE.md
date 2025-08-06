@@ -366,6 +366,21 @@ CREATE INDEX idx_attachments_complaint_id ON attachments(complaint_id);
 
 ## API Endpoints
 
+### Authentication
+- POST `/auth/login` — Body: { username, password }
+  - Validates password policy on create via CLI; at login verifies bcrypt hash
+  - Returns: { access_token, refresh_token, token_type: "bearer", expires_in }
+- POST `/auth/refresh` — Body: { refresh_token }
+  - Verifies and rotates refresh token, returns new access/refresh pair
+
+### Follow-up Actions and Responsables (in progress)
+- GET `/api/responsible-persons/` — Auth required; supports search and active filter
+- Planned admin-only:
+  - POST `/api/responsible-persons/` — Create responsable
+  - PUT `/api/responsible-persons/{id}` — Update responsable
+  - DELETE `/api/responsible-persons/{id}` — Soft-deactivate responsable
+- Action create/update endpoints require auth and will validate responsible_person against active responsables
+
 ### Base URL
 ```
 http://localhost:8000/api/
@@ -705,12 +720,83 @@ Validation/testing plan:
 - **CORS Configuration**: Restricted to localhost development
 
 ### Authentication & Authorization
-- **Current**: No authentication (development mode)
-- **Future**: JWT-based authentication planned
+
+Auth is implemented with FastAPI + JWT and a separate users database.
+
+Backend auth modules:
+- [`python.app/database/users_db.py`](complaint-system/backend/app/database/users_db.py:1) — separate SQLite engine (users.db), session factory, UsersBase metadata
+- [`python.app/auth/models.py`](complaint-system/backend/app/auth/models.py:1) — User and RefreshToken SQLAlchemy models
+- [`python.app/auth/schemas.py`](complaint-system/backend/app/auth/schemas.py:1) — Pydantic schemas for auth payloads
+- [`python.app/auth/security.py`](complaint-system/backend/app/auth/security.py:1) — bcrypt hashing, JWT encode/decode, password policy
+- [`python.app/auth/dependencies.py`](complaint-system/backend/app/auth/dependencies.py:1) — get_current_user and require_admin dependencies
+- [`python.app/auth/router.py`](complaint-system/backend/app/auth/router.py:1) — /auth/login and /auth/refresh endpoints
+- [`python.backend/main.py`](complaint-system/backend/main.py:1) — includes auth router
+
+Datastores:
+- Domain DB: complaints.db (existing domain models)
+- Auth DB: users.db (users, refresh_tokens) isolated via separate engine
+
+JWT:
+- Algorithm HS256
+- Access token TTL: 30 minutes
+- Refresh token TTL: 14 days
+- Rotation: refresh endpoint invalidates old token and issues new pair
+
+Password policy:
+- Min length 10, must include at least one uppercase, one lowercase, and one digit
+- On failed logins: increment failed_login_count and log attempt; reset on successful login
+
+Role-based access:
+- get_current_user protects authenticated endpoints
+- require_admin protects admin-only routes (e.g., responsables CRUD planned below)
+
+Environment variables:
+- JWT_SECRET: required (dev/test in CI uses test-secret)
+- ACCESS_TTL_MIN, REFRESH_TTL_DAYS (optional overrides)
+- ENV: dev/test/prod to tune logging
+
+Frontend auth:
+- Persisted auth store using Zustand with tokens in localStorage
+- Axios interceptor injects Authorization header and auto-refreshes on 401
+- Protected routes wrapper to gate access, with redirect to /login
 
 ---
 
 ## Deployment Commands
+
+### Environment Variables
+Create backend `.env` (or export in shell):
+```
+JWT_SECRET=change-me
+ACCESS_TTL_MIN=30
+REFRESH_TTL_DAYS=14
+ENV=dev
+```
+
+### Bootstrap users and login
+- Create initial user:
+  - [`python.scripts/create_user.py`](complaint-system/backend/scripts/create_user.py:1)
+  - Example:
+    ```
+    cd complaint-system/backend
+    python scripts/create_user.py --username admin --role admin
+    ```
+  - You will be prompted for password; policy enforced
+
+- Run backend:
+  ```
+  python -m uvicorn main:app --reload --host 127.0.0.1 --port 8000
+  ```
+
+- Run frontend:
+  ```
+  npm run dev --prefix complaint-system/frontend
+  ```
+
+- Login via UI at /login or via API:
+  ```
+  curl -X POST http://127.0.0.1:8000/auth/login -H "Content-Type: application/json" -d '{"username":"admin","password":"YourPass123"}'
+  ```
 
 ### Backend Development
 ```powershell
@@ -1115,6 +1201,49 @@ A comprehensive code review conducted on 2025-07-17 identified multiple critical
 - **Screen Reader Support**: Missing ARIA labels
 
 ---
+
+## Continuous Integration (CI)
+
+Workflows located in `.github/workflows`:
+
+- Backend CI: [`yaml.ci-backend.yml`](.github/workflows/ci-backend.yml:1)
+  - Python 3.11
+  - pytest with coverage (coverage.xml)
+  - Coverage enforcement: 85% lines and branches
+  - Caches pip based on requirements.txt
+
+- Frontend CI: [`yaml.ci-frontend.yml`](.github/workflows/ci-frontend.yml:1)
+  - Node 20
+  - Vitest with coverage (coverage/coverage-summary.json)
+  - Coverage enforcement: 80% lines and branches
+  - Uses npm ci with cache
+
+- E2E CI (Playwright): [`yaml.ci-e2e.yml`](.github/workflows/ci-e2e.yml:1)
+  - Installs frontend/backend deps
+  - Launches backend (uvicorn) and frontend (vite dev) on the runner
+  - Waits for ports 8000 and 5173
+  - Runs Playwright tests and uploads report artifact
+
+- Performance (manual, Locust): [`yaml.ci-perf.yml`](.github/workflows/ci-perf.yml:1) [if present]
+  - workflow_dispatch with inputs (users, spawn_rate, run_time)
+  - Writes a minimal locustfile dynamically and runs headless
+  - Uploads CSV artifacts (stats/failures/distribution)
+
+Badge placement recommendation (README):
+```
+![Backend CI](https://github.com/OWNER/REPO/actions/workflows/ci-backend.yml/badge.svg)
+![Frontend CI](https://github.com/OWNER/REPO/actions/workflows/ci-frontend.yml/badge.svg)
+![E2E CI](https://github.com/OWNER/REPO/actions/workflows/ci-e2e.yml/badge.svg)
+![Perf (Locust)](https://github.com/OWNER/REPO/actions/workflows/ci-perf.yml/badge.svg)
+```
+
+Coverage adjustment:
+- Backend: edit “Enforce coverage threshold” Python step
+- Frontend: edit Node “Enforce coverage thresholds” step
+
+Secret considerations:
+- None required for dev; JWT_SECRET is set inline in workflows for test runs
+- For production environments, use GitHub Secrets and environment protection rules
 
 ## Monitoring & Logging
 

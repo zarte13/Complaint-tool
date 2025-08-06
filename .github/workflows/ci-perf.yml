@@ -1,0 +1,101 @@
+name: Performance (Locust - manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      users:
+        description: "Number of virtual users"
+        required: false
+        default: "50"
+      spawn_rate:
+        description: "User spawn rate per second"
+        required: false
+        default: "5"
+      run_time:
+        description: "Test duration (e.g., 2m, 5m)"
+        required: false
+        default: "2m"
+
+jobs:
+  locust:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    env:
+      USERS: ${{ github.event.inputs.users }}
+      SPAWN_RATE: ${{ github.event.inputs.spawn_rate }}
+      RUN_TIME: ${{ github.event.inputs.run_time }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('complaint-system/backend/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install backend deps + Locust
+        working-directory: complaint-system/backend
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install locust
+
+      - name: Launch backend
+        working-directory: complaint-system/backend
+        env:
+          ENV: dev
+          JWT_SECRET: test-secret
+        run: |
+          nohup python -m uvicorn main:app --host 127.0.0.1 --port 8000 --log-level warning &
+
+      - name: Wait for backend
+        run: |
+          for i in {1..60}; do
+            if curl -sSf http://127.0.0.1:8000/health >/dev/null; then echo "Backend up"; break; fi; sleep 1;
+          done
+
+      - name: Generate basic Locustfile
+        shell: bash
+        run: |
+          echo 'from locust import HttpUser, task, between' > locustfile.py
+          echo '' >> locustfile.py
+          echo 'class ApiUser(HttpUser):' >> locustfile.py
+          echo '    wait_time = between(1, 2)' >> locustfile.py
+          echo '' >> locustfile.py
+          echo '    @task(3)' >> locustfile.py
+          echo '    def health(self):' >> locustfile.py
+          echo '        self.client.get("/health")' >> locustfile.py
+          echo '' >> locustfile.py
+          echo '    @task(2)' >> locustfile.py
+          echo '    def list_complaints(self):' >> locustfile.py
+          echo '        self.client.get("/api/complaints/?limit=10")' >> locustfile.py
+
+      - name: Run Locust headless
+        run: |
+          locust -f locustfile.py \
+            --headless \
+            -u ${USERS:-50} \
+            -r ${SPAWN_RATE:-5} \
+            --run-time ${RUN_TIME:-2m} \
+            --host http://127.0.0.1:8000 \
+            --csv=locust-report
+
+      - name: Upload artifacts (CSV)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: locust-csv
+          path: |
+            locust-report_stats.csv
+            locust-report_failures.csv
+            locust-report_distribution.csv

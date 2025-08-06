@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, Path
+from fastapi import APIRouter, Depends, HTTPException, Query, Path, status
 from sqlalchemy.orm import Session
 from sqlalchemy import func, and_, or_
 from typing import List, Optional
@@ -15,6 +15,7 @@ from app.schemas.schemas import (
     ActionStatus, ActionPriority
 )
 
+from app.auth.dependencies import get_current_user, require_admin
 router = APIRouter(prefix="/api/complaints/{complaint_id}/actions", tags=["follow-up-actions"])
 
 # Helper functions
@@ -77,7 +78,8 @@ async def create_action(
     action: FollowUpActionCreate,
     complaint_id: int = Path(..., description="Complaint ID"),
     changed_by: str = Query("System", description="Who is creating this action"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _user = Depends(get_current_user),
 ):
     """Create a new follow-up action for a complaint"""
     
@@ -189,21 +191,114 @@ async def get_actions(
 async def get_responsible_persons(
     complaint_id: int = Path(..., description="Complaint ID"),
     active_only: bool = Query(True, description="Show only active persons"),
-    db: Session = Depends(get_db)
+    search: Optional[str] = Query(None, description="Search by name or email"),
+    db: Session = Depends(get_db),
+    _user = Depends(get_current_user),  # authentication required
 ):
-    """Get list of available responsible persons"""
-    
+    """Get list of available responsible persons (auth required)"""
     try:
         query = db.query(ResponsiblePerson)
-        
         if active_only:
             query = query.filter(ResponsiblePerson.is_active == True)
-        
+        if search:
+            like = f"%{search.strip()}%"
+            query = query.filter(
+                (ResponsiblePerson.name.ilike(like)) | (ResponsiblePerson.email.ilike(like))
+            )
         persons = query.order_by(ResponsiblePerson.name).all()
         return persons
-        
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to retrieve responsible persons: {str(e)}")
+
+# --- Admin-only Responsible Persons CRUD ---
+@router.post("/responsible-persons", response_model=ResponsiblePersonResponse, status_code=status.HTTP_201_CREATED)
+async def create_responsible_person(
+    payload: ResponsiblePersonResponse,
+    complaint_id: int = Path(..., description="Complaint ID (ignored)"),
+    db: Session = Depends(get_db),
+    _admin = Depends(require_admin),
+):
+    try:
+        name = (payload.name or "").strip()
+        if not name:
+            raise HTTPException(status_code=400, detail="Name is required")
+        exists = db.query(ResponsiblePerson).filter(ResponsiblePerson.name == name).first()
+        if exists:
+            raise HTTPException(status_code=409, detail="Responsible person with this name already exists")
+        person = ResponsiblePerson(
+            name=name,
+            email=getattr(payload, "email", None),
+            department=getattr(payload, "department", None),
+            is_active=True,
+        )
+        db.add(person)
+        db.commit()
+        db.refresh(person)
+        return person
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to create responsible person: {str(e)}")
+
+
+@router.put("/responsible-persons/{person_id}", response_model=ResponsiblePersonResponse)
+async def update_responsible_person_admin(
+    person_id: int,
+    complaint_id: int = Path(..., description="Complaint ID (ignored)"),
+    name: Optional[str] = Query(None, min_length=2, max_length=255),
+    email: Optional[str] = Query(None),
+    department: Optional[str] = Query(None),
+    is_active: Optional[bool] = Query(None),
+    db: Session = Depends(get_db),
+    _admin = Depends(require_admin),
+):
+    try:
+        person = db.query(ResponsiblePerson).filter(ResponsiblePerson.id == person_id).first()
+        if not person:
+            raise HTTPException(status_code=404, detail="Responsible person not found")
+        if name is not None:
+            name_s = name.strip()
+            if not name_s:
+                raise HTTPException(status_code=400, detail="Name cannot be empty")
+            dup = db.query(ResponsiblePerson).filter(and_(ResponsiblePerson.name == name_s, ResponsiblePerson.id != person_id)).first()
+            if dup:
+                raise HTTPException(status_code=409, detail="Another person with this name already exists")
+            person.name = name_s
+        if email is not None:
+            person.email = email.strip() or None
+        if department is not None:
+            person.department = department.strip() or None
+        if is_active is not None:
+            person.is_active = is_active
+        db.add(person)
+        db.commit()
+        db.refresh(person)
+        return person
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to update responsible person: {str(e)}")
+
+
+@router.delete("/responsible-persons/{person_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def deactivate_responsible_person(
+    person_id: int,
+    complaint_id: int = Path(..., description="Complaint ID (ignored)"),
+    db: Session = Depends(get_db),
+    _admin = Depends(require_admin),
+):
+    try:
+        person = db.query(ResponsiblePerson).filter(ResponsiblePerson.id == person_id).first()
+        if not person:
+            raise HTTPException(status_code=404, detail="Responsible person not found")
+        person.is_active = False
+        db.add(person)
+        db.commit()
+        return None
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to deactivate responsible person: {str(e)}")
 
 # Action metrics endpoint
 
@@ -296,7 +391,8 @@ async def update_action(
     complaint_id: int = Path(..., description="Complaint ID"),
     action_id: int = Path(..., description="Action ID"),
     changed_by: str = Query("System", description="Who is updating this action"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _user = Depends(get_current_user),
 ):
     """Update a follow-up action"""
     

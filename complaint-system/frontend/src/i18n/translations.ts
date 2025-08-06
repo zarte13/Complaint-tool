@@ -521,7 +521,7 @@ export const translations: Record<'en' | 'fr', Partial<Translations>> = {
     actionsOverdue: 'en retard',
     actionsCompleted: 'complétées',
     completionRate: 'complétées',
-    createFirstAction: 'Créez votre première action pour organiser le plan d\'action',
+    createFirstAction: 'Créez votre première action',
     actionLimit: 'Attention: Vous approchez de la limite de 10 actions par réclamation',
     actionLimitReached: 'Limite atteinte: Maximum 10 actions par réclamation',
     

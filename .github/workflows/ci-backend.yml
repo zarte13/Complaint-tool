@@ -1,0 +1,90 @@
+name: Backend CI (pytest + coverage)
+
+on:
+  push:
+    paths:
+      - "complaint-system/backend/**"
+      - ".github/workflows/ci-backend.yml"
+  pull_request:
+    paths:
+      - "complaint-system/backend/**"
+      - ".github/workflows/ci-backend.yml"
+
+jobs:
+  test-backend:
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: complaint-system/backend
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('complaint-system/backend/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-cov
+
+      - name: Lint optional (skip if no flake8)
+        run: |
+          if python -c "import importlib; importlib.import_module('flake8')" 2>/dev/null; then flake8 . ; else echo "flake8 not installed, skipping"; fi
+        continue-on-error: true
+
+      - name: Run unit/integration tests with coverage
+        env:
+          ENV: dev
+          JWT_SECRET: test-secret
+        run: |
+          pytest -q --maxfail=1 --disable-warnings --cov=app --cov-report=xml --cov-report=term-missing
+
+      - name: Upload coverage to job summary
+        if: always()
+        run: |
+          echo "## Backend Coverage Summary" >> $GITHUB_STEP_SUMMARY
+          python - <<'PY'
+import xml.etree.ElementTree as ET
+tree = ET.parse('coverage.xml')
+root = tree.getroot()
+metrics = root.find('packages').attrib if root.find('packages') is not None else root.attrib
+line_rate = float(root.attrib.get('line-rate', 0)) * 100
+branch_rate = float(root.attrib.get('branch-rate', 0)) * 100
+print(f"Lines: {line_rate:.2f}%")
+print(f"Branches: {branch_rate:.2f}%")
+with open('${{ github.step_summary }}','a') as f:
+    f.write(f"\nLines: {line_rate:.2f}%\nBranches: {branch_rate:.2f}%\n")
+PY
+
+      - name: Enforce coverage threshold
+        run: |
+          python - <<'PY'
+import sys, xml.etree.ElementTree as ET
+tree = ET.parse('coverage.xml')
+root = tree.getroot()
+line_rate = float(root.attrib.get('line-rate', 0)) * 100
+branch_rate = float(root.attrib.get('branch-rate', 0)) * 100
+min_lines = 85.0
+min_branches = 85.0
+fail = []
+if line_rate < min_lines: fail.append(f"Lines {line_rate:.2f}% < {min_lines}%")
+if branch_rate < min_branches: fail.append(f"Branches {branch_rate:.2f}% < {min_branches}%")
+if fail:
+    print("Coverage threshold not met:", "; ".join(fail))
+    sys.exit(1)
+print("Coverage thresholds met")
+PY
