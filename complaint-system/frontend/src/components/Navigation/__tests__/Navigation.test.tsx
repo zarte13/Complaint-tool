@@ -1,6 +1,16 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '../../../test/test-utils';
+
+// Partial mock react-router-dom to preserve real exports like MemoryRouter
+vi.mock('react-router-dom', async (importOriginal) => {
+  const actual: any = await importOriginal();
+  return Object.assign({}, actual, {
+    // Mock only what we need; keep MemoryRouter, Link, etc. intact
+    useNavigate: () => vi.fn(),
+  });
+});
+
 import { MemoryRouter } from 'react-router-dom';
 import Navigation from '../Navigation';
 

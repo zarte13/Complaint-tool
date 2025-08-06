@@ -97,15 +97,23 @@ def test_api_documentation():
 def test_complaints_endpoint():
     """Test if we can access complaints (required for actions)"""
     print("📋 Testing complaints endpoint...")
-    result = make_request("GET", f"{API_BASE}/complaints", params={"skip": 0, "limit": 10})
+    # Support both legacy pagination (skip/limit returning a list)
+    # and current API that returns { items, pagination }
+    # Try new API first
+    result = make_request("GET", f"{API_BASE}/complaints", params={"page": 1, "size": 10})
+    if not result["success"]:
+        # Fallback to legacy query params
+        result = make_request("GET", f"{API_BASE}/complaints", params={"skip": 0, "limit": 10})
     if result["success"]:
         complaints = result["data"]
-        print(f"✅ Found {len(complaints)} complaints")
-        if isinstance(complaints, list) and len(complaints) > 0:
-            return complaints[0]
-        elif isinstance(complaints, dict) and "items" in complaints:
-            items = complaints["items"]
+        # Determine structure
+        if isinstance(complaints, dict) and "items" in complaints:
+            items = complaints.get("items", [])
+            print(f"✅ Found {len(items)} complaints (paged)")
             return items[0] if items else None
+        elif isinstance(complaints, list):
+            print(f"✅ Found {len(complaints)} complaints (list)")
+            return complaints[0] if complaints else None
         else:
             print(f"📋 Complaints structure: {complaints}")
             return None
@@ -113,12 +121,13 @@ def test_complaints_endpoint():
         print(f"❌ Failed to get complaints: {result['error']}")
         return None
 
-def test_responsible_persons():
+def test_responsible_persons(complaint_id: int = None):
     """Test responsible persons endpoint"""
-    # Fetch a complaint id first, as this is not a pytest fixture-based test file
-    complaint = test_complaints_endpoint()
-    assert complaint is not None, "No complaints available to test responsible persons"
-    complaint_id = complaint["id"]
+    # Accept optional complaint_id for orchestration; otherwise derive it
+    if complaint_id is None:
+        complaint = test_complaints_endpoint()
+        assert complaint is not None, "No complaints available to test responsible persons"
+        complaint_id = complaint["id"]
 
     print(f"👤 Testing responsible persons for complaint {complaint_id}...")
     result = make_request("GET", f"{API_BASE}/complaints/{complaint_id}/actions/responsible-persons")
@@ -313,7 +322,9 @@ def run_comprehensive_test():
         print("❌ No responsible persons found. Using default.")
         responsible_person = "AL"
     else:
-        responsible_person = persons[0]["name"]
+        # Persons may be list of strings or list of dicts with 'name'
+        first = persons[0]
+        responsible_person = first.get("name") if isinstance(first, dict) and "name" in first else (first if isinstance(first, str) else "AL")
     
     # Test 5: Create Actions
     action1 = test_create_action(complaint_id, responsible_person)
