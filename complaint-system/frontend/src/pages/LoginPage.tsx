@@ -2,10 +2,12 @@ import { FormEvent, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { post, ensureTrailingSlash } from '../services/api';
 import { useAuthStore } from '../stores/authStore';
+import { useLanguage } from '../contexts/LanguageContext';
 
 export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation() as any;
+  const { t } = useLanguage();
   const login = useAuthStore((s: ReturnType<typeof useAuthStore.getState>) => s.login);
 
   const [username, setUsername] = useState('');
@@ -27,7 +29,7 @@ export default function LoginPage() {
       login(data);
       navigate(from, { replace: true });
     } catch (err: any) {
-      const msg = err?.response?.data?.detail || 'Login failed';
+      const msg = err?.response?.data?.detail || t('loginFailed');
       setError(msg);
     } finally {
       setSubmitting(false);
@@ -37,7 +39,7 @@ export default function LoginPage() {
   return (
     <div className="flex items-center justify-center min-h-[60vh]">
       <form onSubmit={onSubmit} className="w-full max-w-sm bg-white shadow rounded p-6 space-y-4">
-        <h1 className="text-xl font-semibold">Login</h1>
+        <h1 className="text-xl font-semibold">{t('loginTitle')}</h1>
 
         {error && (
           <div className="text-red-700 bg-red-100 border border-red-200 rounded px-3 py-2 text-sm" role="alert" aria-live="assertive">
@@ -47,7 +49,7 @@ export default function LoginPage() {
 
         <div>
           <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
-            Username
+            {t('loginUsername')}
           </label>
           <input
             id="username"
@@ -63,7 +65,7 @@ export default function LoginPage() {
 
         <div>
           <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-            Password
+            {t('loginPassword')}
           </label>
           <input
             id="password"
@@ -77,7 +79,7 @@ export default function LoginPage() {
             aria-describedby="password-help"
             aria-required="true"
           />
-          <p id="password-help" className="text-xs text-gray-500 mt-1">At least 10 characters, include upper, lower, and a digit.</p>
+          <p id="password-help" className="text-xs text-gray-500 mt-1">{t('loginPasswordHelp')}</p>
         </div>
 
         <button
@@ -85,7 +87,7 @@ export default function LoginPage() {
           disabled={submitting}
           className="w-full bg-blue-600 text-white rounded py-2 hover:bg-blue-700 disabled:opacity-60"
         >
-          {submitting ? 'Signing in…' : 'Sign in'}
+          {submitting ? t('loginSubmitting') : t('loginSubmit')}
         </button>
       </form>
     </div>

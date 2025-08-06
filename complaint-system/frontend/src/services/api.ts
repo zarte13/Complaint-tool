@@ -8,7 +8,9 @@ import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 import { useAuthStore } from '../stores/authStore';
 
 // Create enhanced axios instance with timeout
+// Ensure all relative paths (e.g., '/auth/login') target the backend, not the Vite dev server
 const apiClient: AxiosInstance = axios.create({
+  baseURL: (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_API_BASE_URL) || (window as any).__API_BASE_URL__ || 'http://127.0.0.1:8000',
   timeout: 10000, // 10 second timeout
 });
 
@@ -122,6 +124,18 @@ apiClient.interceptors.request.use(
       if (!hasQuery && !isMultipart) {
         config.url = ensureTrailingSlash(config.url);
       }
+
+      // If caller accidentally provided an absolute URL pointing at the frontend dev server,
+      // rewrite it to the backend baseURL to avoid 404s on port 3000.
+      const base = (apiClient.defaults.baseURL || '').replace(/\/+$/, '');
+      if (/^https?:\/\//i.test(config.url)) {
+        const u = new URL(config.url);
+        if (u.host === 'localhost:3000' || u.host === '127.0.0.1:3000') {
+          // Keep the path/query but point to backend base
+          const pathAndQuery = u.pathname + (u.search || '') + (u.hash || '');
+          config.url = `${base}${ensureLeadingSlash(pathAndQuery)}`;
+        }
+      }
     }
     return config;
   },
@@ -171,21 +185,37 @@ async function retryRequest<T>(
   }
 }
 
+// Normalize URL to ensure it targets backend baseURL
+function toBackend(url: string): string {
+  // If url is already absolute and not pointing to frontend, return as-is
+  if (/^https?:\/\//i.test(url)) {
+    const u = new URL(url);
+    if (u.host === 'localhost:3000' || u.host === '127.0.0.1:3000') {
+      const base = (apiClient.defaults.baseURL || '').replace(/\/+$/, '');
+      return `${base}${ensureLeadingSlash(u.pathname + (u.search || '') + (u.hash || ''))}`;
+    }
+    return url;
+  }
+  // Relative path -> join with backend baseURL
+  const base = (apiClient.defaults.baseURL || '').replace(/\/+$/, '');
+  return `${base}${ensureLeadingSlash(url)}`;
+}
+
 // Enhanced API methods with retry logic
 async function get<T>(url: string, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
-  return retryRequest(() => apiClient.get<T>(url, config));
+  return retryRequest(() => apiClient.get<T>(toBackend(url), config));
 }
 
 async function post<T>(url: string, data?: any, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
-  return retryRequest(() => apiClient.post<T>(url, data, config));
+  return retryRequest(() => apiClient.post<T>(toBackend(url), data, config));
 }
 
 async function put<T>(url: string, data?: any, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
-  return retryRequest(() => apiClient.put<T>(url, data, config));
+  return retryRequest(() => apiClient.put<T>(toBackend(url), data, config));
 }
 
 async function del<T>(url: string, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
-  return retryRequest(() => apiClient.delete<T>(url, config));
+  return retryRequest(() => apiClient.delete<T>(toBackend(url), config));
 }
 
 export function ensureTrailingSlash(path: string): string {
@@ -209,6 +239,12 @@ export function ensureTrailingSlash(path: string): string {
   if (isLikelyItem) return `${base}${rest}`;
 
   return `${base}/${rest}`;
+}
+
+/** Ensure a leading slash for URL path joining */
+function ensureLeadingSlash(p: string): string {
+  if (!p) return '/';
+  return p.startsWith('/') ? p : `/${p}`;
 }
 
 /**

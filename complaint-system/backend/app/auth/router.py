@@ -8,12 +8,12 @@ from app.database.users_db import UsersBase, users_engine, get_users_db
 from app.auth.models import User, RefreshToken
 from app.auth.schemas import LoginRequest, TokenPair, RefreshRequest, UserOut
 from app.auth.security import (
-    validate_password_policy,
-    verify_password,
-    hash_password,
-    create_access_token,
-    create_refresh_token,
-    decode_token,
+  validate_password_policy,
+  verify_password,
+  hash_password,
+  create_access_token,
+  create_refresh_token,
+  decode_token,
 )
 
 # NOTE: Avoid creating tables at import time to prevent DB errors during test collection
@@ -32,7 +32,9 @@ def _issue_tokens(user: User, db: Session) -> TokenPair:
     return TokenPair(access_token=access, refresh_token=refresh, expires_in=expires_in)
 
 
+# Accept both "/auth/login" and "/auth/login/" to be resilient to trailing slashes
 @router.post("/login", response_model=TokenPair)
+@router.post("/login/", response_model=TokenPair)
 def login(payload: LoginRequest, db: Session = Depends(get_users_db)) -> TokenPair:
     # Basic password policy check to avoid timing hints; full policy enforced at creation time too
     ok, reason = validate_password_policy(payload.password)
@@ -61,7 +63,9 @@ def login(payload: LoginRequest, db: Session = Depends(get_users_db)) -> TokenPa
     return _issue_tokens(user, db)
 
 
+# Accept both "/auth/refresh" and "/auth/refresh/" to be resilient to trailing slashes
 @router.post("/refresh", response_model=TokenPair)
+@router.post("/refresh/", response_model=TokenPair)
 def refresh(payload: RefreshRequest, db: Session = Depends(get_users_db)) -> TokenPair:
     data = decode_token(payload.refresh_token)
     if data.get("type") != "refresh":

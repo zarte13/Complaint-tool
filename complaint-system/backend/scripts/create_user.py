@@ -17,11 +17,20 @@ import os
 import sys
 from datetime import datetime, timezone
 
-# Ensure relative imports work when invoked via -m or direct path
+# Ensure imports work regardless of invocation cwd
+# Supports:
+#  - repo root: python -m complaint-system.backend.scripts.create_user ...
+#  - complaint-system dir: python -m backend.scripts.create_user ...
+#  - backend dir: python scripts/create_user.py ...
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
-PROJECT_ROOT = os.path.abspath(os.path.join(CURRENT_DIR, "..", ".."))
-if PROJECT_ROOT not in sys.path:
-    sys.path.insert(0, PROJECT_ROOT)
+BACKEND_DIR = os.path.abspath(os.path.join(CURRENT_DIR, ".."))
+REPO_ROOT = os.path.abspath(os.path.join(BACKEND_DIR, ".."))
+COMPLAINT_SYSTEM_DIR = os.path.basename(REPO_ROOT).lower()
+
+# Prefer adding backend dir so "app.*" is importable
+for p in (BACKEND_DIR, REPO_ROOT):
+    if p not in sys.path:
+        sys.path.insert(0, p)
 
 from sqlalchemy.orm import Session  # type: ignore
 

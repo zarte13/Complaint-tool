@@ -128,7 +128,7 @@ export interface Translations {
   statusEscalated: string;
   statusClosed: string;
   
-  // Action Priorities  
+  // Action Priorities
   priorityLow: string;
   priorityMedium: string;
   priorityHigh: string;
@@ -198,6 +198,17 @@ export interface Translations {
   deleteAttachment: string;
   confirmDeleteAttachment: string;
   noFilesAttached: string;
+
+  // Authentication (Login)
+  loginTitle: string;
+  loginUsername: string;
+  loginPassword: string;
+  loginPasswordHelp: string;
+  loginSubmit: string;
+  loginSubmitting: string;
+  loginFailed: string;
+  loginLink: string;
+  logoutButton: string;
 }
 
 // Relax type to avoid requiring all keys during iteration; runtime access stays the same
@@ -374,7 +385,18 @@ export const translations: Record<'en' | 'fr', Partial<Translations>> = {
     kpiInProgressCount: 'Number of in progress complaints',
     kpiResolvedCount: 'Number of resolved complaints',
     trendsTitle: 'Complaint Trends (30 Days)',
-    failureModesTitle: 'Top 3 Failure Modes'
+    failureModesTitle: 'Top 3 Failure Modes',
+
+    // Authentication (Login)
+    loginTitle: 'Login',
+    loginUsername: 'Username',
+    loginPassword: 'Password',
+    loginPasswordHelp: 'At least 10 characters, include upper, lower, and a digit.',
+    loginSubmit: 'Sign in',
+    loginSubmitting: 'Signing in…',
+    loginFailed: 'Login failed',
+    loginLink: 'Login',
+    logoutButton: 'Logout'
   },
   fr: {
     navHome: 'Accueil',
@@ -548,6 +570,17 @@ export const translations: Record<'en' | 'fr', Partial<Translations>> = {
     kpiInProgressCount: 'Nombre de réclamations en cours',
     kpiResolvedCount: 'Nombre de réclamations résolues',
     trendsTitle: 'Tendances des plaintes (30 jours)',
-    failureModesTitle: 'Top 3 des modes de défaillance'
+    failureModesTitle: 'Top 3 des modes de défaillance',
+
+    // Authentication (Login)
+    loginTitle: 'Connexion',
+    loginUsername: 'Nom d’utilisateur',
+    loginPassword: 'Mot de passe',
+    loginPasswordHelp: 'Au moins 10 caractères, incluant majuscule, minuscule et un chiffre.',
+    loginSubmit: 'Se connecter',
+    loginSubmitting: 'Connexion…',
+    loginFailed: 'Échec de la connexion',
+    loginLink: 'Connexion',
+    logoutButton: 'Déconnexion'
   },
 };

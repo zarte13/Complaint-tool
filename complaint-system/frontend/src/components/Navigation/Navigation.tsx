@@ -72,11 +72,11 @@ export default function Navigation() {
                 type="button"
                 onClick={handleLogout}
                 className="inline-flex items-center px-3 py-2 rounded-md text-sm font-medium text-white bg-red-500 hover:bg-red-600 transition-colors"
-                aria-label="Logout"
-                title="Logout"
+                aria-label={t('logoutButton')}
+                title={t('logoutButton')}
               >
                 <LogOut className="h-4 w-4 mr-2" />
-                Logout
+                {t('logoutButton')}
               </button>
             ) : (
               <Link
@@ -86,8 +86,10 @@ export default function Navigation() {
                     ? 'bg-blue-100 text-blue-700'
                     : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                 }`}
+                aria-label={t('loginLink')}
+                title={t('loginLink')}
               >
-                Login
+                {t('loginLink')}
               </Link>
             )}
           </div>
