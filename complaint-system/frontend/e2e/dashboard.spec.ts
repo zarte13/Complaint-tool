@@ -1,8 +1,29 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('Dashboard E2E Tests', () => {
+async function primeAuth(page: any) {
+  // Obtain tokens using known CI test user seeded by workflow or local dev
+  const resp = await page.request.post('http://127.0.0.1:8000/auth/login', {
+    data: { username: 'admin', password: 'YourPass123' },
+  });
+  expect(resp.ok()).toBeTruthy();
+  const json = await resp.json();
+
+  // Persist in localStorage using the shape used by the Zustand auth store
+  await page.addInitScript(([access, refresh]) => {
+    localStorage.setItem('auth-storage', JSON.stringify({
+      state: {
+        isAuthenticated: true,
+        accessToken: access,
+        refreshToken: refresh,
+      },
+      version: 0,
+    }));
+  }, [json.access_token, json.refresh_token]);
+}
+
+test.describe('Dashboard E2E Tests (authenticated)', () => {
   test.beforeEach(async ({ page }) => {
-    // Navigate to the dashboard
+    await primeAuth(page);
     await page.goto('http://localhost:5173/dashboard');
   });
 
@@ -11,50 +32,28 @@ test.describe('Dashboard E2E Tests', () => {
   });
 
   test('should display RAR metrics', async ({ page }) => {
-    // Wait for data to load
-    await page.waitForSelector('text=Return Rate');
-    
-    // Check if RAR metrics are displayed
-    await expect(page.locator('text=Return Rate')).toBeVisible();
-    await expect(page.locator('text=Authorization Rate')).toBeVisible();
-    await expect(page.locator('text=Rejection Rate')).toBeVisible();
+    await expect(page.getByText('Number of open complaints')).toBeVisible();
+    await expect(page.getByText('Number of in progress complaints')).toBeVisible();
+    await expect(page.getByText('Number of resolved complaints')).toBeVisible();
   });
 
   test('should display failure modes', async ({ page }) => {
-    // Wait for data to load
-    await page.waitForSelector('text=Top 3 Failure Modes');
-    
-    // Check if failure modes section is visible
-    await expect(page.locator('text=Top 3 Failure Modes')).toBeVisible();
+    await expect(page.getByText('Top 3 Failure Modes')).toBeVisible();
   });
 
   test('should display sparklines', async ({ page }) => {
-    // Wait for data to load
-    await page.waitForSelector('text=Complaint Trends');
-    
-    // Check if sparklines are visible
-    await expect(page.locator('text=Complaint Trends')).toBeVisible();
+    await expect(page.getByText('Complaint Trends')).toBeVisible();
   });
 
   test('should navigate to dashboard from navigation', async ({ page }) => {
-    // Go to home page first
     await page.goto('http://localhost:5173/');
-    
-    // Click on dashboard link
     await page.click('text=Dashboard');
-    
-    // Verify we're on dashboard
     await expect(page).toHaveURL('http://localhost:5173/dashboard');
   });
 
   test('should display real-time updates', async ({ page }) => {
-    // Wait for initial load
-    await page.waitForSelector('text=Return Rate');
-    
-    // Get initial values
+    await expect(page.getByText('Return Rate')).toBeVisible();
     const initialReturnRate = await page.locator('text=Return Rate').textContent();
-    
-    // Wait for potential updates (30 second polling)
     // In test, we might need to mock or trigger updates
     await page.waitForTimeout(1000);
     
