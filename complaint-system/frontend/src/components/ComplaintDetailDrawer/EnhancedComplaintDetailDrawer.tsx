@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { postMessageToSW } from '../../utils';
 import { X, Edit3, Save, AlertCircle, Download, FileText, ChevronDown, Loader2, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -7,6 +8,7 @@ import { format } from 'date-fns';
 import { enUS, fr } from 'date-fns/locale';
 import ImageGallery from './ImageGallery';
 import { FollowUpActionsPanel } from '../FollowUpActions/FollowUpActionsPanel';
+import { get as apiGet, put as apiPut, del as apiDel } from '../../services/api';
 import { complaintsStore } from '../../stores/complaintsStore';
 
 interface EnhancedComplaintDetailDrawerProps {
@@ -158,20 +160,7 @@ export default function EnhancedComplaintDetailDrawer({
     setStatusError(null);
 
     try {
-      const response = await fetch(`/api/complaints/${complaint.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        // Always send canonical values
-        body: JSON.stringify({ status: newStatus }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to update status: ${response.statusText}`);
-      }
-
-      const updatedComplaint = await response.json();
+      const { data: updatedComplaint } = await apiPut(`/api/complaints/${complaint.id}` as any, { status: newStatus });
 
       // Normalize any outward 'closed' to 'resolved' for UI state
       const canonical = (updatedComplaint.status === 'closed' ? 'resolved' : updatedComplaint.status) as ComplaintStatus;
@@ -218,11 +207,8 @@ export default function EnhancedComplaintDetailDrawer({
     
     setIsLoadingAttachments(true);
     try {
-      const response = await fetch(`/api/complaints/${complaint.id}/attachments`);
-      if (response.ok) {
-        const data = await response.json();
-        setAttachments(data);
-      }
+      const { data } = await apiGet(`/api/complaints/${complaint.id}/attachments` as any);
+      setAttachments(data as any);
     } catch (error) {
       console.error('Failed to fetch attachments:', error);
     } finally {
@@ -255,11 +241,8 @@ export default function EnhancedComplaintDetailDrawer({
       const message = t('confirmDeleteAttachment') || 'Delete this attachment?';
       if (!window.confirm(message)) return;
 
-      const res = await fetch(`/api/complaints/attachments/${attachment.id}`, {
-        method: 'DELETE',
-      });
-
-      if (!res.ok) {
+      const res = await apiDel(`/api/complaints/attachments/${attachment.id}` as any);
+      if (res.status >= 400) {
         throw new Error(`Failed to delete attachment: ${res.statusText}`);
       }
 
@@ -291,6 +274,26 @@ export default function EnhancedComplaintDetailDrawer({
       setUiStatus(null);
     }
   }, [complaint?.status]);
+
+  // Optional: listen to SW messages about sync status/conflicts
+  useEffect(() => {
+    const handler = (event: MessageEvent) => {
+      const data: any = (event as any).data;
+      if (!data) return;
+      if (data.type === 'sync-conflict') {
+        // In a full implementation, we could surface a toast/badge
+        // console.warn('Offline sync conflict for', data.url);
+      }
+    };
+    if (typeof window !== 'undefined' && (navigator as any).serviceWorker) {
+      (navigator as any).serviceWorker.addEventListener('message', handler as any);
+    }
+    return () => {
+      if (typeof window !== 'undefined' && (navigator as any).serviceWorker) {
+        (navigator as any).serviceWorker.removeEventListener('message', handler as any);
+      }
+    };
+  }, []);
 
   // Animation control:
   // - First ever open per complaint in a session: run animations

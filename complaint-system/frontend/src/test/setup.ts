@@ -57,25 +57,28 @@ getMock.mockImplementation((url: string) => {
   return Promise.resolve({ data: {} });
 });
 
-vi.mock('../services/api', async (importOriginal) => {
-  const mod = await importOriginal<any>();
-  return {
-    ...mod,
-    // expose the same helper names used by code under test
-    get: (...args: any[]) => getMock(...args),
-    post: (...args: any[]) => postMock(...args),
-    put: (...args: any[]) => putMock(...args),
-    del: (...args: any[]) => deleteMock(...args),
-    ensureTrailingSlash: mod.ensureTrailingSlash,
-    // also export a shape similar to axios instance for any legacy usage
-    apiClient: {
-      get: getMock,
-      post: postMock,
-      put: putMock,
-      delete: deleteMock,
-    },
-  };
-});
+// Allow tests to opt out of API mocking (e.g., offline queue unit tests)
+if (process.env.TEST_REAL_API !== '1') {
+  vi.mock('../services/api', async (importOriginal) => {
+    const mod = await importOriginal<any>();
+    return {
+      ...mod,
+      // expose the same helper names used by code under test
+      get: (...args: any[]) => getMock(...args),
+      post: (...args: any[]) => postMock(...args),
+      put: (...args: any[]) => putMock(...args),
+      del: (...args: any[]) => deleteMock(...args),
+      ensureTrailingSlash: mod.ensureTrailingSlash,
+      // also export a shape similar to axios instance for any legacy usage
+      apiClient: {
+        get: getMock,
+        post: postMock,
+        put: putMock,
+        delete: deleteMock,
+      },
+    };
+  });
+}
 
 // expose mocks globally for convenience in tests
 // @ts-ignore

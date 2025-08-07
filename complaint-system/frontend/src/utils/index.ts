@@ -56,3 +56,36 @@ export const statusColors: Record<string, string> = {
   resolved: 'bg-green-100 text-green-800',
   closed: 'bg-gray-100 text-gray-800'
 };
+
+// Offline utilities for DA-005
+export function isOnline(): boolean {
+  return typeof navigator === 'undefined' ? true : navigator.onLine;
+}
+
+export function registerServiceWorker(): void {
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker
+        .register('/sw.js')
+        .then(() => {
+          // Registered
+        })
+        .catch(() => {
+          // ignore
+        });
+    });
+  }
+}
+
+export function requestBackgroundSync(tag: string): Promise<void> {
+  if ('serviceWorker' in navigator && 'SyncManager' in (window as any)) {
+    return navigator.serviceWorker.ready.then((reg) => (reg as any).sync.register(tag));
+  }
+  return Promise.resolve();
+}
+
+export function postMessageToSW(message: any): void {
+  if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+    navigator.serviceWorker.controller.postMessage(message);
+  }
+}

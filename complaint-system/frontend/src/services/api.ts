@@ -5,6 +5,7 @@
  * - Enhanced axios instance with retry logic and rate limiting
  */
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
+import { isOnline, requestBackgroundSync } from '../utils';
 import { useAuthStore } from '../stores/authStore';
 
 // Create enhanced axios instance with timeout
@@ -207,15 +208,54 @@ async function get<T>(url: string, config?: AxiosRequestConfig): Promise<AxiosRe
 }
 
 async function post<T>(url: string, data?: any, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
-  return retryRequest(() => apiClient.post<T>(toBackend(url), data, config));
+  const target = toBackend(url);
+  if (isOnline()) {
+    return retryRequest(() => apiClient.post<T>(target, data, config));
+  }
+  await queueOfflineRequest({ url: target, method: 'POST', body: data, headers: (config && (config.headers as any)) || undefined });
+  await requestBackgroundSync('sync-offline-requests');
+  return Promise.resolve({
+    data: { offline: true } as any,
+    status: 202,
+    statusText: 'Accepted (offline queued)',
+    headers: {},
+    config: config || {},
+    request: null,
+  } as AxiosResponse<T>);
 }
 
 async function put<T>(url: string, data?: any, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
-  return retryRequest(() => apiClient.put<T>(toBackend(url), data, config));
+  const target = toBackend(url);
+  if (isOnline()) {
+    return retryRequest(() => apiClient.put<T>(target, data, config));
+  }
+  await queueOfflineRequest({ url: target, method: 'PUT', body: data, headers: (config && (config.headers as any)) || undefined });
+  await requestBackgroundSync('sync-offline-requests');
+  return Promise.resolve({
+    data: { offline: true } as any,
+    status: 202,
+    statusText: 'Accepted (offline queued)',
+    headers: {},
+    config: config || {},
+    request: null,
+  } as AxiosResponse<T>);
 }
 
 async function del<T>(url: string, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
-  return retryRequest(() => apiClient.delete<T>(toBackend(url), config));
+  const target = toBackend(url);
+  if (isOnline()) {
+    return retryRequest(() => apiClient.delete<T>(target, config));
+  }
+  await queueOfflineRequest({ url: target, method: 'DELETE', body: undefined, headers: (config && (config.headers as any)) || undefined });
+  await requestBackgroundSync('sync-offline-requests');
+  return Promise.resolve({
+    data: { offline: true } as any,
+    status: 202,
+    statusText: 'Accepted (offline queued)',
+    headers: {},
+    config: config || {},
+    request: null,
+  } as AxiosResponse<T>);
 }
 
 export function ensureTrailingSlash(path: string): string {
@@ -295,3 +335,34 @@ export const partsApi = {
 
 // Export the enhanced API client for direct usage
 export { apiClient, get, post, put, del };
+
+// Lightweight IndexedDB queue for offline mutations (kept in this module for simplicity)
+type QueuedRequest = { url: string; method: 'POST' | 'PUT' | 'DELETE'; headers?: Record<string, any>; body?: any };
+
+const OFFLINE_DB_NAME = 'offline-db';
+const REQUESTS_STORE = 'requests';
+
+function openDb(): Promise<IDBDatabase> {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(OFFLINE_DB_NAME, 1);
+    req.onupgradeneeded = () => {
+      const db = req.result;
+      if (!db.objectStoreNames.contains(REQUESTS_STORE)) {
+        db.createObjectStore(REQUESTS_STORE, { keyPath: 'id', autoIncrement: true });
+      }
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function queueOfflineRequest(entry: QueuedRequest): Promise<void> {
+  const db = await openDb();
+  await new Promise<void>((resolve, reject) => {
+    const tx = db.transaction(REQUESTS_STORE, 'readwrite');
+    const req = tx.objectStore(REQUESTS_STORE).add({ ...entry, queuedAt: Date.now() } as any);
+    // Resolve on request success to avoid relying on tx.oncomplete in tests/envs
+    (req as any).onsuccess = () => resolve();
+    (req as any).onerror = () => reject((req as any).error as any);
+  });
+}

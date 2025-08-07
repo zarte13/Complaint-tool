@@ -1,8 +1,8 @@
 # Complaint Management System - Complete Architecture Guide
 
-**Last Updated**: 2025-08-06
-**Commit Hash**: Auth, Routing, i18n updates, tests stabilized
-**Version**: 2.2.0
+**Last Updated**: 2025-08-07
+**Commit Hash**: DA-005 Offline mode implemented, tests added
+**Version**: 2.3.0
 
 ## Table of Contents
 1. [System Overview](#system-overview)
@@ -24,8 +24,9 @@
 17. [Recent Changes](#recent-changes)
 18. [Enhanced Complaint Detail System](#enhanced-complaint-detail-system)
 19. [Code Quality & Security Analysis](#code-quality--security-analysis)
-20. [Troubleshooting](#troubleshooting)
-21. [Glossary](#glossary)
+20. [Offline Mode (DA-005)](#offline-mode-da-005)
+21. [Troubleshooting](#troubleshooting)
+22. [Glossary](#glossary)
 
 ---
 
@@ -388,13 +389,28 @@ CREATE INDEX idx_attachments_complaint_id ON attachments(complaint_id);
   - Users DB models: User and RefreshToken. See [`python.app/auth/models.py`](complaint-system/backend/app/auth/models.py:1)
   - CLI user creation: [`python.backend/scripts/create_user.py`](complaint-system/backend/scripts/create_user.py:1)
 
-### Follow-up Actions and Responsables (in progress)
-- GET `/api/responsible-persons/` — Auth required; supports search and active filter
-- Planned admin-only:
-  - POST `/api/responsible-persons/` — Create responsable
-  - PUT `/api/responsible-persons/{id}` — Update responsable
-  - DELETE `/api/responsible-persons/{id}` — Soft-deactivate responsable
-- Action create/update endpoints require auth and will validate responsible_person against active responsables
+### Follow-up Actions (DA-004)
+- Router prefix: `/api/complaints/{complaint_id}/actions`
+- Endpoints (implemented):
+  - GET `/` — List actions with filters (`status`, `responsible_person`, `overdue_only`)
+  - POST `/` — Create action (max 10 per complaint)
+  - GET `/{action_id}` — Get action
+  - PUT `/{action_id}` — Update action (audit history recorded)
+  - DELETE `/{action_id}` — Soft-delete (status `cancelled` with audit)
+  - POST `/{action_id}/reorder?new_position=..` — Reorder actions
+  - GET `/{action_id}/history` — Audit trail
+  - POST `/{action_id}/dependencies` — Create dependency
+  - GET `/{action_id}/dependencies` — List dependencies
+  - POST `/{action_id}/start` — Start action if dependencies satisfied
+  - PATCH `/bulk-update` — Bulk update actions
+  - GET `/metrics` — Aggregated metrics for dashboard
+- Responsible persons (nested): `/api/complaints/{complaint_id}/actions/responsible-persons`
+  - GET — Auth required; supports `active_only`, `search`
+  - POST — Admin only: create
+  - PUT `/{person_id}` — Admin only: update
+  - DELETE `/{person_id}` — Admin only: deactivate
+  
+Role enforcement uses `get_current_user` and `require_admin` where applicable.
 
 ### Base URL
 ```
@@ -433,9 +449,10 @@ http://localhost:8000/api/
 ### Analytics Endpoints
 | Method | Endpoint | Description | Parameters |
 |--------|----------|-------------|------------|
-| GET | `/analytics/rar-metrics/` | Return/Authorization/Rejection rates | None |
-| GET | `/analytics/failure-modes/` | Top 3 failure modes | None |
-| GET | `/analytics/trend-data/` | Complaint trends | `days` (default: 30) |
+| GET | `/analytics/rar-metrics` | Return/Authorization/Rejection rates (legacy taxonomy) | None |
+| GET | `/analytics/failure-modes` | Top 3 failure modes | None |
+| GET | `/analytics/trends` | Complaint trends (last 30 days) | None |
+| GET | `/analytics/status-counts` | Counts by `open`, `in_progress`, `resolved` | None |
 
 ### Export Endpoints
 | Method | Endpoint | Description | Parameters |
@@ -644,7 +661,7 @@ uploads/
 ### Routes (Updated)
 - `/` - Home page (complaint form and list)
 - `/dashboard` - Command center dashboard with RAR metrics and real-time sparklines
-- `/complaints` - Complaints management page (renamed from `/second`)
+- `/complaints` - Complaints management page
 
 ### Navigation Components
 ```
@@ -658,7 +675,7 @@ frontend/src/components/
 - **Active State Indicators**: Visual feedback for current route
 - **Responsive Design**: Mobile-friendly navigation
 - **Keyboard Accessibility**: Tab navigation support
-- **Route Updates**: `/second` → `/complaints` for complaint management
+
 
 ---
 
@@ -1238,6 +1255,72 @@ Secret considerations:
 
 ---
 
+## Offline Mode (DA-005)
+
+### Overview
+Offline-first capabilities are implemented on the frontend to ensure core workflows continue without network connectivity. The browser acts as the system of record temporarily and synchronizes with the backend when connectivity resumes.
+
+### Key Features
+- Service Worker for app shell and GET caching
+- Background Sync to flush queued mutations
+- IndexedDB-backed queue for POST/PUT/DELETE
+- Optimistic UI for edits and status changes
+- Basic conflict capture (409/412 moved to a conflicts store with client notifications)
+
+### Implementation
+
+Frontend files:
+- `frontend/public/sw.js`
+  - Caches navigation shell (`/`, `/index.html`) in `app-cache-v1`.
+  - Network-first cache for GET API requests in `api-get-cache-v1`.
+  - IndexedDB database `offline-db` with stores:
+    - `requests`: queued mutations with `{ url, method, headers, body, queuedAt }`.
+    - `conflicts`: failed sync entries when server responds 409/412.
+  - Background Sync tag `sync-offline-requests` triggers `flushQueue()` to replay queued mutations.
+  - Posts `sync-success` and `sync-conflict` messages to clients via `clients.matchAll().postMessage`.
+
+- `frontend/src/main.tsx`
+  - Registers the service worker at `/sw.js` on window `load` using `registerServiceWorker()`.
+
+- `frontend/src/utils/index.ts`
+  - `isOnline()`: wraps `navigator.onLine`.
+  - `registerServiceWorker()`, `requestBackgroundSync(tag)`, `postMessageToSW(message)` helpers.
+
+- `frontend/src/services/api.ts`
+  - `post/put/del` are offline-aware.
+    - If online: normal axios request with retry/backoff.
+    - If offline: enqueue into `offline-db.requests`, register background sync, and return a synthetic `202 Accepted` with `{ offline: true }`.
+  - Uses lightweight IndexedDB accessors (`openDb`, `queueOfflineRequest`).
+  - GET requests remain network-first and benefit from SW cache.
+
+- `frontend/src/components/ComplaintDetailDrawer/EnhancedComplaintDetailDrawer.tsx`
+  - Uses shared API client so status updates are queued offline.
+  - Listens for SW `message` events to allow future UI toasts for conflicts.
+
+### Developer Notes
+- Background Sync requires browser support; if unavailable, queued requests persist and will be flushed on manual `postMessage({ type: 'flush-queue' })`.
+- Avoid queuing multipart uploads (file attachments) in this iteration; uploads require online mode.
+- Conflicts (409/412) are stored for later resolution; UI surfacing is planned (badge/toast).
+
+### Testing
+- Unit tests (Vitest): `frontend/src/services/api.offline.test.ts`
+  - Fakes IndexedDB and `navigator.onLine=false` to assert that POST/PUT/DELETE return 202 and are queued.
+  - Test timeout increased to accommodate async IDB operations.
+- E2E (Playwright): `frontend/e2e/offline-mode.spec.ts`
+  - Toggles offline/online, navigates, and triggers SW queue flush to ensure no runtime errors across transitions.
+- Existing suites run with API mocking by default. The offline test opts out to exercise the real module.
+
+### Operations
+- Local dev: no special steps beyond frontend dev server. SW registers in dev as path `/sw.js`.
+- Clearing caches during development: Application tab → Clear storage; unregister SW if needed.
+
+### References
+- Offline-first queueing and IndexedDB patterns: [`How to Build an Offline-First React App`](https://betterprogramming.pub/offline-first-react-app-b79ab1a17649?gi=8cf23a0185f0)
+- Example repo with offline sync/versioning ideas: `offline-first-app` (`https://github.com/mkrn/offline-first-app`)
+- React Query offline considerations: [`Offline React Query`](https://tkdodo.eu/blog/offline-react-query)
+
+---
+
 ## Recent Changes
 
 ### Code Review & Security Analysis (2025-07-17)
@@ -1248,13 +1331,13 @@ Secret considerations:
 - **PRIORITIZED**: Risk assessment matrix with P0-P3 priority classifications
 - **UPDATED**: Architecture documentation with current system state and security analysis
 
-### Security Findings
-- **CRITICAL**: No authentication system - all endpoints publicly accessible
-- **HIGH**: XSS vulnerabilities in complaint detail fields
-- **HIGH**: Insufficient file upload validation using only MIME headers
-- **HIGH**: Incorrect analytics data with hardcoded status values
-- **MEDIUM**: Missing database indexes causing performance issues
-- **MEDIUM**: Type mismatches between frontend and backend schemas
+### Security & Quality Findings (Revised)
+- Authentication implemented (JWT access/refresh) and enforced on protected routes; admin-only endpoints guarded. See `backend/app/auth/*` and router inclusion in `backend/main.py`.
+- Follow-up actions APIs use `get_current_user` and `require_admin` for appropriate operations.
+- Frontend input fields are plain text with validation; consider DOM sanitization for any future rich text.
+- File upload validation present; recommend augmenting with content-based verification (e.g., python-magic) if not already enforced.
+- Analytics taxonomy: ensure consistent status usage across endpoints; prefer `open, in_progress, resolved` for complaint dashboards.
+- Indexation: verify and enforce DB indexes as specified in Database Configuration.
 
 ### Performance Issues
 - **Database**: Missing indexes on frequently queried fields
