@@ -1255,7 +1255,7 @@ Secret considerations:
 
 ---
 
-## Offline Mode (DA-005)
+## Offline Mode
 
 ### Overview
 Offline-first capabilities are implemented on the frontend to ensure core workflows continue without network connectivity. The browser acts as the system of record temporarily and synchronizes with the backend when connectivity resumes.
