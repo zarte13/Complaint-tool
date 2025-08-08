@@ -28,7 +28,8 @@ type ExportArgs = {
     company: string;
     part: string;
     issueType: string;
-    categorySubtypes: string;
+    category: string;
+    subtypes: string;
     status: string;
     workOrder: string;
     occurrence: string;
@@ -37,6 +38,9 @@ type ExportArgs = {
     due: string;
     responsible: string;
     priority: string;
+    packagingDetails: string;
+    received: string;
+    expected: string;
   }>;
 };
 
@@ -134,7 +138,8 @@ export async function exportComplaintToPDF({ complaint, attachments, actions, la
     company: isFR ? 'Client' : 'Company',
     part: isFR ? 'Pièce' : 'Part',
     issueType: isFR ? "Type d'anomalie" : 'Issue Type',
-    categorySubtypes: isFR ? 'Catégorie/Sous-types' : 'Category/Subtypes',
+    category: isFR ? 'Catégorie' : 'Category',
+    subtypes: isFR ? 'Sous-types' : 'Subtypes',
     status: isFR ? 'Statut' : 'Status',
     workOrder: isFR ? 'Bon de travail #' : 'Work Order #',
     occurrence: isFR ? 'Occurrence' : 'Occurrence',
@@ -143,7 +148,40 @@ export async function exportComplaintToPDF({ complaint, attachments, actions, la
     due: isFR ? 'Échéance' : 'Due',
     responsible: isFR ? 'Responsable' : 'Responsible',
     priority: isFR ? 'Priorité' : 'Priority',
+    packagingDetails: isFR ? "Détails d'emballage" : 'Packaging Details',
+    received: isFR ? 'Reçu' : 'Received',
+    expected: isFR ? 'Attendu' : 'Expected',
     ...labels,
+  };
+
+  // Localized display helpers for values
+  const mapStatus = (raw?: string) => {
+    if (!raw) return '';
+    const m = isFR
+      ? { open: 'ouvert', in_progress: 'en cours', resolved: 'résolu', closed: 'fermé', in_planning: 'plans établis' }
+      : { open: 'open', in_progress: 'in progress', resolved: 'resolved', closed: 'closed', in_planning: 'in planning' };
+    return (m as any)[raw] || raw;
+  };
+  const mapIssueType = (raw?: string) => {
+    if (!raw) return '';
+    const m = isFR
+      ? { wrong_quantity: 'Mauvaise quantité', wrong_part: 'Mauvaise pièce', damaged: 'Endommagé', other: 'Autre' }
+      : { wrong_quantity: 'Wrong Quantity', wrong_part: 'Wrong Part', damaged: 'Damaged', other: 'Other' };
+    return (m as any)[raw] || raw;
+  };
+  const mapCategory = (raw?: string) => {
+    if (!raw) return '';
+    const m = isFR
+      ? { dimensional: 'Dimensionnel', visual: 'Visuel', packaging: 'Emballage', other: 'Autre' }
+      : { dimensional: 'Dimensional', visual: 'Visual', packaging: 'Packaging', other: 'Other' };
+    return (m as any)[raw] || raw;
+  };
+  const mapSubtype = (raw?: string) => {
+    if (!raw) return '';
+    const m = isFR
+      ? { scratch: 'Éraflure', nicks: 'Coches', rust: 'Rouille', wrong_box: 'Mauvaise boîte', wrong_bag: 'Mauvais sac', wrong_paper: 'Mauvais papier', wrong_part: 'Mauvaise pièce', wrong_quantity: 'Mauvaise quantité', wrong_tags: 'Mauvaises étiquettes' }
+      : { scratch: 'Scratch', nicks: 'Nicks', rust: 'Rust', wrong_box: 'Wrong Box', wrong_bag: 'Wrong Bag', wrong_paper: 'Wrong Paper', wrong_part: 'Wrong Part', wrong_quantity: 'Wrong Quantity', wrong_tags: 'Wrong Tags' };
+    return (m as any)[raw] || raw;
   };
 
   // Header with logo and title
@@ -181,18 +219,38 @@ export async function exportComplaintToPDF({ complaint, attachments, actions, la
   y = addSectionTitle(doc, L.summary, y);
   y += 2;
   const partLabel = `${complaint.part?.part_number || ''} ${complaint.part?.description ? `— ${complaint.part.description}` : ''}`.trim();
-  const catSubtype = [
-    (complaint as any).issue_category || '',
-    Array.isArray((complaint as any).issue_subtypes) ? (complaint as any).issue_subtypes.join(', ') : ''
-  ].filter(Boolean).join(' / ');
+  const subtypesArray: string[] = Array.isArray((complaint as any).issue_subtypes) ? (complaint as any).issue_subtypes : [];
+  const localizedSubtypes = subtypesArray.map(mapSubtype).join(', ');
 
-  const summaryRows: Array<[string, string, string, string]> = [
-    [L.complaintId, `#${complaint.id}`, L.status, (complaint.status || '') as string],
-    [L.company, complaint.company?.name || '', L.workOrder, complaint.work_order_number || ''],
-    [L.part, partLabel, L.occurrence, complaint.occurrence || ''],
-    [L.issueType, (complaint.issue_type as any) || '', L.partReceived, complaint.part_received || ''],
-    [L.categorySubtypes, catSubtype, L.createdUpdated, `${format(new Date(complaint.created_at), 'yyyy-MM-dd HH:mm', { locale: dfLocale })} / ${format(new Date(complaint.updated_at), 'yyyy-MM-dd HH:mm', { locale: dfLocale })}`],
+  const leftPairs: Array<[string, string]> = [
+    [L.complaintId, `#${complaint.id}`],
+    [L.company, complaint.company?.name || ''],
+    [L.part, partLabel],
+    [L.issueType, mapIssueType((complaint.issue_type as any) || '')],
+    [L.category, mapCategory((complaint as any).issue_category || '')],
+    [L.subtypes, localizedSubtypes],
   ];
+
+  const rightPairs: Array<[string, string]> = [
+    [L.status, mapStatus(complaint.status as any)],
+    [L.workOrder, complaint.work_order_number || ''],
+    [L.occurrence, complaint.occurrence || ''],
+  ];
+  // Conditional Part Received
+  const hasWrongPart = subtypesArray.includes('wrong_part') || !!complaint.part_received;
+  if (hasWrongPart) {
+    rightPairs.push([L.partReceived, complaint.part_received || '']);
+  }
+  rightPairs.push([L.createdUpdated, `${format(new Date(complaint.created_at), 'yyyy-MM-dd HH:mm', { locale: dfLocale })} / ${format(new Date(complaint.updated_at), 'yyyy-MM-dd HH:mm', { locale: dfLocale })}`]);
+
+  // Zip into rows of 4 columns
+  const maxLen = Math.max(leftPairs.length, rightPairs.length);
+  const summaryRows: Array<[string, string, string, string]> = [];
+  for (let i = 0; i < maxLen; i++) {
+    const [lk, lv] = leftPairs[i] || ['', ''];
+    const [rk, rv] = rightPairs[i] || ['', ''];
+    summaryRows.push([lk, lv, rk, rv]);
+  }
 
   autoTable(doc, {
     startY: y + 4,
@@ -216,8 +274,9 @@ export async function exportComplaintToPDF({ complaint, attachments, actions, la
   y = (doc as any).lastAutoTable?.finalY ? (doc as any).lastAutoTable.finalY + SECTION_SPACING : y + 80;
 
   // Description
-  y = ensureSpace(doc, y, 24);
+  y = ensureSpace(doc, y, 28);
   y = addSectionTitle(doc, L.description, y);
+  y += 6;
   const details = (complaint.details || '').trim();
   if (details) {
     doc.setFont('helvetica', 'normal');
@@ -233,7 +292,32 @@ export async function exportComplaintToPDF({ complaint, attachments, actions, la
     doc.text(L.noDescription, PAGE_MARGIN, y);
     y += LINE_HEIGHT;
   }
-  y += SECTION_SPACING;
+  y += SECTION_SPACING + 8;
+
+  // Packaging details table (received vs expected) if applicable
+  const pkgRecv: Record<string, string> | undefined = (complaint as any).packaging_received;
+  const pkgExp: Record<string, string> | undefined = (complaint as any).packaging_expected;
+  const packagingSubtypes = ['wrong_box','wrong_bag','wrong_paper','wrong_quantity','wrong_tags'];
+  const selectedPackaging = packagingSubtypes.filter(s => subtypesArray.includes(s));
+  if (selectedPackaging.length > 0) {
+    y = ensureSpace(doc, y, 24);
+    y = addSectionTitle(doc, L.packagingDetails, y);
+    const rows = selectedPackaging.map(sub => [mapSubtype(sub), (pkgRecv?.[sub] ?? ''), (pkgExp?.[sub] ?? '')]);
+    autoTable(doc, {
+      head: [[L.subtypes, L.received, L.expected]],
+      body: rows,
+      startY: y + 4,
+      margin: { left: PAGE_MARGIN, right: PAGE_MARGIN },
+      styles: { font: 'helvetica', fontSize: 10, cellPadding: 3 },
+      headStyles: { fillColor: [107, 114, 128], textColor: 255 },
+      columnStyles: {
+        0: { cellWidth: contentWidth * 0.40 },
+        1: { cellWidth: contentWidth * 0.30 },
+        2: { cellWidth: contentWidth * 0.30 },
+      },
+    });
+    y = (doc as any).lastAutoTable?.finalY ? (doc as any).lastAutoTable.finalY + SECTION_SPACING : y + 60;
+  }
 
   // Images (attachments)
   const atts = attachments ?? await fetchAttachments(complaint.id);

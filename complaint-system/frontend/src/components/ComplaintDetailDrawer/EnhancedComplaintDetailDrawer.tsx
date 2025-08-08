@@ -404,6 +404,19 @@ export default function EnhancedComplaintDetailDrawer({
     const currentStatus = getStatusDisplay(normalizedDisplay);
     const statusOptions: ComplaintStatus[] = ['open', 'in_planning' as any, 'in_progress', 'resolved'];
     
+    if (!isAuthenticated) {
+      const badge = getStatusDisplay(normalizedDisplay);
+      return (
+        <div className="space-y-1">
+          <label className="text-xs font-medium text-gray-600">Status</label>
+          <div className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full ${badge.bgColor} ${badge.color}`}>
+            <span aria-hidden className="mr-1">{badge.icon}</span>
+            <span className="sr-only">{badge.label}</span>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="space-y-1">
         <label className="text-xs font-medium text-gray-600">Status</label>
@@ -418,12 +431,12 @@ export default function EnhancedComplaintDetailDrawer({
               // Make the network call; the success handler will persist the same value
               handleStatusChange(next);
             }}
-            disabled={isUpdatingStatus || !isAuthenticated}
+            disabled={isUpdatingStatus}
             className={`
               w-full px-3 py-2 pr-8 text-sm border border-gray-300 rounded-md 
               focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
               appearance-none cursor-pointer bg-white transition-opacity duration-200
-              ${(isUpdatingStatus || !isAuthenticated) ? 'cursor-not-allowed opacity-70' : ''}
+              ${isUpdatingStatus ? 'cursor-not-allowed opacity-70' : ''}
             `}
           >
             {statusOptions.map((status) => {

@@ -30,7 +30,7 @@ export default function HomePage() {
             <ComplaintForm onSuccess={handleComplaintSubmitted} />
           ) : (
             <div className="p-4 rounded border border-amber-200 bg-amber-50 text-amber-800 text-sm">
-              {'Please log in to submit a complaint.'}
+              {t('pleaseLoginToSubmit') || 'Please log in to submit a complaint.'}
             </div>
           )}
         </div>

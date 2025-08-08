@@ -157,21 +157,23 @@ export const FollowUpActionsPanel: React.FC<FollowUpActionsPanelProps> = ({
           <div className="p-4">
             {/* Header Row with Add Button and Metrics */}
             <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-100">
-              <button
-                onClick={() => setShowAddForm(true)}
-                className="h-10 px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-blue-700 rounded hover:bg-blue-700 shadow-sm"
-                style={{ fontSize: '14px', fontWeight: '500', boxShadow: '0 2px 4px rgba(37, 99, 235, 0.25)' }}
-                disabled={actions.length >= 10 || creating || !isEditable}
-              >
-                {creating ? (
-                  <>
-                    <span className="inline-block w-4 h-4 bg-white/50 rounded-full mr-2"></span>
-                    {t('saving')}
-                  </>
-                ) : (
-                  t('createNewAction') ?? t('addAction')
-                )}
-              </button>
+              {isEditable && (
+                <button
+                  onClick={() => setShowAddForm(true)}
+                  className="h-10 px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-blue-700 rounded hover:bg-blue-700 shadow-sm"
+                  style={{ fontSize: '14px', fontWeight: '500', boxShadow: '0 2px 4px rgba(37, 99, 235, 0.25)' }}
+                  disabled={actions.length >= 10 || creating}
+                >
+                  {creating ? (
+                    <>
+                      <span className="inline-block w-4 h-4 bg-white/50 rounded-full mr-2"></span>
+                      {t('saving')}
+                    </>
+                  ) : (
+                    t('createNewAction') ?? t('addAction')
+                  )}
+                </button>
+              )}
 
               {metrics && (
                 <div className="flex items-center space-x-4 text-sm text-gray-600">

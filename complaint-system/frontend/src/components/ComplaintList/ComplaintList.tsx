@@ -6,6 +6,7 @@ import { Complaint, ComplaintStatus } from '../../types';
 import { get, put } from '../../services/api';
 import EnhancedComplaintDetailDrawer from '../ComplaintDetailDrawer/EnhancedComplaintDetailDrawer';
 import ComplaintTile from './ComplaintTile';
+import { useAuthStore } from '../../stores/authStore';
 // complaintsStore imported where needed
 
 interface ComplaintListProps {
@@ -30,9 +31,14 @@ export default function ComplaintList({
   const [complaints, setComplaints] = useState<Complaint[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState<number>(page);
+  const [currentSize, setCurrentSize] = useState<number>(pageSize);
+  const [total, setTotal] = useState<number>(0);
+  const [totalPages, setTotalPages] = useState<number>(1);
   const [drawerComplaint, setDrawerComplaint] = useState<Complaint | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const { t } = useLanguage();
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
   // Track last query to avoid duplicate requests with identical params
   const lastParamsRef = useRef<string>('');
@@ -42,8 +48,8 @@ export default function ComplaintList({
  
   const buildParams = useCallback(() => {
     const params = new URLSearchParams();
-    const effectivePage = page ?? 1;
-    const effectiveSize = pageSize ?? 10;
+    const effectivePage = currentPage ?? 1;
+    const effectiveSize = currentSize ?? 10;
     if (searchTerm) params.append('search', searchTerm);
     if (statusFilter && statusFilter.length > 0) {
       statusFilter.forEach(status => params.append('status', status));
@@ -52,7 +58,7 @@ export default function ComplaintList({
     params.append('page', String(effectivePage));
     params.append('size', String(effectiveSize));
     return params.toString();
-  }, [searchTerm, statusFilter, issueTypeFilter, page, pageSize]);
+  }, [searchTerm, statusFilter, issueTypeFilter, currentPage, currentSize]);
  
   const fetchComplaints = useCallback(async () => {
     const paramString = buildParams();
@@ -72,13 +78,24 @@ export default function ComplaintList({
       setLoading(true);
       // Avoid passing an unsupported signal to our wrapped axios if environment doesn't support it
       const response = await get(`/api/complaints?${paramString}` as any);
-      const data = response.data as { items?: Complaint[] } | Complaint[];
+      const data = response.data as any;
       if (Array.isArray(data)) {
         setComplaints(data);
-      } else if (data && Array.isArray((data as any).items)) {
-        setComplaints((data as any).items);
+        setTotal(data.length);
+        setTotalPages(1);
+      } else if (data && Array.isArray(data.items)) {
+        setComplaints(data.items as Complaint[]);
+        if (data.pagination) {
+          setTotal(data.pagination.total ?? 0);
+          setTotalPages(data.pagination.total_pages ?? 1);
+        } else {
+          setTotal((data.items as Complaint[]).length);
+          setTotalPages(1);
+        }
       } else {
         setComplaints([]);
+        setTotal(0);
+        setTotalPages(1);
       }
       lastParamsRef.current = paramString;
       lastRefreshTriggerRef.current = refreshTrigger;
@@ -86,6 +103,8 @@ export default function ComplaintList({
       // Treat any error as non-fatal for the purpose of request flood tests
       setError(err?.response?.data?.detail || 'Failed to load complaints');
       setComplaints([]);
+      setTotal(0);
+      setTotalPages(1);
     } finally {
       setLoading(false);
     }
@@ -106,7 +125,12 @@ export default function ComplaintList({
         clearTimeout(debounceRef.current);
       }
     };
-  }, [fetchComplaints, buildParams, refreshTrigger, searchTerm, statusFilter, issueTypeFilter, page, pageSize]);
+  }, [fetchComplaints, buildParams, refreshTrigger, searchTerm, statusFilter, issueTypeFilter, currentPage, currentSize]);
+
+  // Reset to first page on filter/search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, statusFilter, issueTypeFilter]);
 
 
 
@@ -225,10 +249,44 @@ export default function ComplaintList({
                     complaint={complaint}
                     onClick={handleRowClick}
                     onFileUploadComplete={fetchComplaints}
-                    readOnly={readOnly}
+                    readOnly={readOnly || !isAuthenticated}
                   />
                 </motion.div>
               ))}
+              {/* Pagination controls */}
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-gray-100">
+                <div className="text-sm text-gray-600">
+                  {t('show')} {complaints.length} {t('of')} {total} {t('results')}
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    disabled={currentPage <= 1}
+                    className="px-3 py-1 text-sm border rounded disabled:opacity-50"
+                  >
+                    {t('previous')}
+                  </button>
+                  <span className="text-sm text-gray-700">
+                    {`Page ${currentPage} / ${totalPages}`}
+                  </span>
+                  <button
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={currentPage >= totalPages}
+                    className="px-3 py-1 text-sm border rounded disabled:opacity-50"
+                  >
+                    {t('next')}
+                  </button>
+                  <select
+                    value={currentSize}
+                    onChange={(e) => { setCurrentSize(Number(e.target.value)); setCurrentPage(1); }}
+                    className="ml-2 px-2 py-1 text-sm border rounded"
+                  >
+                    <option value={10}>{t('show')} 10/{t('perPage')}</option>
+                    <option value={20}>{t('show')} 20/{t('perPage')}</option>
+                    <option value={50}>{t('show')} 50/{t('perPage')}</option>
+                  </select>
+                </div>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>

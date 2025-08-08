@@ -73,7 +73,8 @@ export default function ComplaintDetailView({ complaint }: ComplaintDetailViewPr
         </div>
       </div>
 
-      <div>
+      {/* Removed Additional Information section as requested */}
+      <div className="hidden">
         <h3 className="text-sm font-medium text-gray-900 mb-3">{t('additionalInformation')}</h3>
         <div className="space-y-3">
           <div>

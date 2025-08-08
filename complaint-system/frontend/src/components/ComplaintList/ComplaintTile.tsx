@@ -82,7 +82,7 @@ export default function ComplaintTile({ complaint, onClick, onFileUploadComplete
     return new Date(dateString).toLocaleDateString();
   };
 
-  const hasExtraInfo = complaint.issue_type === 'wrong_quantity' || complaint.issue_type === 'wrong_part';
+  const hasExtraInfo = false; // Additional information section removed per requirements
 
   return (
     <motion.div 

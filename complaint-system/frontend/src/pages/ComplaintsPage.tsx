@@ -114,7 +114,7 @@ export default function ComplaintsPage() {
                 onClick={() => handleExport('csv')}
                 className="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
               >
-                Export CSV
+                {t('exportCSV') || 'Export CSV'}
               </button>
             </div>
           </div>

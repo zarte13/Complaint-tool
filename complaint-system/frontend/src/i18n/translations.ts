@@ -101,6 +101,7 @@ export interface Translations {
   tooltipFileUpload: string;
   uploadDropHereOrClick: string;
   uploadSupportNote: string;
+  pleaseLoginToSubmit?: string;
   tooltipWorkOrderNumber: string;
   tooltipOccurrence: string;
   tooltipPartReceived: string;
@@ -348,6 +349,7 @@ export const translations: Record<'en' | 'fr', Partial<Translations>> = {
     tooltipFileUpload: 'Attach supporting documents, photos, or evidence (PDF, JPG, PNG, max 10MB each)',
     uploadDropHereOrClick: 'Drag & drop files here, or click to select',
     uploadSupportNote: 'Supports images, PDFs, and text files up to 10MB',
+    pleaseLoginToSubmit: 'Please log in to submit a complaint.',
     tooltipWorkOrderNumber: 'Enter the work order number for tracking purposes',
     tooltipOccurrence: 'Specify the occurrence or instance number',
     tooltipPartReceived: 'Enter the part number that was actually received',
@@ -570,6 +572,7 @@ export const translations: Record<'en' | 'fr', Partial<Translations>> = {
     tooltipFileUpload: 'Joindre des documents, photos ou preuves à l\'appui (PDF, JPG, PNG, max 10 Mo chacun)',
     uploadDropHereOrClick: 'Glissez-déposez des fichiers ici, ou cliquez pour sélectionner',
     uploadSupportNote: 'Prend en charge les images, PDF et fichiers texte jusqu\'à 10 Mo',
+    pleaseLoginToSubmit: 'Veuillez vous connecter pour soumettre une réclamation.',
     tooltipWorkOrderNumber: 'Entrer le numéro de bon de travail (BT) pour le suivi',
     tooltipOccurrence: 'Spécifier l\'occurrence ou le numéro d\'instance',
     tooltipPartReceived: 'Entrer le numéro de pièce qui a été réellement reçu',
