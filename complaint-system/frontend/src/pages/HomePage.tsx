@@ -36,8 +36,8 @@ export default function HomePage() {
         </div>
 
         <div>
-          {/* Pass only refreshTrigger so list refetches when a new complaint is created */}
-          <ComplaintList refreshTrigger={refreshTrigger} readOnly={!isAuthenticated} />
+          {/* Recent complaints: last 5, no pagination */}
+          <ComplaintList refreshTrigger={refreshTrigger} readOnly={!isAuthenticated} pageSize={5} showPagination={false} />
         </div>
       </div>
     </div>

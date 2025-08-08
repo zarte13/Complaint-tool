@@ -17,6 +17,7 @@ interface ComplaintListProps {
   page?: number;
   pageSize?: number;
   readOnly?: boolean;
+  showPagination?: boolean;
 }
 
 export default function ComplaintList({
@@ -27,6 +28,7 @@ export default function ComplaintList({
   page = 1,
   pageSize = 10,
   readOnly = false,
+  showPagination = true,
 }: ComplaintListProps) {
   const [complaints, setComplaints] = useState<Complaint[]>([]);
   const [loading, setLoading] = useState(true);
@@ -35,6 +37,7 @@ export default function ComplaintList({
   const [currentSize, setCurrentSize] = useState<number>(pageSize);
   const [total, setTotal] = useState<number>(0);
   const [totalPages, setTotalPages] = useState<number>(1);
+  const [pageInput, setPageInput] = useState<string>(String(page));
   const [drawerComplaint, setDrawerComplaint] = useState<Complaint | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const { t } = useLanguage();
@@ -57,6 +60,8 @@ export default function ComplaintList({
     if (issueTypeFilter) params.append('issue_category', issueTypeFilter as any);
     params.append('page', String(effectivePage));
     params.append('size', String(effectiveSize));
+    params.append('sort_by', 'created_at');
+    params.append('sort_order', 'desc');
     return params.toString();
   }, [searchTerm, statusFilter, issueTypeFilter, currentPage, currentSize]);
  
@@ -80,16 +85,17 @@ export default function ComplaintList({
       const response = await get(`/api/complaints?${paramString}` as any);
       const data = response.data as any;
       if (Array.isArray(data)) {
-        setComplaints(data);
+        setComplaints(showPagination ? data : (data as Complaint[]).slice(0, 5));
         setTotal(data.length);
         setTotalPages(1);
       } else if (data && Array.isArray(data.items)) {
-        setComplaints(data.items as Complaint[]);
+        const items = data.items as Complaint[];
+        setComplaints(showPagination ? items : items.slice(0, 5));
         if (data.pagination) {
           setTotal(data.pagination.total ?? 0);
           setTotalPages(data.pagination.total_pages ?? 1);
         } else {
-          setTotal((data.items as Complaint[]).length);
+          setTotal(items.length);
           setTotalPages(1);
         }
       } else {
@@ -130,7 +136,21 @@ export default function ComplaintList({
   // Reset to first page on filter/search changes
   useEffect(() => {
     setCurrentPage(1);
+    setPageInput('1');
   }, [searchTerm, statusFilter, issueTypeFilter]);
+
+  // Keep input in sync when currentPage changes externally
+  useEffect(() => {
+    setPageInput(String(currentPage));
+  }, [currentPage]);
+
+  const commitPageInput = useCallback(() => {
+    let next = parseInt(pageInput, 10);
+    if (isNaN(next)) next = currentPage;
+    next = Math.max(1, Math.min(totalPages || 1, next));
+    if (next !== currentPage) setCurrentPage(next);
+    setPageInput(String(next));
+  }, [pageInput, currentPage, totalPages]);
 
 
 
@@ -253,40 +273,56 @@ export default function ComplaintList({
                   />
                 </motion.div>
               ))}
-              {/* Pagination controls */}
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-gray-100">
-                <div className="text-sm text-gray-600">
-                  {t('show')} {complaints.length} {t('of')} {total} {t('results')}
+              {showPagination && (
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-gray-100">
+                  <div className="text-sm text-gray-600">
+                    {t('show')} {complaints.length} {t('of')} {total} {t('results')}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                      disabled={currentPage <= 1}
+                      className="px-3 py-1 text-sm border rounded disabled:opacity-50"
+                    >
+                      {t('previous')}
+                    </button>
+                  <div className="flex items-center gap-2 text-sm text-gray-700">
+                    <span>Page</span>
+                    <input
+                      type="number"
+                      min={1}
+                      max={totalPages}
+                      value={pageInput}
+                      onChange={(e) => setPageInput(e.target.value)}
+                      onBlur={commitPageInput}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          commitPageInput();
+                        }
+                      }}
+                      className="w-16 px-2 py-1 border rounded"
+                    />
+                    <span>/ {totalPages}</span>
+                  </div>
+                    <button
+                      onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                      disabled={currentPage >= totalPages}
+                      className="px-3 py-1 text-sm border rounded disabled:opacity-50"
+                    >
+                      {t('next')}
+                    </button>
+                    <select
+                      value={currentSize}
+                      onChange={(e) => { setCurrentSize(Number(e.target.value)); setCurrentPage(1); }}
+                      className="ml-2 px-2 py-1 text-sm border rounded"
+                    >
+                      <option value={10}>{t('show')} 10/{t('perPage')}</option>
+                      <option value={20}>{t('show')} 20/{t('perPage')}</option>
+                      <option value={50}>{t('show')} 50/{t('perPage')}</option>
+                    </select>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                    disabled={currentPage <= 1}
-                    className="px-3 py-1 text-sm border rounded disabled:opacity-50"
-                  >
-                    {t('previous')}
-                  </button>
-                  <span className="text-sm text-gray-700">
-                    {`Page ${currentPage} / ${totalPages}`}
-                  </span>
-                  <button
-                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                    disabled={currentPage >= totalPages}
-                    className="px-3 py-1 text-sm border rounded disabled:opacity-50"
-                  >
-                    {t('next')}
-                  </button>
-                  <select
-                    value={currentSize}
-                    onChange={(e) => { setCurrentSize(Number(e.target.value)); setCurrentPage(1); }}
-                    className="ml-2 px-2 py-1 text-sm border rounded"
-                  >
-                    <option value={10}>{t('show')} 10/{t('perPage')}</option>
-                    <option value={20}>{t('show')} 20/{t('perPage')}</option>
-                    <option value={50}>{t('show')} 50/{t('perPage')}</option>
-                  </select>
-                </div>
-              </div>
+              )}
             </motion.div>
           )}
         </AnimatePresence>
