@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
-import { X, Edit3, Save, AlertCircle, Download, FileText, ChevronDown, Loader2, Trash2 } from 'lucide-react';
+import { X, Edit3, Save, AlertCircle, Download, FileText, ChevronDown, Loader2, Trash2, FileDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { Complaint, Attachment, ComplaintStatus } from '../../types';
+import { Complaint, Attachment, ComplaintStatus, Company, Part } from '../../types';
+import CompanySearch from '../CompanySearch/CompanySearch';
+import PartAutocomplete from '../PartAutocomplete/PartAutocomplete';
 import { format } from 'date-fns';
 import { enUS, fr } from 'date-fns/locale';
 import ImageGallery from './ImageGallery';
@@ -10,6 +12,7 @@ import { FollowUpActionsPanel } from '../FollowUpActions/FollowUpActionsPanel';
 import { get as apiGet, put as apiPut, del as apiDel } from '../../services/api';
 import { useAuthStore } from '../../stores/authStore';
 import { complaintsStore } from '../../stores/complaintsStore';
+import { exportComplaintToPDF } from '../../utils/pdfExport';
 
 interface EnhancedComplaintDetailDrawerProps {
   complaint: Complaint | null;
@@ -37,6 +40,10 @@ export default function EnhancedComplaintDetailDrawer({
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const [statusError, setStatusError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
+  const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
+  const [selectedPart, setSelectedPart] = useState<Part | null>(null);
+  const [isVisualDropdownOpen, setIsVisualDropdownOpen] = useState(false);
+  const [isPackagingDropdownOpen, setIsPackagingDropdownOpen] = useState(false);
   // Local UI status state normalized to canonical values
   const [uiStatus, setUiStatus] = useState<ComplaintStatus | null>(null);
   const tilesContainerRef = useRef<HTMLDivElement>(null);
@@ -98,8 +105,14 @@ export default function EnhancedComplaintDetailDrawer({
       part_received: complaint.part_received,
       human_factor: complaint.human_factor,
       details: complaint.details,
+      issue_category: (complaint as any).issue_category,
+      issue_subtypes: (complaint as any).issue_subtypes,
+      packaging_received: (complaint as any).packaging_received,
+      packaging_expected: (complaint as any).packaging_expected,
     });
     setValidationErrors({});
+    setSelectedCompany(complaint.company);
+    setSelectedPart(complaint.part);
   };
 
   const handleSave = async () => {
@@ -198,9 +211,9 @@ export default function EnhancedComplaintDetailDrawer({
     // Automatically transition from "open" to "in_progress" when first action is added
     if (complaint && complaint.status === 'open') {
       try {
-        await onUpdate({ status: 'in_progress' });
+        await onUpdate({ status: 'in_planning' as any });
       } catch (err) {
-        console.error('Failed to auto-update status to in_progress:', err);
+        console.error('Failed to auto-update status to in_planning:', err);
         // Don't show user-facing error for this automatic transition
       }
     }
@@ -331,27 +344,36 @@ export default function EnhancedComplaintDetailDrawer({
     setValidationErrors(prev => ({ ...prev, [field]: error || '' }));
   };
 
-  const getIssueTypeDisplay = (issueType: string, category?: string, subtypes?: string[]) => {
-    if (category) {
-      const prettyCategory: Record<string, string> = {
-        dimensional: 'Dimensional',
-        visual: 'Visual',
-        packaging: 'Packaging',
-        other: 'Other',
-      };
-      const cat = prettyCategory[category] || category;
-      if (subtypes && subtypes.length > 0) {
-        return `${cat} — ${subtypes.join(', ')}`;
-      }
-      return cat;
+  // Note: legacy helper removed (unused)
+
+  const getCategoryLabel = (category?: string) => {
+    switch (category) {
+      case 'dimensional':
+        return t('categoryDimensional') || 'Dimensional';
+      case 'visual':
+        return t('categoryVisual') || 'Visual';
+      case 'packaging':
+        return t('categoryPackaging') || 'Packaging';
+      case 'other':
+        return t('other') || 'Other';
+      default:
+        return '-';
     }
-    const issueTypes: Record<string, string> = {
-      wrong_quantity: 'Wrong Quantity',
-      wrong_part: 'Wrong Part',
-      damaged: 'Damaged',
-      other: 'Other',
+  };
+
+  const getSubtypeLabel = (subtype: string) => {
+    const map: Record<string, string> = {
+      scratch: t('visualScratch') || 'Scratch',
+      nicks: t('visualNicks') || 'Nicks',
+      rust: t('visualRust') || 'Rust',
+      wrong_box: t('packagingWrongBox') || 'Wrong Box',
+      wrong_bag: t('packagingWrongBag') || 'Wrong Bag',
+      wrong_paper: t('packagingWrongPaper') || 'Wrong Paper',
+      wrong_part: t('wrongPart') || 'Wrong Part',
+      wrong_quantity: t('wrongQuantity') || 'Wrong Quantity',
+      wrong_tags: t('packagingWrongTags') || 'Wrong Tags',
     };
-    return issueTypes[issueType] || issueType;
+    return map[subtype] || subtype;
   };
 
   // Accept string to avoid TS literal mismatch when server might surface "closed"
@@ -359,11 +381,13 @@ export default function EnhancedComplaintDetailDrawer({
     const normalized = (status === 'closed' ? 'resolved' : status) as ComplaintStatus;
     switch (normalized) {
       case 'open':
-        return { label: 'Open', color: 'text-blue-800', bgColor: 'bg-blue-100', icon: '⚪' };
+        return { label: t('statusOpenLabel') || 'Open', color: 'text-blue-800', bgColor: 'bg-blue-100', icon: '⚪' };
+      case 'in_planning' as any:
+        return { label: t('statusInPlanningLabel') || 'In Planning', color: 'text-purple-800', bgColor: 'bg-purple-100', icon: '🟣' };
       case 'in_progress':
-        return { label: 'In Progress', color: 'text-yellow-800', bgColor: 'bg-yellow-100', icon: '🟡' };
+        return { label: t('statusInProgressLabel') || 'In Progress', color: 'text-yellow-800', bgColor: 'bg-yellow-100', icon: '🟡' };
       case 'resolved':
-        return { label: 'Resolved', color: 'text-green-800', bgColor: 'bg-green-100', icon: '✅' };
+        return { label: t('statusClosedLabel') || 'Resolved', color: 'text-green-800', bgColor: 'bg-green-100', icon: '✅' };
       default:
         return { label: normalized, color: 'text-gray-800', bgColor: 'bg-gray-100', icon: '⚪' };
     }
@@ -378,7 +402,7 @@ export default function EnhancedComplaintDetailDrawer({
     const normalizedDisplay = (raw === 'closed' ? 'resolved' : raw) as ComplaintStatus;
 
     const currentStatus = getStatusDisplay(normalizedDisplay);
-    const statusOptions: ComplaintStatus[] = ['open', 'in_progress', 'resolved'];
+    const statusOptions: ComplaintStatus[] = ['open', 'in_planning' as any, 'in_progress', 'resolved'];
     
     return (
       <div className="space-y-1">
@@ -537,7 +561,7 @@ export default function EnhancedComplaintDetailDrawer({
           </div>
         ) : (
           <div className="text-sm text-gray-900">
-            {type === 'toggle' ? (currentValue ? 'Yes' : 'No') : 
+            {type === 'toggle' ? (currentValue ? (t('yes') || 'Yes') : (t('no') || 'No')) : 
              type === 'number' ? (currentValue || 0) : 
              (currentValue || '-')}
           </div>
@@ -599,12 +623,12 @@ export default function EnhancedComplaintDetailDrawer({
                         {isSaving ? (
                           <>
                             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
-                            Saving...
+                            {t('saving') || 'Saving...'}
                           </>
                         ) : (
                           <>
                             <Save className="h-4 w-4 mr-1" />
-                            Save
+                            {t('save') || 'Save'}
                           </>
                         )}
                       </button>
@@ -612,7 +636,7 @@ export default function EnhancedComplaintDetailDrawer({
                         onClick={handleCancel}
                         className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
                       >
-                        Cancel
+                        {t('cancel') || 'Cancel'}
                       </button>
                     </>
                   ) : (
@@ -623,9 +647,25 @@ export default function EnhancedComplaintDetailDrawer({
                           className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
                         >
                           <Edit3 className="h-4 w-4 mr-1" />
-                          Edit
+                          {t('edit') || 'Edit'}
                         </button>
                       )}
+                      <button
+                        onClick={async () => {
+                          if (!complaint) return;
+                          try {
+                            // Export in UI language when possible
+                            await exportComplaintToPDF({ complaint, attachments, language });
+                          } catch (e: any) {
+                            setError(e?.message || 'Failed to export PDF');
+                          }
+                        }}
+                        className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+                        title={t('exportPdf') || 'Export PDF'}
+                      >
+                        <FileDown className="h-4 w-4 mr-1" />
+                        {t('exportPdf') || 'Export PDF'}
+                      </button>
                       {isAdmin && (
                         <button
                           onClick={async () => {
@@ -646,7 +686,7 @@ export default function EnhancedComplaintDetailDrawer({
                           className="inline-flex items-center px-3 py-2 border border-red-300 text-sm font-medium rounded-md text-red-700 bg-red-50 hover:bg-red-100"
                         >
                           <Trash2 className="h-4 w-4 mr-1" />
-                          Delete
+                          {t('delete') || 'Delete'}
                         </button>
                       )}
                     </>
@@ -707,39 +747,166 @@ export default function EnhancedComplaintDetailDrawer({
                         {t('basicInformation')}
                       </h3>
                       <div className="space-y-4">
-                        {renderField(t('customerCompany') || 'Customer Company', complaint.company.name)}
-                        {renderField(t('partNumber') || 'Part Number', complaint.part.part_number)}
-                        {renderField(
-                          t('issueType') || 'Issue Type',
-                          getIssueTypeDisplay(complaint.issue_type as any, complaint.issue_category as any, complaint.issue_subtypes as any)
+                        {/* Company */}
+                        {isEditing ? (
+                          <div>
+                            <label className="text-xs font-medium text-gray-600">{t('customerCompany') || 'Customer Company'}</label>
+                            <div className="mt-1">
+                              <CompanySearch
+                                value={selectedCompany}
+                                onChange={(company) => {
+                                  setSelectedCompany(company);
+                                  if (company) setEditData(prev => ({ ...prev, company_id: company.id } as any));
+                                }}
+                              />
+                            </div>
+                          </div>
+                        ) : (
+                          renderField(t('customerCompany') || 'Customer Company', complaint.company.name)
                         )}
+
+                        {/* Part */}
+                        {isEditing ? (
+                          <div>
+                            <label className="text-xs font-medium text-gray-600">{t('partNumber') || 'Part Number'}</label>
+                            <div className="mt-1">
+                              <PartAutocomplete
+                                value={selectedPart}
+                                onChange={(part: any) => {
+                                  if (!part) {
+                                    setSelectedPart(null);
+                                    setEditData(prev => {
+                                      const next: any = { ...prev };
+                                      delete next.part_id;
+                                      return next;
+                                    });
+                                    return;
+                                  }
+                                  setSelectedPart(part);
+                                  setEditData(prev => ({ ...prev, part_id: part.id } as any));
+                                }}
+                              />
+                            </div>
+                          </div>
+                        ) : (
+                          renderField(t('partNumber') || 'Part Number', complaint.part.part_number)
+                        )}
+
+                        {/* Issue Category */}
+                        {isEditing ? (
+                          <div>
+                            <label className="text-xs font-medium text-gray-600">{t('issueCategory') || 'Issue Category'}</label>
+                            <select
+                              value={(editData as any).issue_category || (complaint as any).issue_category || ''}
+                              onChange={(e) => {
+                                const val = e.target.value || undefined;
+                                setEditData(prev => ({ ...prev, issue_category: val, issue_subtypes: [] } as any));
+                              }}
+                              className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md"
+                            >
+                              <option value="">{t('selectIssueCategory') || 'Select category'}</option>
+                              <option value="dimensional">{t('categoryDimensional') || 'Dimensional'}</option>
+                              <option value="visual">{t('categoryVisual') || 'Visual'}</option>
+                              <option value="packaging">{t('categoryPackaging') || 'Packaging'}</option>
+                              <option value="other">{t('other') || 'Other'}</option>
+                            </select>
+                          </div>
+                        ) : (
+                          renderField(t('issueCategory') || 'Issue Category', getCategoryLabel(complaint.issue_category as any))
+                        )}
+
+                        {/* Issue Subtypes */}
+                        {isEditing ? (
+                          <div className="relative">
+                            <label className="text-xs font-medium text-gray-600">{t('issueSubtypes') || 'Issue Subtypes'}</label>
+                            {(((editData as any).issue_category) || (complaint as any).issue_category) === 'visual' && (
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={() => setIsVisualDropdownOpen(v => !v)}
+                                  className="mt-1 w-full px-3 py-2 border rounded-md text-left bg-white hover:bg-gray-50"
+                                >
+                                  {Array.isArray((editData as any).issue_subtypes) && (editData as any).issue_subtypes.length > 0
+                                    ? ((editData as any).issue_subtypes as string[]).map(s => getSubtypeLabel(s)).join(', ')
+                                    : (t('selectSubtypes') || 'Select subtypes')}
+                                </button>
+                                {isVisualDropdownOpen && (
+                                  <div className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg p-2">
+                                    {['scratch','nicks','rust'].map(val => {
+                                      const checked = Array.isArray((editData as any).issue_subtypes) && (editData as any).issue_subtypes.includes(val);
+                                      return (
+                                        <label key={val} className="flex items-center gap-2 px-2 py-1 hover:bg-gray-50 rounded cursor-pointer">
+                                          <input
+                                            type="checkbox"
+                                            checked={!!checked}
+                                            onChange={(e) => {
+                                              const curr: string[] = Array.isArray((editData as any).issue_subtypes) ? (editData as any).issue_subtypes : [];
+                                              const set = new Set(curr);
+                                              if (e.target.checked) set.add(val); else set.delete(val);
+                                              setEditData(prev => ({ ...prev, issue_subtypes: Array.from(set) } as any));
+                                            }}
+                                          />
+                                          <span className="text-sm text-gray-700">{getSubtypeLabel(val)}</span>
+                                        </label>
+                                      );
+                                    })}
+                                  </div>
+                                )}
+                              </>
+                            )}
+                            {(((editData as any).issue_category) || (complaint as any).issue_category) === 'packaging' && (
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={() => setIsPackagingDropdownOpen(v => !v)}
+                                  className="mt-1 w-full px-3 py-2 border rounded-md text-left bg-white hover:bg-gray-50"
+                                >
+                                  {Array.isArray((editData as any).issue_subtypes) && (editData as any).issue_subtypes.length > 0
+                                    ? ((editData as any).issue_subtypes as string[]).map(s => getSubtypeLabel(s)).join(', ')
+                                    : (t('selectSubtypes') || 'Select subtypes')}
+                                </button>
+                                {isPackagingDropdownOpen && (
+                                  <div className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg p-2 max-h-64 overflow-auto">
+                                    {['wrong_box','wrong_bag','wrong_paper','wrong_part','wrong_quantity','wrong_tags'].map(val => {
+                                      const checked = Array.isArray((editData as any).issue_subtypes) && (editData as any).issue_subtypes.includes(val);
+                                      return (
+                                        <label key={val} className="flex items-center gap-2 px-2 py-1 hover:bg-gray-50 rounded cursor-pointer">
+                                          <input
+                                            type="checkbox"
+                                            checked={!!checked}
+                                            onChange={(e) => {
+                                              const curr: string[] = Array.isArray((editData as any).issue_subtypes) ? (editData as any).issue_subtypes : [];
+                                              const set = new Set(curr);
+                                              if (e.target.checked) set.add(val); else set.delete(val);
+                                              setEditData(prev => ({ ...prev, issue_subtypes: Array.from(set) } as any));
+                                            }}
+                                          />
+                                          <span className="text-sm text-gray-700">{getSubtypeLabel(val)}</span>
+                                        </label>
+                                      );
+                                    })}
+                                  </div>
+                                )}
+                              </>
+                            )}
+                          </div>
+                        ) : (
+                          renderField(
+                            t('issueSubtypes') || 'Issue Subtypes',
+                            (complaint.issue_subtypes && (complaint.issue_subtypes as any[]).length > 0)
+                              ? (complaint.issue_subtypes as string[]).map((s) => getSubtypeLabel(s)).join(', ')
+                              : '-'
+                          )
+                        )}
+
+                        {/* Work Order Number (moved to Basic Info) */}
+                        {renderField(t('workOrderNumber') || 'Work Order Number', complaint.work_order_number, 'work_order_number')}
+
                         {renderStatusDropdown()}
                       </div>
                     </motion.div>
 
-                    {/* Order Details */}
-                    <motion.div
-                      className="bg-white border border-gray-200 rounded-lg p-4"
-                      initial={{ opacity: 0, x: 24 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: 24 }}
-                      transition={{ duration: 0.25, ease: 'easeOut', delay: 0.12 }}
-                    >
-                      <h3 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                        <div className="w-1 h-4 bg-green-600 rounded-full" />
-                        {t('orderDetails')}
-                      </h3>
-                      <div className="space-y-4">
-                        {renderField(t('workOrderNumber') || 'Work Order Number', complaint.work_order_number, 'work_order_number')}
-                        {(complaint.issue_category === 'packaging' && (complaint.issue_subtypes?.includes('wrong_quantity') || complaint.issue_subtypes?.includes('wrong_part'))) && (
-                          <>
-                            {renderField(t('quantityOrdered') || 'Quantity Ordered', complaint.quantity_ordered, 'quantity_ordered', 'number')}
-                            {renderField(t('quantityReceived') || 'Quantity Received', complaint.quantity_received, 'quantity_received', 'number')}
-                          </>
-                        )}
-                        {renderField(t('partReceived') || 'Part Received', complaint.part_received, 'part_received')}
-                      </div>
-                    </motion.div>
+                    {/* Removed Order Details section as requested */}
 
                     {/* Issue Details */}
                     <motion.div
@@ -757,6 +924,38 @@ export default function EnhancedComplaintDetailDrawer({
                         {renderField(t('occurrence') || 'Occurrence', complaint.occurrence, 'occurrence')}
                         {renderField(t('humanFactor') || 'Human Factor', complaint.human_factor, 'human_factor', 'toggle')}
                         {renderField(t('details') || 'Details', complaint.details, 'details', 'textarea')}
+                        {/* Show received part number only when relevant */}
+                        {(
+                          (complaint.issue_category === 'packaging' && complaint.issue_subtypes?.includes('wrong_part')) ||
+                          (!complaint.issue_category && complaint.issue_type === 'wrong_part')
+                        ) && (
+                          renderField(t('partReceived') || 'Part Received', complaint.part_received, 'part_received')
+                        )}
+                        {complaint.issue_category === 'packaging' && Array.isArray(complaint.issue_subtypes) && complaint.issue_subtypes.length > 0 && (
+                          <div className="space-y-3">
+                            {(complaint.issue_subtypes as string[]).map((sub) => {
+                              const showPair = ['wrong_box','wrong_bag','wrong_paper','wrong_quantity'].includes(sub);
+                              if (!showPair) return null;
+                              const recv = (complaint.packaging_received as any)?.[sub] || '';
+                              const exp = (complaint.packaging_expected as any)?.[sub] || '';
+                              return (
+                                <div key={sub} className="border rounded-md p-3 bg-gray-50">
+                                  <div className="text-sm font-medium text-gray-800 mb-2">{getSubtypeLabel(sub)}</div>
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                                    <div>
+                                      <div className="text-gray-600">{t('packagingReceivedLabel') || 'Received'}</div>
+                                      <div className="text-gray-900">{recv || '-'}</div>
+                                    </div>
+                                    <div>
+                                      <div className="text-gray-600">{t('packagingExpectedLabel') || 'Expected'}</div>
+                                      <div className="text-gray-900">{exp || '-'}</div>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
                       </div>
                     </motion.div>
 

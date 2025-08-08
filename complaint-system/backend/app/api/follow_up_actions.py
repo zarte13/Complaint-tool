@@ -302,6 +302,7 @@ async def deactivate_responsible_person(
 # Action metrics endpoint
 
 @router.get("/metrics", response_model=ActionMetrics)
+@router.get("/metrics/", response_model=ActionMetrics)
 async def get_action_metrics(
     complaint_id: int = Path(..., description="Complaint ID"),
     db: Session = Depends(get_db)
@@ -319,7 +320,8 @@ async def get_action_metrics(
                    .all()
         
         total_actions = len(actions)
-        open_actions = len([a for a in actions if a.status in ['open', 'pending', 'in_progress']])
+        # Treat any non-closed status as open for visibility (open, pending, in_progress, blocked, escalated)
+        open_actions = len([a for a in actions if a.status != 'closed'])
         closed_actions = len([a for a in actions if a.status == 'closed'])
         
         # Check for overdue actions

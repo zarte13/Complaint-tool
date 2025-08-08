@@ -31,14 +31,6 @@ const complaintSchema = z.object({
   part_received: z.string().optional(),
   human_factor: z.boolean().default(false),
 }).refine((data) => {
-  if (data.issue_category === 'packaging' && data.issue_subtypes?.includes('wrong_quantity')) {
-    return data.quantity_ordered !== undefined && data.quantity_received !== undefined;
-  }
-  return true;
-}, {
-  message: 'Both quantity ordered and received are required for wrong quantity issues',
-  path: ['quantity_received'],
-}).refine((data) => {
   if (data.issue_category === 'packaging' && data.issue_subtypes?.includes('wrong_part')) {
     return data.part_received !== undefined && data.part_received.trim().length > 0;
   }
@@ -97,6 +89,37 @@ export default function ComplaintForm({ onSuccess }: ComplaintFormProps) {
   const packagingReceived = watch('packaging_received') || {};
   const packagingExpected = watch('packaging_expected') || {};
 
+  // Clear irrelevant fields when category changes
+  // - Switching to 'visual' should drop any packaging-only subtypes/fields
+  // - Switching to 'packaging' should drop visual-only subtypes
+  // - Switching away from 'packaging' clears packaging_received/expected and part_received/quantities
+  const handleCategoryChange: React.ChangeEventHandler<HTMLSelectElement> = (e) => {
+    const next = e.target.value as IssueCategory;
+    setValue('issue_category', next as any, { shouldValidate: true });
+
+    const currentSubtypes: string[] = (issueSubtypes as string[]) || [];
+    if (next === 'visual') {
+      const filtered = currentSubtypes.filter((s) => s === 'scratch' || s === 'nicks' || s === 'rust');
+      setValue('issue_subtypes' as any, filtered, { shouldValidate: true });
+      setValue('packaging_received' as any, {}, { shouldValidate: true });
+      setValue('packaging_expected' as any, {}, { shouldValidate: true });
+      setValue('part_received' as any, '', { shouldValidate: true });
+      setValue('quantity_ordered' as any, undefined, { shouldValidate: true });
+      setValue('quantity_received' as any, undefined, { shouldValidate: true });
+    } else if (next === 'packaging') {
+      const filtered = currentSubtypes.filter((s) => s === 'wrong_box' || s === 'wrong_bag' || s === 'wrong_paper' || s === 'wrong_part' || s === 'wrong_quantity' || s === 'wrong_tags');
+      setValue('issue_subtypes' as any, filtered, { shouldValidate: true });
+    } else {
+      // dimensional/other: clear all subtypes and packaging-specific fields
+      setValue('issue_subtypes' as any, [], { shouldValidate: true });
+      setValue('packaging_received' as any, {}, { shouldValidate: true });
+      setValue('packaging_expected' as any, {}, { shouldValidate: true });
+      setValue('part_received' as any, '', { shouldValidate: true });
+      setValue('quantity_ordered' as any, undefined, { shouldValidate: true });
+      setValue('quantity_received' as any, undefined, { shouldValidate: true });
+    }
+  };
+
   const handleCompanyChange = (company: Company) => {
     setSelectedCompany(company);
     setValue('company_id', company.id);
@@ -110,6 +133,7 @@ export default function ComplaintForm({ onSuccess }: ComplaintFormProps) {
 
   const deriveIssueType = (category: IssueCategory, subtypes: Array<VisualSubtype | PackagingSubtype> | undefined): 'wrong_quantity' | 'wrong_part' | 'damaged' | 'other' => {
     if (category === 'packaging') {
+      // If both are selected, prefer wrong_quantity to enforce required quantities
       if (subtypes?.includes('wrong_quantity')) return 'wrong_quantity';
       if (subtypes?.includes('wrong_part')) return 'wrong_part';
       return 'other';
@@ -118,11 +142,28 @@ export default function ComplaintForm({ onSuccess }: ComplaintFormProps) {
     return 'other';
   };
 
-  const onSubmit = async (data: ComplaintFormData) => {
+  // Ghost legacy fields guard: if wrong_quantity is selected under packaging,
+  // explicitly nullify any hidden legacy blockers and ensure numeric defaults are valid.
+  const normalizeForWrongQuantity = (data: ComplaintFormData): ComplaintFormData => {
+    const subtypes = data.issue_subtypes || [];
+    if (data.issue_category === 'packaging' && subtypes.includes('wrong_quantity')) {
+      // Ensure numbers are actually numbers (not undefined or NaN)
+      // Leave them as-is if provided; backend schema allows nulls when packaging is used
+      // but we set explicit undefined to avoid React Hook Form keeping hidden stale values
+      const patch: Partial<ComplaintFormData> = {};
+      if (data.quantity_ordered === null as any) patch.quantity_ordered = undefined;
+      if (data.quantity_received === null as any) patch.quantity_received = undefined;
+      return { ...data, ...patch } as ComplaintFormData;
+    }
+    return data;
+  };
+
+  const onSubmit = async (incoming: ComplaintFormData) => {
     setSubmitting(true);
     setError(null);
 
     try {
+      const data = normalizeForWrongQuantity(incoming);
       const payload: ComplaintCreate = {
         company_id: data.company_id,
         part_id: data.part_id,
@@ -289,6 +330,7 @@ export default function ComplaintForm({ onSuccess }: ComplaintFormProps) {
         <select
           id="issue_category"
           {...register('issue_category')}
+          onChange={handleCategoryChange}
           className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
             (errors as any).issue_category ? 'border-red-300' : 'border-gray-300'
           }`}
@@ -399,7 +441,7 @@ export default function ComplaintForm({ onSuccess }: ComplaintFormProps) {
 
       {issueCategory === 'packaging' && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {(['wrong_box','wrong_bag','wrong_paper','wrong_quantity'] as PackagingSubtype[]).map((sub) => (
+          {(['wrong_box','wrong_bag','wrong_paper','wrong_quantity'] as const).map((sub) => (
             issueSubtypes.includes(sub) ? (
               <div key={sub} className="space-y-2">
                 <div className="text-sm font-medium text-gray-700">{{
@@ -407,7 +449,7 @@ export default function ComplaintForm({ onSuccess }: ComplaintFormProps) {
                   wrong_bag: t('packagingWrongBag') || 'Wrong Bag',
                   wrong_paper: t('packagingWrongPaper') || 'Wrong Paper',
                   wrong_quantity: t('wrongQuantity') || 'Wrong Quantity',
-                }[sub]}
+                }[sub as 'wrong_box'|'wrong_bag'|'wrong_paper'|'wrong_quantity']}
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <input

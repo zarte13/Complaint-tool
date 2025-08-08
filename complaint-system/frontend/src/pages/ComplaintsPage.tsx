@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
-import { Complaint, ComplaintStatus, IssueType, IssueCategory } from '../types';
+import { Complaint, ComplaintStatus, IssueCategory } from '../types';
 import { get, put, ensureTrailingSlash } from '../services/api';
 import ComplaintList from '../components/ComplaintList/ComplaintList';
 import EnhancedComplaintDetailDrawer from '../components/ComplaintDetailDrawer/EnhancedComplaintDetailDrawer';
@@ -123,7 +123,7 @@ export default function ComplaintsPage() {
             refreshTrigger={refreshTrigger}
             searchTerm={searchTerm}
             statusFilter={statusFilter}
-            issueTypeFilter={''}
+            issueTypeFilter={issueCategoryFilter}
             page={page}
             pageSize={pageSize}
           />

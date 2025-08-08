@@ -159,13 +159,13 @@ export const FollowUpActionsPanel: React.FC<FollowUpActionsPanelProps> = ({
             <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-100">
               <button
                 onClick={() => setShowAddForm(true)}
-                className="h-10 px-4 py-2 text-sm font-medium text-gray-600 bg-gray-100 border border-gray-200 rounded hover:bg-gray-200 shadow-sm"
-                style={{ fontSize: '14px', fontWeight: '500', boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)' }}
+                className="h-10 px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-blue-700 rounded hover:bg-blue-700 shadow-sm"
+                style={{ fontSize: '14px', fontWeight: '500', boxShadow: '0 2px 4px rgba(37, 99, 235, 0.25)' }}
                 disabled={actions.length >= 10 || creating || !isEditable}
               >
                 {creating ? (
                   <>
-                    <span className="inline-block w-4 h-4 bg-gray-400 rounded-full mr-2"></span>
+                    <span className="inline-block w-4 h-4 bg-white/50 rounded-full mr-2"></span>
                     {t('saving')}
                   </>
                 ) : (
@@ -214,8 +214,8 @@ export const FollowUpActionsPanel: React.FC<FollowUpActionsPanelProps> = ({
                   {isEditable && (
                     <button
                       onClick={() => setShowAddForm(true)}
-                      className="h-10 px-4 text-sm font-medium text-gray-600 bg-gray-100 border border-gray-200 rounded hover:bg-gray-200 shadow-sm"
-                      style={{ fontSize: '14px', fontWeight: '500', boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)' }}
+                      className="h-10 px-4 text-sm font-medium text-white bg-blue-600 border border-blue-700 rounded hover:bg-blue-700 shadow-sm"
+                      style={{ fontSize: '14px', fontWeight: '500', boxShadow: '0 2px 4px rgba(37, 99, 235, 0.25)' }}
                       disabled={creating}
                     >
                       {t('createFirstAction')}
@@ -330,17 +330,13 @@ export const followUpActionsStyles = `
   @apply bg-red-100 text-red-800;
 }
 
-.status-escalated {
-  @apply bg-orange-100 text-orange-800;
-}
+/* removed escalated status style */
 
 .status-closed {
   @apply bg-green-100 text-green-800;
 }
 
-.status-pending {
-  @apply bg-blue-100 text-blue-800;
-}
+/* removed pending status style */
 
 /* Priority indicators */
 .priority-low {

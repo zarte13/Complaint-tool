@@ -27,10 +27,8 @@ export const ActionFilters: React.FC<ActionFiltersProps> = ({
   const getStatusDisplay = (status: ActionStatus) => {
     switch (status) {
       case 'open': return { label: 'Ouvert', icon: '⚪' };
-      case 'pending': return { label: 'En attente', icon: '⏳' };
       case 'in_progress': return { label: 'En cours', icon: '🟡' };
       case 'blocked': return { label: 'Bloqué', icon: '⏸️' };
-      case 'escalated': return { label: 'Escaladé', icon: '🔥' };
       case 'closed': return { label: 'Fermé', icon: '✅' };
       default: return { label: status, icon: '⚪' };
     }
@@ -75,12 +73,10 @@ export const ActionFilters: React.FC<ActionFiltersProps> = ({
               className="text-sm px-3 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
             >
               <option value="">Tous les statuts</option>
-              <option value="open">{getStatusDisplay('open').icon} {getStatusDisplay('open').label}</option>
-              <option value="pending">{getStatusDisplay('pending').icon} {getStatusDisplay('pending').label}</option>
-              <option value="in_progress">{getStatusDisplay('in_progress').icon} {getStatusDisplay('in_progress').label}</option>
-              <option value="blocked">{getStatusDisplay('blocked').icon} {getStatusDisplay('blocked').label}</option>
-              <option value="escalated">{getStatusDisplay('escalated').icon} {getStatusDisplay('escalated').label}</option>
-              <option value="closed">{getStatusDisplay('closed').icon} {getStatusDisplay('closed').label}</option>
+            <option value="open">{getStatusDisplay('open').icon} {getStatusDisplay('open').label}</option>
+            <option value="in_progress">{getStatusDisplay('in_progress').icon} {getStatusDisplay('in_progress').label}</option>
+            <option value="blocked">{getStatusDisplay('blocked').icon} {getStatusDisplay('blocked').label}</option>
+            <option value="closed">{getStatusDisplay('closed').icon} {getStatusDisplay('closed').label}</option>
             </select>
           </div>
 

@@ -83,7 +83,7 @@ export interface FileUploadProgress {
 
 // DA-004: Follow-up Actions Types
 
-export type ActionStatus = 'open' | 'pending' | 'in_progress' | 'blocked' | 'escalated' | 'closed';
+export type ActionStatus = 'open' | 'in_progress' | 'blocked' | 'closed';
 export type ActionPriority = 'low' | 'medium' | 'high' | 'critical';
 export type DependencyType = 'sequential' | 'blocking' | 'optional';
 
@@ -106,7 +106,7 @@ export interface FollowUpAction {
   status: ActionStatus;
   priority: ActionPriority;
   notes?: string;
-  completion_percentage: number;
+  completion_percentage: number; // retained for API compatibility; no longer edited in UI
   created_at: string;
   updated_at: string;
   started_at?: string;
@@ -130,7 +130,7 @@ export interface FollowUpActionUpdate {
   status?: ActionStatus;
   priority?: ActionPriority;
   notes?: string;
-  completion_percentage?: number;
+  completion_percentage?: number; // retained for API compatibility; no longer edited in UI
 }
 
 export interface ActionHistory {

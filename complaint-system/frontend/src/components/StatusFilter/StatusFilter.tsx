@@ -34,14 +34,21 @@ export default function StatusFilter({
   const statusOptions: StatusOption[] = [
     {
       value: 'open',
-      label: t('statusOpen') || 'Open',
+      label: t('statusOpenLabel') || 'Open',
       color: 'text-blue-800',
       bgColor: 'bg-blue-100',
       icon: '⚪'
     },
     {
+      value: 'in_planning' as ComplaintStatus,
+      label: t('statusInPlanningLabel') || 'In Planning',
+      color: 'text-purple-800',
+      bgColor: 'bg-purple-100',
+      icon: '🟣'
+    },
+    {
       value: 'in_progress',
-      label: t('statusInProgress') || 'In Progress',
+      label: t('statusInProgressLabel') || 'In Progress',
       color: 'text-yellow-800',
       bgColor: 'bg-yellow-100',
       icon: '🟡'

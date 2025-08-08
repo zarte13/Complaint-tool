@@ -11,6 +11,7 @@ class IssueType(str, Enum):
 
 class ComplaintStatus(str, Enum):
     OPEN = "open"
+    IN_PLANNING = "in_planning"
     IN_PROGRESS = "in_progress"
     RESOLVED = "resolved"
 
@@ -153,9 +154,9 @@ class ComplaintUpdate(BaseModel):
         if s == "closed":
             return "resolved"
         # Allow only known canonical values
-        allowed = {"open", "in_progress", "resolved"}
+        allowed = {"open", "in_planning", "in_progress", "resolved"}
         if s not in allowed:
-            raise ValueError(f"Invalid status '{v}'. Allowed: open, in_progress, resolved (or 'closed' synonym).")
+            raise ValueError(f"Invalid status '{v}'. Allowed: open, in_planning, in_progress, resolved (or 'closed' synonym).")
         return s
 
 class ComplaintResponse(BaseModel):

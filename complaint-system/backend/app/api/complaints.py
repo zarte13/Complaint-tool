@@ -15,7 +15,7 @@ from app.schemas.schemas import (
 from app.utils.file_handler import save_upload_file, validate_file, delete_file
 import mimetypes
 import os
-from app.auth.dependencies import require_admin
+from app.auth.dependencies import require_admin, get_current_user
 
 router = APIRouter(prefix="/api/complaints", tags=["complaints"])
 # Register alias routes to support both "/api/complaints" and "/api/complaints/" without 307 redirects
@@ -25,7 +25,8 @@ router = APIRouter(prefix="/api/complaints", tags=["complaints"])
 @router.post("/", response_model=ComplaintResponse)
 async def create_complaint(
     complaint: ComplaintCreate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _user = Depends(get_current_user),
 ):
     """Create a new complaint"""
     # Verify company exists
@@ -130,7 +131,8 @@ async def get_complaints(
         query = query.filter(Complaint.issue_type == issue_type)
     # New filters (FF-002)
     if issue_category:
-        query = query.filter(Complaint.issue_category == str(issue_category))
+        cat_val = issue_category.value if hasattr(issue_category, "value") else str(issue_category)
+        query = query.filter(Complaint.issue_category == cat_val)
     if issue_subtypes:
         # Split comma-separated and match any overlap using LIKE for SQLite JSON/text storage
         subtype_list = [s.strip() for s in issue_subtypes.split(',') if s.strip()]
@@ -209,7 +211,8 @@ async def get_complaint(
 async def update_complaint(
     complaint_id: int,
     complaint_update: ComplaintUpdate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _user = Depends(get_current_user),
 ):
     """Update a complaint"""
     complaint = db.query(Complaint).filter(Complaint.id == complaint_id, Complaint.is_deleted == False).first()
@@ -239,7 +242,8 @@ async def update_complaint(
 async def upload_attachment(
     complaint_id: int,
     file: UploadFile = File(...),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _user = Depends(get_current_user),
 ):
     """Upload file attachment to a complaint"""
     # Verify complaint exists
@@ -339,7 +343,8 @@ async def download_attachment(
 @router.delete("/attachments/{attachment_id}")
 async def delete_attachment(
     attachment_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    _user = Depends(get_current_user),
 ):
     """Delete an attachment"""
     attachment = db.query(ComplaintAttachment).filter(
@@ -422,7 +427,8 @@ async def export_csv(
     if issue_type:
         query = query.filter(Complaint.issue_type == issue_type)
     if issue_category:
-        query = query.filter(Complaint.issue_category == str(issue_category))
+        cat_val = issue_category.value if hasattr(issue_category, "value") else str(issue_category)
+        query = query.filter(Complaint.issue_category == cat_val)
     if issue_subtypes:
         subtype_list = [s.strip() for s in issue_subtypes.split(',') if s.strip()]
         for sub in subtype_list:

@@ -36,14 +36,7 @@ function App() {
                   </ProtectedRoute>
                 }
               />
-              <Route
-                path="/complaints"
-                element={
-                  <ProtectedRoute>
-                    <ComplaintsPage />
-                  </ProtectedRoute>
-                }
-              />
+              <Route path="/complaints" element={<ComplaintsPage />} />
               <Route
                 path="/responsables"
                 element={

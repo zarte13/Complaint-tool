@@ -55,11 +55,13 @@ export default function ComplaintListView() {
   const getStatusDisplay = (status: ComplaintStatus) => {
     switch (status) {
       case 'open':
-        return 'Open';
+        return t('statusOpenLabel') || 'Open';
+      case 'in_planning' as any:
+        return (t('statusInPlanningLabel') || 'In Planning');
       case 'in_progress':
-        return 'In Progress';
+        return t('statusInProgressLabel') || 'In Progress';
       case 'resolved':
-        return 'Resolved';
+        return t('statusClosedLabel') || 'Resolved';
       default:
         return status;
     }

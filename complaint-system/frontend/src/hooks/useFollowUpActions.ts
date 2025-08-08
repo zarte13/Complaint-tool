@@ -31,7 +31,7 @@ export const followUpActionsApi = {
       const { data } = await get(`${API_BASE_URL}/complaints/${complaintId}/actions`, {
         params: { ...(filters ?? {}) }
       });
-      return data;
+      return data as FollowUpAction[];
     } catch (err: any) {
       if (err?.response?.status === 404) {
         // Backend does not implement actions; return empty list to avoid console errors
@@ -45,7 +45,7 @@ export const followUpActionsApi = {
   getAction: async (complaintId: number, actionId: number): Promise<FollowUpAction> => {
     try {
       const { data } = await get(`${API_BASE_URL}/complaints/${complaintId}/actions/${actionId}`);
-      return data;
+      return data as FollowUpAction;
     } catch (err: any) {
       if (err?.response?.status === 404) {
         // Provide a clear error for consumers if needed
@@ -67,7 +67,7 @@ export const followUpActionsApi = {
         actionData,
         { params: { changed_by: changedBy } }
       );
-      return data;
+      return data as FollowUpAction;
     } catch (err: any) {
       if (err?.response?.status === 404) {
         throw new Error('Follow-up actions API not available on server');
@@ -89,7 +89,7 @@ export const followUpActionsApi = {
         updates,
         { params: { changed_by: changedBy } }
       );
-      return data;
+      return data as FollowUpAction;
     } catch (err: any) {
       if (err?.response?.status === 404) {
         throw new Error('Follow-up actions API not available on server');
@@ -143,7 +143,7 @@ export const followUpActionsApi = {
   getActionHistory: async (complaintId: number, actionId: number): Promise<ActionHistory[]> => {
     try {
       const { data } = await get(`${API_BASE_URL}/complaints/${complaintId}/actions/${actionId}/history`);
-      return data;
+      return data as ActionHistory[];
     } catch (err: any) {
       if (err?.response?.status === 404) {
         return [];
@@ -158,7 +158,7 @@ export const followUpActionsApi = {
       const { data } = await get(`${API_BASE_URL}/complaints/${complaintId}/actions/responsible-persons`, {
         params: { active_only: activeOnly }
       });
-      return data;
+      return data as ResponsiblePerson[];
     } catch (err: any) {
       if (err?.response?.status === 404) {
         return [];
@@ -197,7 +197,7 @@ export const followUpActionsApi = {
   getActionMetrics: async (complaintId: number): Promise<ActionMetrics> => {
     try {
       const { data } = await get(`${API_BASE_URL}/complaints/${complaintId}/actions/metrics`);
-      return data;
+      return data as ActionMetrics;
     } catch (err: any) {
       if (err?.response?.status === 404) {
         // Provide empty metrics matching ActionMetrics shape

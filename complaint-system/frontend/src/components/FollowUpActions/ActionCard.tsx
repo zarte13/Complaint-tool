@@ -37,8 +37,7 @@ export const ActionCard: React.FC<ActionCardProps> = ({
     priority: action.priority,
     due_date: action.due_date || '',
     notes: action.notes || '',
-    status: action.status,
-    completion_percentage: action.completion_percentage
+    status: action.status
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -131,8 +130,7 @@ export const ActionCard: React.FC<ActionCardProps> = ({
       priority: action.priority,
       due_date: action.due_date || '',
       notes: action.notes || '',
-      status: action.status,
-      completion_percentage: action.completion_percentage
+      status: action.status
     });
     setErrors({});
     setTouchedFields({});
@@ -153,8 +151,7 @@ export const ActionCard: React.FC<ActionCardProps> = ({
         priority: formData.priority,
         due_date: formData.due_date || undefined,
         notes: formData.notes || undefined,
-        status: formData.status,
-        completion_percentage: formData.completion_percentage
+        status: formData.status
       };
       
       await onUpdate(updates);
@@ -234,8 +231,7 @@ export const ActionCard: React.FC<ActionCardProps> = ({
     try {
       const newStatus: ActionStatus = action.status === 'closed' ? 'open' : 'closed';
       const updates: FollowUpActionUpdate = { 
-        status: newStatus,
-        completion_percentage: newStatus === 'closed' ? 100 : 0
+        status: newStatus
       };
       
       await onUpdate(updates);
@@ -369,10 +365,8 @@ export const ActionCard: React.FC<ActionCardProps> = ({
               </div>
             </div>
 
-            {/* Status and Completion Row */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Status */}
-              <div>
+            {/* Status */}
+            <div>
                 <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-2">
                   Statut
                 </label>
@@ -384,32 +378,12 @@ export const ActionCard: React.FC<ActionCardProps> = ({
                   disabled={isLoading}
                 >
                   <option value="open">Ouvert</option>
-                  <option value="pending">En attente</option>
                   <option value="in_progress">En cours</option>
                   <option value="blocked">Bloqué</option>
-                  <option value="escalated">Escaladé</option>
                   <option value="closed">Fermé</option>
                 </select>
               </div>
-
-              {/* Completion Percentage */}
-              <div>
-                <label htmlFor="completion" className="block text-sm font-medium text-gray-700 mb-2">
-                  Avancement ({formData.completion_percentage}%)
-                </label>
-                <input
-                  type="range"
-                  id="completion"
-                  min="0"
-                  max="100"
-                  step="5"
-                  value={formData.completion_percentage}
-                  onChange={(e) => handleFieldChange('completion_percentage', parseInt(e.target.value))}
-                  className="w-full"
-                  disabled={isLoading}
-                />
-              </div>
-            </div>
+            
 
             {/* Notes - exact match */}
             <div>
@@ -565,7 +539,6 @@ export const ActionCard: React.FC<ActionCardProps> = ({
           action.status === 'closed' ? 'bg-green-500' :
           action.status === 'in_progress' ? 'bg-blue-500' :
           action.status === 'blocked' ? 'bg-red-500' :
-          action.status === 'escalated' ? 'bg-orange-500' :
           'bg-gray-400'
         }`}></div>
       </div>

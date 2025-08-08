@@ -77,6 +77,7 @@ export interface Translations {
 
   // Status display (complaint)
   statusOpenLabel: string;
+  statusInPlanningLabel?: string;
   statusInProgressLabel: string;
   statusClosedLabel: string;
   
@@ -120,6 +121,10 @@ export interface Translations {
   closed: string;
   add: string;
   cancel: string;
+  save: string;
+  yes?: string;
+  no?: string;
+  delete?: string;
   
   // Follow-up Actions Extended
   actionsPanel: string;
@@ -175,7 +180,6 @@ export interface Translations {
   // Drawer
   closePanel: string;
   edit: string;
-  save: string;
   saving: string;
   undo: string;
   redo: string;
@@ -189,6 +193,7 @@ export interface Translations {
   systemInformation: string;
   neverEdited: string;
   attachedFiles: string;
+  exportPdf?: string;
   
   // Image Gallery
   imageGallery: string;
@@ -316,13 +321,10 @@ export const translations: Record<'en' | 'fr', Partial<Translations>> = {
     packagingWrongTags: 'Wrong Tags',
     packagingReceivedLabel: 'Received',
     packagingExpectedLabel: 'Expected',
-    packagingWrongBox: 'Wrong Box',
-    packagingWrongBag: 'Wrong Bag',
-    packagingWrongPaper: 'Wrong Paper',
-    packagingWrongTags: 'Wrong Tags',
 
     // Status display (complaint)
-    statusOpenLabel: 'Open',
+    statusOpenLabel: 'Communicated',
+    statusInPlanningLabel: 'In Planning',
     statusInProgressLabel: 'In Progress',
     statusClosedLabel: 'Closed',
     
@@ -366,6 +368,10 @@ export const translations: Record<'en' | 'fr', Partial<Translations>> = {
     closed: 'Closed',
     add: 'Add',
     cancel: 'Cancel',
+    save: 'Save',
+    yes: 'Yes',
+    no: 'No',
+    delete: 'Delete',
     
     // Complaint List
     recentComplaints: 'Recent Complaints',
@@ -407,7 +413,6 @@ export const translations: Record<'en' | 'fr', Partial<Translations>> = {
     // Drawer
     closePanel: 'Close Panel',
     edit: 'Edit',
-    save: 'Save',
     saving: 'Saving...',
     undo: 'Undo',
     redo: 'Redo',
@@ -421,6 +426,7 @@ export const translations: Record<'en' | 'fr', Partial<Translations>> = {
     systemInformation: 'System Information',
     neverEdited: 'Never edited',
     attachedFiles: 'Attached Files',
+    exportPdf: 'Export PDF',
     
     // Image Gallery
     imageGallery: 'Image Gallery',
@@ -537,13 +543,10 @@ export const translations: Record<'en' | 'fr', Partial<Translations>> = {
     packagingWrongTags: 'Mauvaises étiquettes',
     packagingReceivedLabel: 'Reçu',
     packagingExpectedLabel: 'Attendu',
-    packagingWrongBox: 'Mauvaise boîte',
-    packagingWrongBag: 'Mauvais sac',
-    packagingWrongPaper: 'Mauvais papier',
-    packagingWrongTags: 'Mauvaises étiquettes',
 
     // Status display (complaint)
-    statusOpenLabel: 'Ouverte',
+    statusOpenLabel: 'Communiquées',
+    statusInPlanningLabel: 'Plans établis',
     statusInProgressLabel: 'En cours',
     statusClosedLabel: 'Fermée',
     
@@ -587,6 +590,10 @@ export const translations: Record<'en' | 'fr', Partial<Translations>> = {
     closed: 'Fermé',
     add: 'Ajouter',
     cancel: 'Annuler',
+    save: 'Enregistrer',
+    yes: 'Oui',
+    no: 'Non',
+    delete: 'Supprimer',
     
     // Complaint List
     recentComplaints: 'Réclamations Récentes',
@@ -612,7 +619,6 @@ export const translations: Record<'en' | 'fr', Partial<Translations>> = {
     // Drawer
     closePanel: 'Fermer le panneau',
     edit: 'Modifier',
-    save: 'Enregistrer',
     saving: 'Enregistrement...',
     undo: 'Annuler',
     redo: 'Refaire',
@@ -642,6 +648,7 @@ export const translations: Record<'en' | 'fr', Partial<Translations>> = {
     systemInformation: 'Informations système',
     neverEdited: 'Jamais modifié',
     attachedFiles: 'Fichiers joints',
+    exportPdf: 'Exporter PDF',
     
     // Image Gallery
     imageGallery: 'Galerie d\'images',
