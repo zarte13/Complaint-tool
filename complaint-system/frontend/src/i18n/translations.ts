@@ -3,6 +3,7 @@ export interface Translations {
   navHome: string;
   navComplaints: string;
   navDashboard: string;
+  navResponsables?: string;
   systemTitle: string;
   
   // Home Page
@@ -209,6 +210,22 @@ export interface Translations {
   loginFailed: string;
   loginLink: string;
   logoutButton: string;
+
+  // Responsables
+  responsablesTitle?: string;
+  responsablesSubtitle?: string;
+  searchResponsables?: string;
+  showInactive?: string;
+  name?: string;
+  email?: string;
+  department?: string;
+  actions?: string;
+  loading?: string;
+  noResponsablesFound?: string;
+  addPerson?: string;
+  active?: string;
+  inactive?: string;
+  deactivate?: string;
 }
 
 // Relax type to avoid requiring all keys during iteration; runtime access stays the same
@@ -396,7 +413,23 @@ export const translations: Record<'en' | 'fr', Partial<Translations>> = {
     loginSubmitting: 'Signing in…',
     loginFailed: 'Login failed',
     loginLink: 'Login',
-    logoutButton: 'Logout'
+    logoutButton: 'Logout',
+    // Responsables
+    navResponsables: 'Responsables',
+    responsablesTitle: 'Responsables',
+    responsablesSubtitle: 'Manage responsible persons for follow-up actions',
+    searchResponsables: 'Search responsables...',
+    showInactive: 'Show inactive',
+    name: 'Name',
+    email: 'Email',
+    department: 'Department',
+    actions: 'Actions',
+    loading: 'Loading...',
+    noResponsablesFound: 'No responsables found',
+    addPerson: 'Add Person',
+    active: 'Active',
+    inactive: 'Inactive',
+    deactivate: 'Deactivate'
   },
   fr: {
     navHome: 'Accueil',
@@ -581,6 +614,22 @@ export const translations: Record<'en' | 'fr', Partial<Translations>> = {
     loginSubmitting: 'Connexion…',
     loginFailed: 'Échec de la connexion',
     loginLink: 'Connexion',
-    logoutButton: 'Déconnexion'
+    logoutButton: 'Déconnexion',
+    // Responsables
+    navResponsables: 'Responsables',
+    responsablesTitle: 'Responsables',
+    responsablesSubtitle: 'Gérer les personnes responsables des actions de suivi',
+    searchResponsables: 'Rechercher des responsables...',
+    showInactive: 'Afficher les inactifs',
+    name: 'Nom',
+    email: 'Courriel',
+    department: 'Département',
+    actions: 'Actions',
+    loading: 'Chargement...',
+    noResponsablesFound: 'Aucun responsable trouvé',
+    addPerson: 'Ajouter une personne',
+    active: 'Actif',
+    inactive: 'Inactif',
+    deactivate: 'Désactiver'
   },
 };

@@ -1,4 +1,9 @@
 from sqlalchemy import Column, Integer, String, Text, DateTime, Boolean, ForeignKey, Date
+try:
+    # SQLAlchemy JSON type; maps to TEXT on SQLite with json serialization
+    from sqlalchemy import JSON  # type: ignore
+except Exception:  # pragma: no cover
+    JSON = Text  # Fallback for environments without JSON type
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.database.database import Base
@@ -28,7 +33,14 @@ class Complaint(Base):
     id = Column(Integer, primary_key=True, index=True)
     company_id = Column(Integer, ForeignKey("companies.id"), nullable=False)
     part_id = Column(Integer, ForeignKey("parts.id"), nullable=False)
+    # Legacy single issue type kept for backward-compatibility with existing UI/tests
     issue_type = Column(String(50), nullable=False)  # wrong_quantity, wrong_part, damaged, other
+    # New taxonomy (FF-002): category + subtypes
+    issue_category = Column(String(20), nullable=True)  # dimensional, visual, packaging, other
+    issue_subtypes = Column(JSON, nullable=True)  # List[str]
+    # Packaging details keyed by subtype (e.g., wrong_box, wrong_bag, wrong_paper, wrong_quantity)
+    packaging_received = Column(JSON, nullable=True)
+    packaging_expected = Column(JSON, nullable=True)
     details = Column(Text, nullable=False)
     quantity_ordered = Column(Integer)
     quantity_received = Column(Integer)

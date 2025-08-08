@@ -63,6 +63,31 @@ def migrate_database():
     except sqlite3.OperationalError as e:
         print(f"Skipping is_deleted: {e}")
 
+    # FF-002: Issue taxonomy columns (category/subtypes + packaging details)
+    try:
+        if not has_column(conn, 'complaints', 'issue_category'):
+            cursor.execute("ALTER TABLE complaints ADD COLUMN issue_category VARCHAR(20);")
+    except sqlite3.OperationalError as e:
+        print(f"Skipping issue_category: {e}")
+
+    try:
+        if not has_column(conn, 'complaints', 'issue_subtypes'):
+            cursor.execute("ALTER TABLE complaints ADD COLUMN issue_subtypes TEXT;")  # JSON-serialized list
+    except sqlite3.OperationalError as e:
+        print(f"Skipping issue_subtypes: {e}")
+
+    try:
+        if not has_column(conn, 'complaints', 'packaging_received'):
+            cursor.execute("ALTER TABLE complaints ADD COLUMN packaging_received TEXT;")  # JSON-serialized map
+    except sqlite3.OperationalError as e:
+        print(f"Skipping packaging_received: {e}")
+
+    try:
+        if not has_column(conn, 'complaints', 'packaging_expected'):
+            cursor.execute("ALTER TABLE complaints ADD COLUMN packaging_expected TEXT;")  # JSON-serialized map
+    except sqlite3.OperationalError as e:
+        print(f"Skipping packaging_expected: {e}")
+
     conn.commit()
     print("Migration completed.")
     conn.close()

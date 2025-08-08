@@ -333,6 +333,40 @@ export const partsApi = {
   },
 };
 
+/**
+ * Responsibles API service for responsables directory
+ */
+export const responsiblesApi = {
+  async list(params?: { search?: string; active_only?: boolean; limit?: number }) {
+    const usp = new URLSearchParams();
+    if (params?.search) usp.append('search', params.search);
+    if (typeof params?.active_only === 'boolean') usp.append('active_only', String(params.active_only));
+    if (typeof params?.limit === 'number') usp.append('limit', String(params.limit));
+    const base = ensureTrailingSlash('/api/responsible-persons');
+    const url = usp.toString() ? `${base}?${usp.toString()}` : base;
+    const { data } = await get(url);
+    return data;
+  },
+
+  async create(payload: { name: string; email: string; department?: string }) {
+    const url = ensureTrailingSlash('/api/responsible-persons');
+    const { data } = await post(url, payload);
+    return data;
+  },
+
+  async update(personId: number, payload: { name?: string; email?: string; department?: string; is_active?: boolean }) {
+    const url = `/api/responsible-persons/${personId}`; // item path; no trailing slash normalization
+    const { data } = await put(url, payload);
+    return data;
+  },
+
+  async deactivate(personId: number) {
+    const url = `/api/responsible-persons/${personId}`;
+    const { data } = await del(url);
+    return data;
+  },
+};
+
 // Export the enhanced API client for direct usage
 export { apiClient, get, post, put, del };
 

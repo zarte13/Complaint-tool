@@ -6,6 +6,7 @@ import HomePage from './pages/HomePage';
 import ComplaintsPage from './pages/ComplaintsPage';
 import DashboardPage from './pages/DashboardPage';
 import LoginPage from './pages/LoginPage';
+import ResponsablesPage from './pages/ResponsablesPage';
 import { useAuthStore } from './stores/authStore';
 
 function ProtectedRoute({ children }: { children: JSX.Element }) {
@@ -40,6 +41,14 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <ComplaintsPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/responsables"
+                element={
+                  <ProtectedRoute>
+                    <ResponsablesPage />
                   </ProtectedRoute>
                 }
               />

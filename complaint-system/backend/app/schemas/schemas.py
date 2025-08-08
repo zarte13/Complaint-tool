@@ -197,6 +197,12 @@ class ResponsiblePersonResponse(ResponsiblePersonBase):
     class Config:
         from_attributes = True
 
+class ResponsiblePersonUpdate(BaseModel):
+    name: Optional[str] = Field(None, min_length=2, max_length=255)
+    email: Optional[str] = Field(None, max_length=255)
+    department: Optional[str] = Field(None, max_length=100)
+    is_active: Optional[bool] = None
+
 # Follow-up Action schemas
 class FollowUpActionBase(BaseModel):
     action_text: str = Field(..., min_length=5, max_length=500)

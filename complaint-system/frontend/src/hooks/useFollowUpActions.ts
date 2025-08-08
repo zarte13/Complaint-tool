@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import axios from 'axios';
+import { get, post, put, del } from '../services/api';
 import { useAuthStore } from '../stores/authStore';
 import { 
   FollowUpAction, 
@@ -28,10 +28,10 @@ export const followUpActionsApi = {
   ): Promise<FollowUpAction[]> => {
     try {
       // Backend path: /api/complaints/{complaint_id}/actions
-      const response = await axios.get(`${API_BASE_URL}/complaints/${complaintId}/actions`, {
+      const { data } = await get(`${API_BASE_URL}/complaints/${complaintId}/actions`, {
         params: { ...(filters ?? {}) }
       });
-      return response.data;
+      return data;
     } catch (err: any) {
       if (err?.response?.status === 404) {
         // Backend does not implement actions; return empty list to avoid console errors
@@ -44,8 +44,8 @@ export const followUpActionsApi = {
   // Get a specific action
   getAction: async (complaintId: number, actionId: number): Promise<FollowUpAction> => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/complaints/${complaintId}/actions/${actionId}`);
-      return response.data;
+      const { data } = await get(`${API_BASE_URL}/complaints/${complaintId}/actions/${actionId}`);
+      return data;
     } catch (err: any) {
       if (err?.response?.status === 404) {
         // Provide a clear error for consumers if needed
@@ -62,12 +62,12 @@ export const followUpActionsApi = {
     changedBy: string = 'User'
   ): Promise<FollowUpAction> => {
     try {
-      const response = await axios.post(
+      const { data } = await post(
         `${API_BASE_URL}/complaints/${complaintId}/actions`,
         actionData,
         { params: { changed_by: changedBy } }
       );
-      return response.data;
+      return data;
     } catch (err: any) {
       if (err?.response?.status === 404) {
         throw new Error('Follow-up actions API not available on server');
@@ -84,12 +84,12 @@ export const followUpActionsApi = {
     changedBy: string = 'User'
   ): Promise<FollowUpAction> => {
     try {
-      const response = await axios.put(
+      const { data } = await put(
         `${API_BASE_URL}/complaints/${complaintId}/actions/${actionId}`,
         updates,
         { params: { changed_by: changedBy } }
       );
-      return response.data;
+      return data;
     } catch (err: any) {
       if (err?.response?.status === 404) {
         throw new Error('Follow-up actions API not available on server');
@@ -105,7 +105,7 @@ export const followUpActionsApi = {
     changedBy: string = 'User'
   ): Promise<void> => {
     try {
-      await axios.delete(
+      await del(
         `${API_BASE_URL}/complaints/${complaintId}/actions/${actionId}`,
         { params: { changed_by: changedBy } }
       );
@@ -126,7 +126,7 @@ export const followUpActionsApi = {
     changedBy: string = 'User'
   ): Promise<void> => {
     try {
-      await axios.post(
+      await post(
         `${API_BASE_URL}/complaints/${complaintId}/actions/${actionId}/reorder`,
         null,
         { params: { new_position: newPosition, changed_by: changedBy } }
@@ -142,8 +142,8 @@ export const followUpActionsApi = {
   // Get action history
   getActionHistory: async (complaintId: number, actionId: number): Promise<ActionHistory[]> => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/complaints/${complaintId}/actions/${actionId}/history`);
-      return response.data;
+      const { data } = await get(`${API_BASE_URL}/complaints/${complaintId}/actions/${actionId}/history`);
+      return data;
     } catch (err: any) {
       if (err?.response?.status === 404) {
         return [];
@@ -155,10 +155,10 @@ export const followUpActionsApi = {
   // Get responsible persons
   getResponsiblePersons: async (complaintId: number, activeOnly: boolean = true): Promise<ResponsiblePerson[]> => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/complaints/${complaintId}/actions/responsible-persons`, {
+      const { data } = await get(`${API_BASE_URL}/complaints/${complaintId}/actions/responsible-persons`, {
         params: { active_only: activeOnly }
       });
-      return response.data;
+      return data;
     } catch (err: any) {
       if (err?.response?.status === 404) {
         return [];
@@ -174,12 +174,12 @@ export const followUpActionsApi = {
     changedBy: string = 'User'
   ): Promise<BulkActionResponse> => {
     try {
-      const response = await axios.patch(
+      const { data } = await put(
         `${API_BASE_URL}/complaints/${complaintId}/actions/bulk-update`,
         bulkUpdate,
         { params: { changed_by: changedBy } }
       );
-      return response.data;
+      return data as unknown as BulkActionResponse;
     } catch (err: any) {
       if (err?.response?.status === 404) {
         // Return a benign response matching BulkActionResponse shape
@@ -196,8 +196,8 @@ export const followUpActionsApi = {
   // Get action metrics
   getActionMetrics: async (complaintId: number): Promise<ActionMetrics> => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/complaints/${complaintId}/actions/metrics`);
-      return response.data;
+      const { data } = await get(`${API_BASE_URL}/complaints/${complaintId}/actions/metrics`);
+      return data;
     } catch (err: any) {
       if (err?.response?.status === 404) {
         // Provide empty metrics matching ActionMetrics shape

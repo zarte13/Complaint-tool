@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { FollowUpAction, FollowUpActionUpdate } from '../../types';
 import { useFollowUpActions } from '../../hooks/useFollowUpActions';
 import { ActionCard } from './ActionCard';
@@ -30,6 +30,7 @@ export const FollowUpActionsPanel: React.FC<FollowUpActionsPanelProps> = ({
     updateAction,
     deleteAction,
     reorderActions,
+    refresh,
     filterByStatus,
     filterByPerson,
     // showOverdueOnly, // not used directly in this component
@@ -91,6 +92,16 @@ export const FollowUpActionsPanel: React.FC<FollowUpActionsPanelProps> = ({
   // const toggleActionStatus = async (_action: FollowUpAction) => { ... }
 
   // Local date formatter removed (unused) to satisfy TS6133
+
+  // Ensure responsible persons list is fresh when opening the Add Action form
+  useEffect(() => {
+    if (showAddForm) {
+      // Refresh will reload actions, responsible persons, and metrics
+      (async () => {
+        try { await refresh(); } catch { /* noop */ }
+      })();
+    }
+  }, [showAddForm, refresh]);
 
   if (loading) {
     return (

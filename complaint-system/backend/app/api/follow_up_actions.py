@@ -10,7 +10,8 @@ from app.models.models import (
 )
 from app.schemas.schemas import (
     FollowUpActionCreate, FollowUpActionUpdate, FollowUpActionResponse,
-    ResponsiblePersonResponse, ActionHistoryResponse, ActionDependencyCreate,
+    ResponsiblePersonResponse, ResponsiblePersonCreate, ResponsiblePersonUpdate,
+    ActionHistoryResponse, ActionDependencyCreate,
     ActionDependencyResponse, BulkActionUpdate, BulkActionResponse, ActionMetrics,
     ActionStatus, ActionPriority
 )
@@ -188,6 +189,7 @@ async def get_actions(
 # Responsible persons endpoints (before parameterized routes)
 
 @router.get("/responsible-persons", response_model=List[ResponsiblePersonResponse])
+@router.get("/responsible-persons/", response_model=List[ResponsiblePersonResponse])
 async def get_responsible_persons(
     complaint_id: int = Path(..., description="Complaint ID"),
     active_only: bool = Query(True, description="Show only active persons"),
@@ -213,7 +215,7 @@ async def get_responsible_persons(
 # --- Admin-only Responsible Persons CRUD ---
 @router.post("/responsible-persons", response_model=ResponsiblePersonResponse, status_code=status.HTTP_201_CREATED)
 async def create_responsible_person(
-    payload: ResponsiblePersonResponse,
+    payload: ResponsiblePersonCreate,
     complaint_id: int = Path(..., description="Complaint ID (ignored)"),
     db: Session = Depends(get_db),
     _admin = Depends(require_admin),
@@ -245,10 +247,7 @@ async def create_responsible_person(
 async def update_responsible_person_admin(
     person_id: int,
     complaint_id: int = Path(..., description="Complaint ID (ignored)"),
-    name: Optional[str] = Query(None, min_length=2, max_length=255),
-    email: Optional[str] = Query(None),
-    department: Optional[str] = Query(None),
-    is_active: Optional[bool] = Query(None),
+    updates: ResponsiblePersonUpdate = None,
     db: Session = Depends(get_db),
     _admin = Depends(require_admin),
 ):
@@ -256,20 +255,20 @@ async def update_responsible_person_admin(
         person = db.query(ResponsiblePerson).filter(ResponsiblePerson.id == person_id).first()
         if not person:
             raise HTTPException(status_code=404, detail="Responsible person not found")
-        if name is not None:
-            name_s = name.strip()
+        if updates and updates.name is not None:
+            name_s = updates.name.strip()
             if not name_s:
                 raise HTTPException(status_code=400, detail="Name cannot be empty")
             dup = db.query(ResponsiblePerson).filter(and_(ResponsiblePerson.name == name_s, ResponsiblePerson.id != person_id)).first()
             if dup:
                 raise HTTPException(status_code=409, detail="Another person with this name already exists")
             person.name = name_s
-        if email is not None:
-            person.email = email.strip() or None
-        if department is not None:
-            person.department = department.strip() or None
-        if is_active is not None:
-            person.is_active = is_active
+        if updates and updates.email is not None:
+            person.email = updates.email.strip() or None
+        if updates and updates.department is not None:
+            person.department = updates.department.strip() or None
+        if updates and updates.is_active is not None:
+            person.is_active = updates.is_active
         db.add(person)
         db.commit()
         db.refresh(person)
