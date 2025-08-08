@@ -13,8 +13,15 @@ import sqlite3
 import os
 from pathlib import Path
 
+def has_column(conn: sqlite3.Connection, table: str, column: str) -> bool:
+    cur = conn.cursor()
+    cur.execute(f"PRAGMA table_info({table})")
+    cols = [row[1] for row in cur.fetchall()]
+    return column in cols
+
+
 def migrate_database():
-    """Add new columns to complaints table."""
+    """Add new columns to complaints table (idempotent)."""
     db_path = Path(__file__).parent / "database" / "complaints.db"
     
     if not db_path.exists():
@@ -24,34 +31,41 @@ def migrate_database():
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
     
+    # Work in small, idempotent steps so one failure doesn't stop others
     try:
-        # Add new columns
-        cursor.execute("""
-            ALTER TABLE complaints ADD COLUMN work_order_number VARCHAR(100) NOT NULL DEFAULT '';
-        """)
-        
-        cursor.execute("""
-            ALTER TABLE complaints ADD COLUMN occurrence VARCHAR(100);
-        """)
-        
-        cursor.execute("""
-            ALTER TABLE complaints ADD COLUMN part_received VARCHAR(100);
-        """)
-        
-        cursor.execute("""
-            ALTER TABLE complaints ADD COLUMN human_factor BOOLEAN DEFAULT 0;
-        """)
-        
-        conn.commit()
-        print("Database migration completed successfully!")
-        
+        if not has_column(conn, 'complaints', 'work_order_number'):
+            cursor.execute("ALTER TABLE complaints ADD COLUMN work_order_number VARCHAR(100) NOT NULL DEFAULT '';")
     except sqlite3.OperationalError as e:
-        if "duplicate column name" in str(e):
-            print("Columns already exist. Migration skipped.")
-        else:
-            print(f"Migration error: {e}")
-    finally:
-        conn.close()
+        print(f"Skipping work_order_number: {e}")
+
+    try:
+        if not has_column(conn, 'complaints', 'occurrence'):
+            cursor.execute("ALTER TABLE complaints ADD COLUMN occurrence VARCHAR(100);")
+    except sqlite3.OperationalError as e:
+        print(f"Skipping occurrence: {e}")
+
+    try:
+        if not has_column(conn, 'complaints', 'part_received'):
+            cursor.execute("ALTER TABLE complaints ADD COLUMN part_received VARCHAR(100);")
+    except sqlite3.OperationalError as e:
+        print(f"Skipping part_received: {e}")
+
+    try:
+        if not has_column(conn, 'complaints', 'human_factor'):
+            cursor.execute("ALTER TABLE complaints ADD COLUMN human_factor BOOLEAN DEFAULT 0;")
+    except sqlite3.OperationalError as e:
+        print(f"Skipping human_factor: {e}")
+
+    # Ensure soft delete column exists
+    try:
+        if not has_column(conn, 'complaints', 'is_deleted'):
+            cursor.execute("ALTER TABLE complaints ADD COLUMN is_deleted BOOLEAN DEFAULT 0;")
+    except sqlite3.OperationalError as e:
+        print(f"Skipping is_deleted: {e}")
+
+    conn.commit()
+    print("Migration completed.")
+    conn.close()
 
 if __name__ == "__main__":
     migrate_database()

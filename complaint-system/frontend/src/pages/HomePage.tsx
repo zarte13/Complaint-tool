@@ -2,10 +2,12 @@ import { useState } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import ComplaintForm from '../components/ComplaintForm/ComplaintForm';
 import ComplaintList from '../components/ComplaintList/ComplaintList';
+import { useAuthStore } from '../stores/authStore';
 
 export default function HomePage() {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const { t } = useLanguage();
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
   const handleComplaintSubmitted = () => {
     // Increment to force refresh of the Recent Complaints list
@@ -24,12 +26,18 @@ export default function HomePage() {
       {/* Two-column layout: form (left) and recent complaints (right) */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div>
-          <ComplaintForm onSuccess={handleComplaintSubmitted} />
+          {isAuthenticated ? (
+            <ComplaintForm onSuccess={handleComplaintSubmitted} />
+          ) : (
+            <div className="p-4 rounded border border-amber-200 bg-amber-50 text-amber-800 text-sm">
+              {'Please log in to submit a complaint.'}
+            </div>
+          )}
         </div>
 
         <div>
           {/* Pass only refreshTrigger so list refetches when a new complaint is created */}
-          <ComplaintList refreshTrigger={refreshTrigger} />
+          <ComplaintList refreshTrigger={refreshTrigger} readOnly={!isAuthenticated} />
         </div>
       </div>
     </div>

@@ -9,9 +9,10 @@ interface ComplaintTileProps {
   complaint: Complaint;
   onClick: (complaint: Complaint) => void;
   onFileUploadComplete: () => void;
+  readOnly?: boolean;
 }
 
-export default function ComplaintTile({ complaint, onClick, onFileUploadComplete }: ComplaintTileProps) {
+export default function ComplaintTile({ complaint, onClick, onFileUploadComplete, readOnly = false }: ComplaintTileProps) {
   const { t } = useLanguage();
   const [isExpanded, setIsExpanded] = useState(false);
   const fileUploadRef = useRef<HTMLDivElement>(null);
@@ -175,19 +176,21 @@ export default function ComplaintTile({ complaint, onClick, onFileUploadComplete
           )}
         </div>
         
-        <button
-          onClick={handleAttachFiles}
-          className="flex items-center px-3 py-1 text-xs bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          aria-label={t('attachFilesButton')}
-        >
-          <Paperclip className="h-3 w-3 mr-1" />
-          {t('attachFilesButton')}
-        </button>
+        {!readOnly && (
+          <button
+            onClick={handleAttachFiles}
+            className="flex items-center px-3 py-1 text-xs bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            aria-label={t('attachFilesButton')}
+          >
+            <Paperclip className="h-3 w-3 mr-1" />
+            {t('attachFilesButton')}
+          </button>
+        )}
       </div>
 
       {/* File Upload Section (conditionally rendered) */}
       <AnimatePresence>
-        {isExpanded && (
+        {isExpanded && !readOnly && (
           <motion.div 
             ref={fileUploadRef}
             className="mt-4 pt-4 border-t border-gray-200"

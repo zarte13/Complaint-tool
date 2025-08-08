@@ -17,16 +17,18 @@ export type AuthState = {
   login: (tokens: TokenPair) => void;
   logout: () => void;
   setAccessToken: (token: string | null) => void;
+  getRole: () => string | null;
+  isAdmin: () => boolean;
 };
 
 type AuthPersist = (
-  config: StateCreator<AuthState, [['zustand/immer', never]], []> | StateCreator<AuthState>,
+  config: StateCreator<AuthState>,
   options: PersistOptions<AuthState>
 ) => any;
 
 export const useAuthStore = create<AuthState>()(
   (persist as unknown as AuthPersist)(
-    (set: (partial: Partial<AuthState> | ((state: AuthState) => Partial<AuthState>), replace?: boolean) => void, get: () => AuthState) => ({
+    (set, get) => ({
       accessToken: null,
       refreshToken: null,
       isAuthenticated: false,
@@ -47,14 +49,31 @@ export const useAuthStore = create<AuthState>()(
           accessToken: token,
           isAuthenticated: Boolean(token && state.refreshToken),
         })),
+      getRole: () => {
+        const token = get().accessToken;
+        if (!token) return null;
+        try {
+          const [, payloadB64] = token.split('.') as any;
+          const json = JSON.parse(atob(payloadB64));
+          const role = json?.role || (Array.isArray(json?.roles) ? json.roles[0] : null) || (json?.is_admin ? 'admin' : null);
+          return typeof role === 'string' ? role : null;
+        } catch {
+          return null;
+        }
+      },
+      isAdmin: () => {
+        const role = (get() as any).getRole?.();
+        return role === 'admin';
+      },
     }),
     {
       name: 'auth-store',
-      partialize: (state: AuthState) => ({
+      // Cast to satisfy TS persist type; we only store a subset
+      partialize: ((state: AuthState) => ({
         accessToken: state.accessToken,
         refreshToken: state.refreshToken,
         isAuthenticated: state.isAuthenticated,
-      }),
+      })) as unknown as (state: AuthState) => AuthState,
     }
   )
 );

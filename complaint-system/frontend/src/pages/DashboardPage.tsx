@@ -2,7 +2,7 @@ import { useQuery } from 'react-query';
 import axios from 'axios';
 import { motion } from 'framer-motion';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
-import { TrendingUp, AlertTriangle, CheckCircle, XCircle } from 'lucide-react';
+import { TrendingUp, AlertTriangle, CheckCircle } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 
 interface RARMetrics {
@@ -171,7 +171,7 @@ const DashboardPage: React.FC = () => {
       <TrendingUp className="h-6 w-6 text-purple-600" />
     </div>
     <div className="ml-4">
-      <p className="text-sm font-medium text-gray-600">{t('returnRate') || 'Return Rate'}</p>
+      <p className="text-sm font-medium text-gray-600">{'Return Rate'}</p>
       <p className="text-2xl font-bold text-gray-900">{rarMetrics?.returnRate ?? 0}%</p>
     </div>
   </div>

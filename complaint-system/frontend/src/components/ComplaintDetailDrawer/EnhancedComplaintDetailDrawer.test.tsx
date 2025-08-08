@@ -11,6 +11,14 @@ vi.mock('../../contexts/LanguageContext', () => ({
   }),
 }));
 
+// Mock auth store to simulate authenticated user in tests
+vi.mock('../../stores/authStore', () => ({
+  useAuthStore: (selector: any) => selector({
+    isAuthenticated: true,
+    isAdmin: () => false,
+  }),
+}));
+
 // Mock date-fns
 vi.mock('date-fns', () => ({
   format: (_date: Date, _format: string) => 'formatted-date',

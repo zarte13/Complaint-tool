@@ -38,6 +38,8 @@ class Complaint(Base):
     human_factor = Column(Boolean, default=False)  # Cause avec facteur humain
     status = Column(String(20), default="open")  # open, in_progress, resolved (DB enforced enum)
     has_attachments = Column(Boolean, default=False)
+    # Soft delete flag: when True, the complaint is hidden from all list/detail APIs
+    is_deleted = Column(Boolean, default=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     last_edit = Column(DateTime(timezone=True), nullable=True)

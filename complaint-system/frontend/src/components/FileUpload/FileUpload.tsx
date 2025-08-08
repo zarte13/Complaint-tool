@@ -18,12 +18,12 @@ interface UploadedFile {
   thumbnail_url?: string;
 }
 
-export default function FileUpload({ complaintId, onUploadComplete, refreshTrigger = 0 }: FileUploadProps) {
+export default function FileUpload({ complaintId, onUploadComplete }: FileUploadProps) {
   const [uploading, setUploading] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [error, setError] = useState<string | null>(null);
   // Track last refreshTrigger we used to avoid rapid repeat refreshes
-  const lastRefreshRef = useState<number>(refreshTrigger)[0];
+  // removed unused lastRefreshRef
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     setUploading(true);

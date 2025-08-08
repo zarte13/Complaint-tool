@@ -442,6 +442,7 @@ http://localhost:8000/api/
 | POST | `/complaints/` | Create complaint | ComplaintCreate schema |
 | GET | `/complaints/{id}/` | Get complaint | Path parameter |
 | PUT | `/complaints/{id}/` | Update complaint | Path parameter + body |
+| DELETE | `/complaints/{id}/` | Delete complaint (admin only) | Path parameter |
 | DELETE | `/complaints/{id}/` | Delete complaint | Path parameter |
 | POST | `/complaints/{id}/attachments/` | Upload attachment | Multipart form data |
 | DELETE | `/complaints/{id}/attachments/{attachment_id}/` | Delete attachment | Path parameters |
@@ -675,6 +676,11 @@ frontend/src/components/
 - **Active State Indicators**: Visual feedback for current route
 - **Responsive Design**: Mobile-friendly navigation
 - **Keyboard Accessibility**: Tab navigation support
+
+### Role-based UI Behavior
+- Home page: users can open the complaint detail view in read-only mode without login; edit controls are hidden/disabled when not authenticated.
+- Complaints page: authenticated users can edit complaints inline or via the detail drawer per DA-003.
+- Admins: additionally see delete actions for complaints; delete requires confirmation.
 
 
 ---

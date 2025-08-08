@@ -3,10 +3,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { AlertCircle } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { Complaint, ComplaintStatus } from '../../types';
-import { get, put, ensureTrailingSlash } from '../../services/api';
+import { get, put } from '../../services/api';
 import EnhancedComplaintDetailDrawer from '../ComplaintDetailDrawer/EnhancedComplaintDetailDrawer';
 import ComplaintTile from './ComplaintTile';
-import { complaintsStore } from '../../stores/complaintsStore';
+// complaintsStore imported where needed
 
 interface ComplaintListProps {
   refreshTrigger?: number;
@@ -15,6 +15,7 @@ interface ComplaintListProps {
   issueTypeFilter?: string;
   page?: number;
   pageSize?: number;
+  readOnly?: boolean;
 }
 
 export default function ComplaintList({
@@ -24,6 +25,7 @@ export default function ComplaintList({
   issueTypeFilter = '',
   page = 1,
   pageSize = 10,
+  readOnly = false,
 }: ComplaintListProps) {
   const [complaints, setComplaints] = useState<Complaint[]>([]);
   const [loading, setLoading] = useState(true);
@@ -117,6 +119,11 @@ export default function ComplaintList({
   const handleDrawerClose = () => {
     setIsDrawerOpen(false);
     setDrawerComplaint(null);
+  };
+
+  const handleDeleted = (id: number) => {
+    // Optimistically remove from current list without full refresh
+    setComplaints(prev => prev.filter(c => c.id !== id));
   };
 
   const handleComplaintUpdate = async (updatedData: Partial<Complaint>) => {
@@ -218,6 +225,7 @@ export default function ComplaintList({
                     complaint={complaint}
                     onClick={handleRowClick}
                     onFileUploadComplete={fetchComplaints}
+                    readOnly={readOnly}
                   />
                 </motion.div>
               ))}
@@ -231,6 +239,7 @@ export default function ComplaintList({
         isOpen={isDrawerOpen}
         onClose={handleDrawerClose}
         onUpdate={handleComplaintUpdate}
+        onDeleted={handleDeleted}
       />
     </>
   );

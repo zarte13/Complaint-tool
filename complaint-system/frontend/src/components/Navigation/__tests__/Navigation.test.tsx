@@ -1,4 +1,4 @@
-import React from 'react';
+// React import not necessary with new JSX transform
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '../../../test/test-utils';
 

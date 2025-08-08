@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from 'react';
-import { postMessageToSW } from '../../utils';
 import { X, Edit3, Save, AlertCircle, Download, FileText, ChevronDown, Loader2, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -9,6 +8,7 @@ import { enUS, fr } from 'date-fns/locale';
 import ImageGallery from './ImageGallery';
 import { FollowUpActionsPanel } from '../FollowUpActions/FollowUpActionsPanel';
 import { get as apiGet, put as apiPut, del as apiDel } from '../../services/api';
+import { useAuthStore } from '../../stores/authStore';
 import { complaintsStore } from '../../stores/complaintsStore';
 
 interface EnhancedComplaintDetailDrawerProps {
@@ -16,6 +16,7 @@ interface EnhancedComplaintDetailDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   onUpdate: (updatedData: Partial<Complaint>) => void;
+  onDeleted?: (id: number) => void;
 }
 
 export default function EnhancedComplaintDetailDrawer({
@@ -23,6 +24,7 @@ export default function EnhancedComplaintDetailDrawer({
   isOpen,
   onClose,
   onUpdate,
+  onDeleted,
 }: EnhancedComplaintDetailDrawerProps) {
   const { language, t } = useLanguage();
   const [isEditing, setIsEditing] = useState(false);
@@ -38,6 +40,8 @@ export default function EnhancedComplaintDetailDrawer({
   // Local UI status state normalized to canonical values
   const [uiStatus, setUiStatus] = useState<ComplaintStatus | null>(null);
   const tilesContainerRef = useRef<HTMLDivElement>(null);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const isAdmin = useAuthStore((s) => s.isAdmin());
 
   const dateLocale = language === 'fr' ? fr : enUS;
 
@@ -45,10 +49,7 @@ export default function EnhancedComplaintDetailDrawer({
     return format(new Date(dateString), 'PPpp', { locale: dateLocale });
   };
 
-  const formatRelativeDate = (dateString?: string) => {
-    if (!dateString) return t('neverEdited');
-    return format(new Date(dateString), 'PPp', { locale: dateLocale });
-  };
+  // Removed unused formatRelativeDate
 
   const validateField = (field: keyof Complaint, value: any): string | null => {
     switch (field) {
@@ -86,6 +87,7 @@ export default function EnhancedComplaintDetailDrawer({
 
   const handleEdit = () => {
     if (!complaint) return;
+    if (!isAuthenticated) return; // read-only when not logged in
     
     setIsEditing(true);
     setEditData({
@@ -102,6 +104,7 @@ export default function EnhancedComplaintDetailDrawer({
 
   const handleSave = async () => {
     if (!complaint) return;
+    if (!isAuthenticated) return;
 
     // Validate all fields
     const errors: Record<string, string> = {};
@@ -146,6 +149,7 @@ export default function EnhancedComplaintDetailDrawer({
 
   const handleStatusChange = async (newStatus: ComplaintStatus, isRetry: boolean = false) => {
     if (!complaint || complaint.status === newStatus) return;
+    if (!isAuthenticated) return;
 
     // Optimistically reflect the new status in the dropdown immediately
     setUiStatus(newStatus);
@@ -160,10 +164,10 @@ export default function EnhancedComplaintDetailDrawer({
     setStatusError(null);
 
     try {
-      const { data: updatedComplaint } = await apiPut(`/api/complaints/${complaint.id}` as any, { status: newStatus });
+      const { data: updatedComplaint } = await apiPut<Complaint>(`/api/complaints/${complaint.id}` as any, { status: newStatus });
 
-      // Normalize any outward 'closed' to 'resolved' for UI state
-      const canonical = (updatedComplaint.status === 'closed' ? 'resolved' : updatedComplaint.status) as ComplaintStatus;
+      // Use server-confirmed status
+      const canonical = updatedComplaint.status as ComplaintStatus;
 
       // Push the confirmed status to the parent and cache
       const updatedData = { status: canonical as ComplaintStatus };
@@ -236,6 +240,7 @@ export default function EnhancedComplaintDetailDrawer({
   };
 
   const handleDeleteAttachment = async (attachment: Attachment) => {
+    if (!isAuthenticated) return;
     try {
       // Confirm with i18n
       const message = t('confirmDeleteAttachment') || 'Delete this attachment?';
@@ -376,12 +381,12 @@ export default function EnhancedComplaintDetailDrawer({
               // Make the network call; the success handler will persist the same value
               handleStatusChange(next);
             }}
-            disabled={isUpdatingStatus}
+            disabled={isUpdatingStatus || !isAuthenticated}
             className={`
               w-full px-3 py-2 pr-8 text-sm border border-gray-300 rounded-md 
               focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
               appearance-none cursor-pointer bg-white transition-opacity duration-200
-              ${isUpdatingStatus ? 'cursor-not-allowed' : ''}
+              ${(isUpdatingStatus || !isAuthenticated) ? 'cursor-not-allowed opacity-70' : ''}
             `}
           >
             {statusOptions.map((status) => {
@@ -573,7 +578,7 @@ export default function EnhancedComplaintDetailDrawer({
                 <div className="flex items-center space-x-2">
                   {isEditing ? (
                     <>
-                      <button
+                        <button
                         onClick={handleSave}
                         disabled={isSaving}
                         className="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
@@ -598,13 +603,40 @@ export default function EnhancedComplaintDetailDrawer({
                       </button>
                     </>
                   ) : (
-                    <button
-                      onClick={handleEdit}
-                      className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
-                    >
-                      <Edit3 className="h-4 w-4 mr-1" />
-                      Edit
-                    </button>
+                    <>
+                      {isAuthenticated && (
+                        <button
+                          onClick={handleEdit}
+                          className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+                        >
+                          <Edit3 className="h-4 w-4 mr-1" />
+                          Edit
+                        </button>
+                      )}
+                      {isAdmin && (
+                        <button
+                          onClick={async () => {
+                            if (!complaint) return;
+                            const ok = window.confirm('Delete this complaint? This cannot be undone.');
+                            if (!ok) return;
+                            try {
+                              const res = await apiDel(`/api/complaints/${complaint.id}` as any);
+                              if (res.status >= 400) throw new Error(res.statusText as any);
+                              // Soft delete: backend hides it; remove from client cache immediately
+                              complaintsStore.removeComplaintFromCache(complaint.id);
+                              if (onDeleted) onDeleted(complaint.id);
+                              onClose();
+                            } catch (err) {
+                              setError(err instanceof Error ? err.message : 'Failed to delete complaint');
+                            }
+                          }}
+                          className="inline-flex items-center px-3 py-2 border border-red-300 text-sm font-medium rounded-md text-red-700 bg-red-50 hover:bg-red-100"
+                        >
+                          <Trash2 className="h-4 w-4 mr-1" />
+                          Delete
+                        </button>
+                      )}
+                    </>
                   )}
                   <button
                     onClick={onClose}
@@ -740,9 +772,9 @@ export default function EnhancedComplaintDetailDrawer({
                       exit={{ opacity: 0, x: 24 }}
                       transition={{ duration: 0.25, ease: 'easeOut', delay: 0.36 }}
                     >
-                      <FollowUpActionsPanel
+                       <FollowUpActionsPanel
                         complaintId={complaint.id}
-                        isEditable={!isEditing}
+                         isEditable={isAuthenticated && !isEditing}
                         className="bg-white border border-gray-200 rounded-lg"
                         onFirstActionCreated={handleFirstActionCreated}
                       />
@@ -794,13 +826,15 @@ export default function EnhancedComplaintDetailDrawer({
                                       <Download className="h-3 w-3 mr-1" />
                                       {t('download') || 'Download'}
                                     </button>
-                                    <button
-                                      onClick={() => handleDeleteAttachment(attachment)}
-                                      className="inline-flex items-center px-2 py-1.5 text-xs font-medium text-red-600 bg-red-50 rounded-md hover:bg-red-100 transition-colors"
-                                      title={t('deleteAttachment') || 'Delete attachment'}
-                                    >
-                                      <Trash2 className="h-4 w-4" />
-                                    </button>
+                                    {isAuthenticated && (
+                                      <button
+                                        onClick={() => handleDeleteAttachment(attachment)}
+                                        className="inline-flex items-center px-2 py-1.5 text-xs font-medium text-red-600 bg-red-50 rounded-md hover:bg-red-100 transition-colors"
+                                        title={t('deleteAttachment') || 'Delete attachment'}
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </button>
+                                    )}
                                   </div>
                                 </div>
                               ))}

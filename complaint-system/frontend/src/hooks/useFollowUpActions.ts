@@ -1,5 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import axios from 'axios';
+import { useAuthStore } from '../stores/authStore';
 import { 
   FollowUpAction, 
   FollowUpActionCreate, 
@@ -26,9 +27,9 @@ export const followUpActionsApi = {
     }
   ): Promise<FollowUpAction[]> => {
     try {
-      // Correct path: actions are served under /api/follow-up-actions with complaint_id filter
-      const response = await axios.get(`${API_BASE_URL}/follow-up-actions`, {
-        params: { complaint_id: complaintId, ...(filters ?? {}) }
+      // Backend path: /api/complaints/{complaint_id}/actions
+      const response = await axios.get(`${API_BASE_URL}/complaints/${complaintId}/actions`, {
+        params: { ...(filters ?? {}) }
       });
       return response.data;
     } catch (err: any) {
@@ -43,9 +44,7 @@ export const followUpActionsApi = {
   // Get a specific action
   getAction: async (complaintId: number, actionId: number): Promise<FollowUpAction> => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/follow-up-actions/${actionId}`, {
-        params: { complaint_id: complaintId }
-      });
+      const response = await axios.get(`${API_BASE_URL}/complaints/${complaintId}/actions/${actionId}`);
       return response.data;
     } catch (err: any) {
       if (err?.response?.status === 404) {
@@ -64,8 +63,8 @@ export const followUpActionsApi = {
   ): Promise<FollowUpAction> => {
     try {
       const response = await axios.post(
-        `${API_BASE_URL}/follow-up-actions`,
-        { complaint_id: complaintId, ...actionData },
+        `${API_BASE_URL}/complaints/${complaintId}/actions`,
+        actionData,
         { params: { changed_by: changedBy } }
       );
       return response.data;
@@ -86,9 +85,9 @@ export const followUpActionsApi = {
   ): Promise<FollowUpAction> => {
     try {
       const response = await axios.put(
-        `${API_BASE_URL}/follow-up-actions/${actionId}`,
+        `${API_BASE_URL}/complaints/${complaintId}/actions/${actionId}`,
         updates,
-        { params: { complaint_id: complaintId, changed_by: changedBy } }
+        { params: { changed_by: changedBy } }
       );
       return response.data;
     } catch (err: any) {
@@ -107,8 +106,8 @@ export const followUpActionsApi = {
   ): Promise<void> => {
     try {
       await axios.delete(
-        `${API_BASE_URL}/follow-up-actions/${actionId}`,
-        { params: { complaint_id: complaintId, changed_by: changedBy } }
+        `${API_BASE_URL}/complaints/${complaintId}/actions/${actionId}`,
+        { params: { changed_by: changedBy } }
       );
     } catch (err: any) {
       if (err?.response?.status === 404) {
@@ -128,9 +127,9 @@ export const followUpActionsApi = {
   ): Promise<void> => {
     try {
       await axios.post(
-        `${API_BASE_URL}/follow-up-actions/${actionId}/reorder`,
+        `${API_BASE_URL}/complaints/${complaintId}/actions/${actionId}/reorder`,
         null,
-        { params: { complaint_id: complaintId, new_position: newPosition, changed_by: changedBy } }
+        { params: { new_position: newPosition, changed_by: changedBy } }
       );
     } catch (err: any) {
       if (err?.response?.status === 404) {
@@ -143,9 +142,7 @@ export const followUpActionsApi = {
   // Get action history
   getActionHistory: async (complaintId: number, actionId: number): Promise<ActionHistory[]> => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/follow-up-actions/${actionId}/history`, {
-        params: { complaint_id: complaintId }
-      });
+      const response = await axios.get(`${API_BASE_URL}/complaints/${complaintId}/actions/${actionId}/history`);
       return response.data;
     } catch (err: any) {
       if (err?.response?.status === 404) {
@@ -158,8 +155,8 @@ export const followUpActionsApi = {
   // Get responsible persons
   getResponsiblePersons: async (complaintId: number, activeOnly: boolean = true): Promise<ResponsiblePerson[]> => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/follow-up-actions/responsible-persons`, {
-        params: { complaint_id: complaintId, active_only: activeOnly }
+      const response = await axios.get(`${API_BASE_URL}/complaints/${complaintId}/actions/responsible-persons`, {
+        params: { active_only: activeOnly }
       });
       return response.data;
     } catch (err: any) {
@@ -178,8 +175,8 @@ export const followUpActionsApi = {
   ): Promise<BulkActionResponse> => {
     try {
       const response = await axios.patch(
-        `${API_BASE_URL}/follow-up-actions/bulk-update`,
-        { complaint_id: complaintId, ...bulkUpdate },
+        `${API_BASE_URL}/complaints/${complaintId}/actions/bulk-update`,
+        bulkUpdate,
         { params: { changed_by: changedBy } }
       );
       return response.data;
@@ -199,9 +196,7 @@ export const followUpActionsApi = {
   // Get action metrics
   getActionMetrics: async (complaintId: number): Promise<ActionMetrics> => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/follow-up-actions/metrics`, {
-        params: { complaint_id: complaintId }
-      });
+      const response = await axios.get(`${API_BASE_URL}/complaints/${complaintId}/actions/metrics`);
       return response.data;
     } catch (err: any) {
       if (err?.response?.status === 404) {
@@ -273,6 +268,14 @@ export function useFollowUpActions({
   refreshInterval = 30000 // 30 seconds
 }: UseFollowUpActionsParams): UseFollowUpActionsReturn {
   
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
   // State
   const [actions, setActions] = useState<FollowUpAction[]>([]);
   const [responsiblePersons, setResponsiblePersons] = useState<ResponsiblePerson[]>([]);
@@ -301,14 +304,17 @@ export function useFollowUpActions({
     try {
       setError(null);
       const data = await followUpActionsApi.getActions(complaintId, filters);
+      if (!mountedRef.current) return;
       setActions(data);
     } catch (err: any) {
       // If API not implemented, silence error and keep empty state
       if (err?.message === 'Follow-up actions API not available on server' || err?.response?.status === 404) {
+        if (!mountedRef.current) return;
         setActions([]);
         setError(null);
         return;
       }
+      if (!mountedRef.current) return;
       setError(err instanceof Error ? err.message : 'Failed to load actions');
       console.error('Error loading actions:', err);
     }
@@ -317,9 +323,23 @@ export function useFollowUpActions({
   // Load responsible persons
   const loadResponsiblePersons = useCallback(async () => {
     try {
+      const isAuth = useAuthStore.getState().isAuthenticated;
+      if (!isAuth) {
+        if (!mountedRef.current) return;
+        setResponsiblePersons([]);
+        return;
+      }
       const data = await followUpActionsApi.getResponsiblePersons(complaintId);
+      if (!mountedRef.current) return;
       setResponsiblePersons(data);
     } catch (err) {
+      // Swallow 401 (unauth) and set empty list
+      const status = (err as any)?.response?.status;
+      if (status === 401) {
+        if (!mountedRef.current) return;
+        setResponsiblePersons([]);
+        return;
+      }
       console.error('Error loading responsible persons:', err);
     }
   }, [complaintId]);
@@ -328,6 +348,7 @@ export function useFollowUpActions({
   const loadMetrics = useCallback(async () => {
     try {
       const data = await followUpActionsApi.getActionMetrics(complaintId);
+      if (!mountedRef.current) return;
       setMetrics(data);
     } catch (err) {
       console.error('Error loading metrics:', err);
@@ -344,7 +365,7 @@ export function useFollowUpActions({
         loadMetrics()
       ]);
     } finally {
-      setLoading(false);
+      if (mountedRef.current) setLoading(false);
     }
   }, [loadActions, loadResponsiblePersons, loadMetrics]);
 

@@ -15,6 +15,7 @@ from app.schemas.schemas import (
 from app.utils.file_handler import save_upload_file, validate_file, delete_file
 import mimetypes
 import os
+from app.auth.dependencies import require_admin
 
 router = APIRouter(prefix="/api/complaints", tags=["complaints"])
 # Register alias routes to support both "/api/complaints" and "/api/complaints/" without 307 redirects
@@ -61,7 +62,7 @@ async def get_complaints(
     db: Session = Depends(get_db)
 ):
     """Get complaints with advanced filtering, search, and pagination"""
-    query = db.query(Complaint).join(Company).join(Part)
+    query = db.query(Complaint).join(Company).join(Part).filter(Complaint.is_deleted == False)
     
     # Global search across multiple fields
     if search:
@@ -189,7 +190,7 @@ async def get_complaint(
     db: Session = Depends(get_db)
 ):
     """Get a specific complaint"""
-    complaint = db.query(Complaint).filter(Complaint.id == complaint_id).first()
+    complaint = db.query(Complaint).filter(Complaint.id == complaint_id, Complaint.is_deleted == False).first()
     if not complaint:
         raise HTTPException(status_code=404, detail="Complaint not found")
     return complaint
@@ -201,7 +202,7 @@ async def update_complaint(
     db: Session = Depends(get_db)
 ):
     """Update a complaint"""
-    complaint = db.query(Complaint).filter(Complaint.id == complaint_id).first()
+    complaint = db.query(Complaint).filter(Complaint.id == complaint_id, Complaint.is_deleted == False).first()
     if not complaint:
         raise HTTPException(status_code=404, detail="Complaint not found")
     
@@ -232,7 +233,7 @@ async def upload_attachment(
 ):
     """Upload file attachment to a complaint"""
     # Verify complaint exists
-    complaint = db.query(Complaint).filter(Complaint.id == complaint_id).first()
+    complaint = db.query(Complaint).filter(Complaint.id == complaint_id, Complaint.is_deleted == False).first()
     if not complaint:
         raise HTTPException(status_code=404, detail="Complaint not found")
     
@@ -564,3 +565,20 @@ async def export_excel(
         media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         headers={'Content-Disposition': 'attachment; filename=complaints.xlsx'}
     )
+
+@router.delete("/{complaint_id}", status_code=204)
+@router.delete("/{complaint_id}/", status_code=204)
+async def delete_complaint(
+    complaint_id: int,
+    db: Session = Depends(get_db),
+    _admin = Depends(require_admin),
+):
+    """Admin-only: Soft delete a complaint (hide from UI), keep data and attachments."""
+    complaint = db.query(Complaint).filter(Complaint.id == complaint_id, Complaint.is_deleted == False).first()
+    if not complaint:
+        raise HTTPException(status_code=404, detail="Complaint not found")
+
+    complaint.is_deleted = True
+    db.add(complaint)
+    db.commit()
+    return Response(status_code=204)
