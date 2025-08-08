@@ -1,5 +1,5 @@
-from pydantic import BaseModel, Field, validator, computed_field
-from typing import Optional, List
+from pydantic import BaseModel, Field, validator, computed_field, model_validator
+from typing import Optional, List, Dict
 from datetime import datetime, date
 from enum import Enum
 
@@ -13,6 +13,26 @@ class ComplaintStatus(str, Enum):
     OPEN = "open"
     IN_PROGRESS = "in_progress"
     RESOLVED = "resolved"
+
+# FF-002: Issue categories and subtypes (i18n-ready taxonomy)
+class IssueCategory(str, Enum):
+    DIMENSIONAL = "dimensional"
+    VISUAL = "visual"
+    PACKAGING = "packaging"
+    OTHER = "other"
+
+# Visual subtypes
+ALLOWED_VISUAL_SUBTYPES = {"scratch", "nicks", "rust"}
+
+# Packaging subtypes (multi-select allowed)
+ALLOWED_PACKAGING_SUBTYPES = {
+    "wrong_box",
+    "wrong_bag",
+    "wrong_paper",
+    "wrong_part",
+    "wrong_quantity",
+    "wrong_tags",
+}
 
 # Company schemas
 class CompanyBase(BaseModel):
@@ -55,11 +75,22 @@ class ComplaintBase(BaseModel):
     occurrence: Optional[str] = Field(None, max_length=100)
     part_received: Optional[str] = Field(None, max_length=100)
     human_factor: bool = Field(default=False)
+    # FF-002 additions (all optional for backward compatibility)
+    issue_category: Optional[IssueCategory] = None
+    issue_subtypes: Optional[List[str]] = None
+    packaging_received: Optional[Dict[str, str]] = None
+    packaging_expected: Optional[Dict[str, str]] = None
     
     @validator('quantity_received')
     def validate_quantities(cls, v, values):
-        if 'issue_type' in values and values['issue_type'] == IssueType.WRONG_QUANTITY:
-            if v is None or 'quantity_ordered' not in values or values['quantity_ordered'] is None:
+        # For legacy wrong_quantity, require quantities unless FF-002 packaging path is used
+        if values.get('issue_type') == IssueType.WRONG_QUANTITY:
+            issue_category = values.get('issue_category')
+            subtypes = values.get('issue_subtypes') or []
+            if issue_category == IssueCategory.PACKAGING and ('wrong_quantity' in subtypes):
+                # Use packaging_received/expected instead; skip enforcing top-level quantities
+                return v
+            if v is None or values.get('quantity_ordered') is None:
                 raise ValueError('Both quantity_ordered and quantity_received are required for wrong_quantity issues')
         return v
     
@@ -70,6 +101,36 @@ class ComplaintBase(BaseModel):
                 raise ValueError('Part received is required for wrong_part issues')
         return v
 
+    @validator('issue_subtypes')
+    def validate_issue_subtypes(cls, v, values):
+        if v is None:
+            return v
+        category: Optional[IssueCategory] = values.get('issue_category')
+        if category == IssueCategory.VISUAL:
+            invalid = [s for s in v if s not in ALLOWED_VISUAL_SUBTYPES]
+            if invalid:
+                raise ValueError(f"Invalid visual subtypes: {invalid}")
+        elif category == IssueCategory.PACKAGING:
+            invalid = [s for s in v if s not in ALLOWED_PACKAGING_SUBTYPES]
+            if invalid:
+                raise ValueError(f"Invalid packaging subtypes: {invalid}")
+        return v
+
+    @model_validator(mode='after')
+    def validate_packaging_details(self):
+        # When category is packaging, require Received/Expected for specific subtypes
+        if self.issue_category == IssueCategory.PACKAGING and self.issue_subtypes:
+            required_pairs = {"wrong_box", "wrong_bag", "wrong_paper", "wrong_quantity"}
+            recv = self.packaging_received or {}
+            exp = self.packaging_expected or {}
+            for subtype in self.issue_subtypes:
+                if subtype in required_pairs:
+                    if not recv.get(subtype):
+                        raise ValueError(f"packaging_received['{subtype}'] is required")
+                    if not exp.get(subtype):
+                        raise ValueError(f"packaging_expected['{subtype}'] is required")
+        return self
+
 class ComplaintCreate(ComplaintBase):
     pass
 
@@ -77,6 +138,11 @@ class ComplaintUpdate(BaseModel):
     # Accept broader inputs for status to support legacy synonyms like "closed"
     status: Optional[str] = None
     details: Optional[str] = Field(None, min_length=10)
+    # Allow updating FF-002 fields
+    issue_category: Optional[IssueCategory] = None
+    issue_subtypes: Optional[List[str]] = None
+    packaging_received: Optional[Dict[str, str]] = None
+    packaging_expected: Optional[Dict[str, str]] = None
 
     @validator('status')
     def normalize_status(cls, v: Optional[str]) -> Optional[str]:
@@ -97,6 +163,10 @@ class ComplaintResponse(BaseModel):
     company: CompanyResponse
     part: PartResponse
     issue_type: IssueType
+    issue_category: Optional[IssueCategory]
+    issue_subtypes: Optional[List[str]]
+    packaging_received: Optional[Dict[str, str]]
+    packaging_expected: Optional[Dict[str, str]]
     details: str
     quantity_ordered: Optional[int]
     quantity_received: Optional[int]

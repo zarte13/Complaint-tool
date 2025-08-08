@@ -26,33 +26,55 @@ export default function ComplaintTile({ complaint, onClick, onFileUploadComplete
     }, 100);
   };
 
-  const getIssueTypeLabel = (issueType: string) => {
-    switch (issueType) {
-      case 'wrong_quantity':
-        return t('wrongQuantity');
-      case 'wrong_part':
-        return t('wrongPart');
-      case 'damaged':
-        return t('damaged');
+  const getCategoryLabel = (category?: string, fallbackIssueType?: string) => {
+    switch (category) {
+      case 'dimensional':
+        return t('categoryDimensional') || 'Dimensional';
+      case 'visual':
+        return t('categoryVisual') || 'Visual';
+      case 'packaging':
+        return t('categoryPackaging') || 'Packaging';
       case 'other':
         return t('other');
       default:
-        return issueType;
+        // Fallback to legacy issue_type display
+        switch (fallbackIssueType) {
+          case 'wrong_quantity':
+            return t('wrongQuantity');
+          case 'wrong_part':
+            return t('wrongPart');
+          case 'damaged':
+            return t('damaged');
+          case 'other':
+            return t('other');
+          default:
+            return fallbackIssueType || t('other');
+        }
     }
   };
 
-  const getIssueTypeColor = (issueType: string) => {
-    switch (issueType) {
-      case 'wrong_quantity':
-        return 'bg-orange-100 text-orange-800';
-      case 'wrong_part':
-        return 'bg-red-100 text-red-800';
-      case 'damaged':
-        return 'bg-yellow-100 text-yellow-800';
+  const getCategoryColor = (category?: string, fallbackIssueType?: string) => {
+    switch (category) {
+      case 'dimensional':
+        return 'bg-blue-100 text-blue-800';
+      case 'visual':
+        return 'bg-amber-100 text-amber-800';
+      case 'packaging':
+        return 'bg-purple-100 text-purple-800';
       case 'other':
         return 'bg-gray-100 text-gray-800';
       default:
-        return 'bg-gray-100 text-gray-800';
+        // Fallback mapping based on legacy issue types
+        switch (fallbackIssueType) {
+          case 'wrong_quantity':
+            return 'bg-orange-100 text-orange-800';
+          case 'wrong_part':
+            return 'bg-red-100 text-red-800';
+          case 'damaged':
+            return 'bg-yellow-100 text-yellow-800';
+          default:
+            return 'bg-gray-100 text-gray-800';
+        }
     }
   };
 
@@ -87,8 +109,8 @@ export default function ComplaintTile({ complaint, onClick, onFileUploadComplete
           <span className="text-gray-600">{complaint.company.name}</span>
         </div>
         <div className="flex items-center space-x-2 flex-shrink-0">
-          <span className={`px-2 py-1 text-xs font-medium rounded-full ${getIssueTypeColor(complaint.issue_type)}`}>
-            {getIssueTypeLabel(complaint.issue_type)}
+          <span className={`px-2 py-1 text-xs font-medium rounded-full ${getCategoryColor(complaint.issue_category as any, complaint.issue_type)}`}>
+            {getCategoryLabel(complaint.issue_category as any, complaint.issue_type)}
           </span>
           {complaint.human_factor && (
             <div className="relative group">

@@ -1,4 +1,5 @@
 from sqlalchemy import Column, Integer, String, Text, DateTime, Boolean, ForeignKey, Date
+from sqlalchemy.dialects.sqlite import JSON as SQLITE_JSON
 try:
     # SQLAlchemy JSON type; maps to TEXT on SQLite with json serialization
     from sqlalchemy import JSON  # type: ignore
@@ -37,10 +38,10 @@ class Complaint(Base):
     issue_type = Column(String(50), nullable=False)  # wrong_quantity, wrong_part, damaged, other
     # New taxonomy (FF-002): category + subtypes
     issue_category = Column(String(20), nullable=True)  # dimensional, visual, packaging, other
-    issue_subtypes = Column(JSON, nullable=True)  # List[str]
+    issue_subtypes = Column(SQLITE_JSON, nullable=True)  # List[str]
     # Packaging details keyed by subtype (e.g., wrong_box, wrong_bag, wrong_paper, wrong_quantity)
-    packaging_received = Column(JSON, nullable=True)
-    packaging_expected = Column(JSON, nullable=True)
+    packaging_received = Column(SQLITE_JSON, nullable=True)
+    packaging_expected = Column(SQLITE_JSON, nullable=True)
     details = Column(Text, nullable=False)
     quantity_ordered = Column(Integer)
     quantity_received = Column(Integer)

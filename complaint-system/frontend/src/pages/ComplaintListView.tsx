@@ -1,7 +1,7 @@
 import { useLanguage } from '../contexts/LanguageContext';
 import { useComplaints } from '../hooks/useComplaints';
 import { Calendar, User, Package, Paperclip } from 'lucide-react';
-import { ComplaintStatus, IssueType } from '../types';
+import { ComplaintStatus, IssueCategory } from '../types';
 import StatusFilter from '../components/StatusFilter/StatusFilter';
 
 export default function ComplaintListView() {
@@ -65,14 +65,14 @@ export default function ComplaintListView() {
     }
   };
 
-  const getIssueTypeColor = (issueType: string) => {
-    switch (issueType) {
-      case 'wrong_quantity':
+  const getCategoryColor = (category?: string) => {
+    switch (category) {
+      case 'dimensional':
         return 'bg-blue-100 text-blue-800';
-      case 'wrong_part':
+      case 'visual':
+        return 'bg-amber-100 text-amber-800';
+      case 'packaging':
         return 'bg-purple-100 text-purple-800';
-      case 'damaged':
-        return 'bg-red-100 text-red-800';
       case 'other':
         return 'bg-gray-100 text-gray-800';
       default:
@@ -80,17 +80,19 @@ export default function ComplaintListView() {
     }
   };
 
-  const getIssueTypeDisplay = (issueType: string) => {
-    const issueTypeMap: Record<string, string> = {
-      'wrong_quantity': 'wrongQuantity',
-      'wrong_part': 'wrongPart',
-      'damaged': 'damaged',
-      'other': 'other'
-    };
-    
-    const key = issueTypeMap[issueType] || 'other';
-    const translated = t(key as any);
-    return translated ? translated.toUpperCase() : issueType.toUpperCase();
+  const getCategoryDisplay = (category?: string) => {
+    switch (category) {
+      case 'dimensional':
+        return (t('categoryDimensional') || 'Dimensional').toUpperCase();
+      case 'visual':
+        return (t('categoryVisual') || 'Visual').toUpperCase();
+      case 'packaging':
+        return (t('categoryPackaging') || 'Packaging').toUpperCase();
+      case 'other':
+        return (t('other') || 'Other').toUpperCase();
+      default:
+        return (t('other') || 'Other').toUpperCase();
+    }
   };
 
   if (loading) {
@@ -141,15 +143,15 @@ export default function ComplaintListView() {
               />
 
               <select
-                value={filters.issue_type || ''}
-                onChange={(e) => setFilters({ ...filters, issue_type: e.target.value as IssueType || undefined })}
+                value={(filters as any).issue_category || ''}
+                onChange={(e) => setFilters({ ...filters, ...(e.target.value ? { issue_category: e.target.value as IssueCategory } : { issue_category: undefined }) })}
                 className="px-3 py-2 border border-gray-300 rounded-md"
               >
                 <option value="">{t('allIssueTypes')}</option>
-                <option value="wrong_quantity">Wrong Quantity</option>
-                <option value="wrong_part">Wrong Part</option>
-                <option value="damaged">Damaged</option>
-                <option value="other">Other</option>
+                <option value="dimensional">{t('categoryDimensional') || 'Dimensional'}</option>
+                <option value="visual">{t('categoryVisual') || 'Visual'}</option>
+                <option value="packaging">{t('categoryPackaging') || 'Packaging'}</option>
+                <option value="other">{t('other') || 'Other'}</option>
               </select>
 
               <button
@@ -192,11 +194,11 @@ export default function ComplaintListView() {
                               {getStatusIcon(complaint.status)} {getStatusDisplay(complaint.status)}
                             </span>
                             <span
-                              className={`px-2 py-1 text-xs font-medium rounded-full whitespace-nowrap ${getIssueTypeColor(
-                                complaint.issue_type
+                              className={`px-2 py-1 text-xs font-medium rounded-full whitespace-nowrap ${getCategoryColor(
+                                complaint.issue_category as any
                               )}`}
                             >
-                              {getIssueTypeDisplay(complaint.issue_type)}
+                              {getCategoryDisplay(complaint.issue_category as any)}
                             </span>
                           </div>
                         </div>

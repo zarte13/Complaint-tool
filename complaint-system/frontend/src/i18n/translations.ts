@@ -54,10 +54,26 @@ export interface Translations {
   
   // Form Options
   selectIssueType: string;
+  selectIssueCategory?: string;
+  selectSubtypes?: string;
   wrongQuantity: string;
   wrongPart: string;
   damaged: string;
   other: string;
+  issueCategory?: string;
+  issueSubtypes?: string;
+  categoryDimensional?: string;
+  categoryVisual?: string;
+  categoryPackaging?: string;
+  visualScratch?: string;
+  visualNicks?: string;
+  visualRust?: string;
+  packagingWrongBox?: string;
+  packagingWrongBag?: string;
+  packagingWrongPaper?: string;
+  packagingWrongTags?: string;
+  packagingReceivedLabel?: string;
+  packagingExpectedLabel?: string;
 
   // Status display (complaint)
   statusOpenLabel: string;
@@ -280,10 +296,30 @@ export const translations: Record<'en' | 'fr', Partial<Translations>> = {
     
     // Form Options
     selectIssueType: 'Select issue type',
+    selectIssueCategory: 'Select category',
+    selectSubtypes: 'Select subtypes',
     wrongQuantity: 'Wrong Quantity',
     wrongPart: 'Wrong Part',
     damaged: 'Damaged',
     other: 'Other',
+    issueCategory: 'Issue Category',
+    issueSubtypes: 'Issue Subtypes',
+    categoryDimensional: 'Dimensional',
+    categoryVisual: 'Visual',
+    categoryPackaging: 'Packaging',
+    visualScratch: 'Scratch',
+    visualNicks: 'Nicks',
+    visualRust: 'Rust',
+    packagingWrongBox: 'Wrong Box',
+    packagingWrongBag: 'Wrong Bag',
+    packagingWrongPaper: 'Wrong Paper',
+    packagingWrongTags: 'Wrong Tags',
+    packagingReceivedLabel: 'Received',
+    packagingExpectedLabel: 'Expected',
+    packagingWrongBox: 'Wrong Box',
+    packagingWrongBag: 'Wrong Bag',
+    packagingWrongPaper: 'Wrong Paper',
+    packagingWrongTags: 'Wrong Tags',
 
     // Status display (complaint)
     statusOpenLabel: 'Open',
@@ -481,10 +517,30 @@ export const translations: Record<'en' | 'fr', Partial<Translations>> = {
     
     // Form Options
     selectIssueType: 'Sélectionner le type de problème',
+    selectIssueCategory: 'Sélectionner la catégorie',
+    selectSubtypes: 'Sélectionner des sous-types',
     wrongQuantity: 'Mauvaise quantité',
     wrongPart: 'Mauvaise pièce',
     damaged: 'Endommagé',
     other: 'Autre',
+    issueCategory: 'Catégorie du problème',
+    issueSubtypes: 'Sous-types',
+    categoryDimensional: 'Dimensionnel',
+    categoryVisual: 'Visuel',
+    categoryPackaging: 'Emballage',
+    visualScratch: 'Éraflure',
+    visualNicks: 'Coches',
+    visualRust: 'Rouille',
+    packagingWrongBox: 'Mauvaise boîte',
+    packagingWrongBag: 'Mauvais sac',
+    packagingWrongPaper: 'Mauvais papier',
+    packagingWrongTags: 'Mauvaises étiquettes',
+    packagingReceivedLabel: 'Reçu',
+    packagingExpectedLabel: 'Attendu',
+    packagingWrongBox: 'Mauvaise boîte',
+    packagingWrongBag: 'Mauvais sac',
+    packagingWrongPaper: 'Mauvais papier',
+    packagingWrongTags: 'Mauvaises étiquettes',
 
     // Status display (complaint)
     statusOpenLabel: 'Ouverte',

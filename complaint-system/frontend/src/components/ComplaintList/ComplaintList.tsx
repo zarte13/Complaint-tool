@@ -48,7 +48,7 @@ export default function ComplaintList({
     if (statusFilter && statusFilter.length > 0) {
       statusFilter.forEach(status => params.append('status', status));
     }
-    if (issueTypeFilter) params.append('issue_type', issueTypeFilter);
+    if (issueTypeFilter) params.append('issue_category', issueTypeFilter as any);
     params.append('page', String(effectivePage));
     params.append('size', String(effectiveSize));
     return params.toString();

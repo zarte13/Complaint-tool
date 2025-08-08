@@ -331,7 +331,20 @@ export default function EnhancedComplaintDetailDrawer({
     setValidationErrors(prev => ({ ...prev, [field]: error || '' }));
   };
 
-  const getIssueTypeDisplay = (issueType: string) => {
+  const getIssueTypeDisplay = (issueType: string, category?: string, subtypes?: string[]) => {
+    if (category) {
+      const prettyCategory: Record<string, string> = {
+        dimensional: 'Dimensional',
+        visual: 'Visual',
+        packaging: 'Packaging',
+        other: 'Other',
+      };
+      const cat = prettyCategory[category] || category;
+      if (subtypes && subtypes.length > 0) {
+        return `${cat} — ${subtypes.join(', ')}`;
+      }
+      return cat;
+    }
     const issueTypes: Record<string, string> = {
       wrong_quantity: 'Wrong Quantity',
       wrong_part: 'Wrong Part',
@@ -696,7 +709,10 @@ export default function EnhancedComplaintDetailDrawer({
                       <div className="space-y-4">
                         {renderField(t('customerCompany') || 'Customer Company', complaint.company.name)}
                         {renderField(t('partNumber') || 'Part Number', complaint.part.part_number)}
-                        {renderField(t('issueType') || 'Issue Type', getIssueTypeDisplay(complaint.issue_type))}
+                        {renderField(
+                          t('issueType') || 'Issue Type',
+                          getIssueTypeDisplay(complaint.issue_type as any, complaint.issue_category as any, complaint.issue_subtypes as any)
+                        )}
                         {renderStatusDropdown()}
                       </div>
                     </motion.div>
@@ -715,7 +731,7 @@ export default function EnhancedComplaintDetailDrawer({
                       </h3>
                       <div className="space-y-4">
                         {renderField(t('workOrderNumber') || 'Work Order Number', complaint.work_order_number, 'work_order_number')}
-                        {(complaint.issue_type === 'wrong_quantity' || complaint.issue_type === 'wrong_part') && (
+                        {(complaint.issue_category === 'packaging' && (complaint.issue_subtypes?.includes('wrong_quantity') || complaint.issue_subtypes?.includes('wrong_part'))) && (
                           <>
                             {renderField(t('quantityOrdered') || 'Quantity Ordered', complaint.quantity_ordered, 'quantity_ordered', 'number')}
                             {renderField(t('quantityReceived') || 'Quantity Received', complaint.quantity_received, 'quantity_received', 'number')}

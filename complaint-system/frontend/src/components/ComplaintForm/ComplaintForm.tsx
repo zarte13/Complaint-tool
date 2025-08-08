@@ -7,13 +7,22 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import CompanySearch from '../CompanySearch/CompanySearch';
 import PartAutocomplete from '../PartAutocomplete/PartAutocomplete';
 import Tooltip from '../Tooltip/Tooltip';
-import { Company, Part } from '../../types';
+import { Company, Part, IssueCategory, PackagingSubtype, VisualSubtype, ComplaintCreate } from '../../types';
 import { post } from '../../services/api';
+
+const IssueCategoryEnum = z.enum(['dimensional', 'visual', 'packaging', 'other']);
+const VisualSubtypeEnum = z.enum(['scratch', 'nicks', 'rust']);
+const PackagingSubtypeEnum = z.enum(['wrong_box', 'wrong_bag', 'wrong_paper', 'wrong_part', 'wrong_quantity', 'wrong_tags']);
 
 const complaintSchema = z.object({
   company_id: z.number().min(1, 'selectCompany'),
   part_id: z.number().min(1, 'selectPart'),
-  issue_type: z.enum(['wrong_quantity', 'wrong_part', 'damaged', 'other']),
+  issue_category: IssueCategoryEnum,
+  issue_subtypes: z.array(z.union([VisualSubtypeEnum, PackagingSubtypeEnum])).optional(),
+  packaging_received: z.record(z.string()).optional(),
+  packaging_expected: z.record(z.string()).optional(),
+  // legacy field retained for backend compatibility; derived on submit
+  issue_type: z.enum(['wrong_quantity', 'wrong_part', 'damaged', 'other']).optional(),
   details: z.string().min(10, 'minCharacters'),
   quantity_ordered: z.number().optional(),
   quantity_received: z.number().optional(),
@@ -22,7 +31,7 @@ const complaintSchema = z.object({
   part_received: z.string().optional(),
   human_factor: z.boolean().default(false),
 }).refine((data) => {
-  if (data.issue_type === 'wrong_quantity') {
+  if (data.issue_category === 'packaging' && data.issue_subtypes?.includes('wrong_quantity')) {
     return data.quantity_ordered !== undefined && data.quantity_received !== undefined;
   }
   return true;
@@ -30,13 +39,30 @@ const complaintSchema = z.object({
   message: 'Both quantity ordered and received are required for wrong quantity issues',
   path: ['quantity_received'],
 }).refine((data) => {
-  if (data.issue_type === 'wrong_part') {
+  if (data.issue_category === 'packaging' && data.issue_subtypes?.includes('wrong_part')) {
     return data.part_received !== undefined && data.part_received.trim().length > 0;
   }
   return true;
 }, {
   message: 'Part received is required for wrong part issues',
   path: ['part_received'],
+}).refine((data) => {
+  if (data.issue_category === 'packaging' && data.issue_subtypes) {
+    const required: PackagingSubtype[] = ['wrong_box', 'wrong_bag', 'wrong_paper', 'wrong_quantity'];
+    const recv = data.packaging_received || {};
+    const exp = data.packaging_expected || {};
+    for (const subtype of required) {
+      if (data.issue_subtypes.includes(subtype)) {
+        if (!recv[subtype] || !exp[subtype]) {
+          return false;
+        }
+      }
+    }
+  }
+  return true;
+}, {
+  message: 'Received and Expected values are required for selected packaging subtypes',
+  path: ['packaging_expected'],
 });
 
 type ComplaintFormData = z.infer<typeof complaintSchema>;
@@ -52,6 +78,8 @@ export default function ComplaintForm({ onSuccess }: ComplaintFormProps) {
   const [selectedPart, setSelectedPart] = useState<Part | null>(null);
   const [files, setFiles] = useState<File[]>([]);
   const { t } = useLanguage();
+  const [isVisualDropdownOpen, setIsVisualDropdownOpen] = useState(false);
+  const [isPackagingDropdownOpen, setIsPackagingDropdownOpen] = useState(false);
 
   const {
     register,
@@ -64,7 +92,10 @@ export default function ComplaintForm({ onSuccess }: ComplaintFormProps) {
     resolver: zodResolver(complaintSchema),
   });
 
-  const issueType = watch('issue_type');
+  const issueCategory = watch('issue_category');
+  const issueSubtypes = watch('issue_subtypes') || [];
+  const packagingReceived = watch('packaging_received') || {};
+  const packagingExpected = watch('packaging_expected') || {};
 
   const handleCompanyChange = (company: Company) => {
     setSelectedCompany(company);
@@ -77,12 +108,39 @@ export default function ComplaintForm({ onSuccess }: ComplaintFormProps) {
     setValue('part_id', part.id);
   };
 
+  const deriveIssueType = (category: IssueCategory, subtypes: Array<VisualSubtype | PackagingSubtype> | undefined): 'wrong_quantity' | 'wrong_part' | 'damaged' | 'other' => {
+    if (category === 'packaging') {
+      if (subtypes?.includes('wrong_quantity')) return 'wrong_quantity';
+      if (subtypes?.includes('wrong_part')) return 'wrong_part';
+      return 'other';
+    }
+    if (category === 'visual') return 'damaged';
+    return 'other';
+  };
+
   const onSubmit = async (data: ComplaintFormData) => {
     setSubmitting(true);
     setError(null);
 
     try {
-      const response = await post('/api/complaints/', data);
+      const payload: ComplaintCreate = {
+        company_id: data.company_id,
+        part_id: data.part_id,
+        issue_category: data.issue_category as IssueCategory,
+        issue_subtypes: data.issue_subtypes as any,
+        packaging_received: data.packaging_received,
+        packaging_expected: data.packaging_expected,
+        issue_type: deriveIssueType(data.issue_category as IssueCategory, data.issue_subtypes as any),
+        details: data.details,
+        quantity_ordered: data.quantity_ordered,
+        quantity_received: data.quantity_received,
+        work_order_number: data.work_order_number,
+        occurrence: data.occurrence,
+        part_received: data.part_received,
+        human_factor: data.human_factor ?? false,
+      };
+
+      const response = await post('/api/complaints/', payload);
       const newComplaint = response.data as { id: number };
 
       // Upload files if any
@@ -222,67 +280,158 @@ export default function ComplaintForm({ onSuccess }: ComplaintFormProps) {
       <div>
         <div className="flex items-center mb-1">
           <label className="block text-sm font-medium text-gray-700">
-            {t('issueType')}
+            {t('issueCategory') || 'Issue Category'}
           </label>
           <Tooltip content={t('tooltipIssueType')}>
             <span className="ml-1"></span>
           </Tooltip>
         </div>
         <select
-          id="issue_type"
-          {...register('issue_type')}
+          id="issue_category"
+          {...register('issue_category')}
           className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-            errors.issue_type ? 'border-red-300' : 'border-gray-300'
+            (errors as any).issue_category ? 'border-red-300' : 'border-gray-300'
           }`}
         >
-          <option value="">{t('selectIssueType')}</option>
-          <option value="wrong_quantity">{t('wrongQuantity')}</option>
-          <option value="wrong_part">{t('wrongPart')}</option>
-          <option value="damaged">{t('damaged')}</option>
-          <option value="other">{t('other')}</option>
+          <option value="">{t('selectIssueCategory') || 'Select category'}</option>
+          <option value="dimensional">{t('categoryDimensional') || 'Dimensional'}</option>
+          <option value="visual">{t('categoryVisual') || 'Visual'}</option>
+          <option value="packaging">{t('categoryPackaging') || 'Packaging'}</option>
+          <option value="other">{t('other') || 'Other'}</option>
         </select>
-        {errors.issue_type && (
-          <p className="mt-1 text-sm text-red-600">{errors.issue_type.message}</p>
-        )}
       </div>
-      {issueType === 'wrong_quantity' && (
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label htmlFor="quantity_ordered" className="block text-sm font-medium text-gray-700 mb-1">
-              <Tooltip content={t('tooltipQuantityOrdered')}>
-                <span>{t('quantityOrdered')}</span>
-              </Tooltip>
-            </label>
-            <input
-              type="number"
-              id="quantity_ordered"
-              {...register('quantity_ordered', { valueAsNumber: true })}
-              min="0"
-              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                errors.quantity_ordered ? 'border-red-300' : 'border-gray-300'
-              }`}
-            />
-          </div>
-          <div>
-            <label htmlFor="quantity_received" className="block text-sm font-medium text-gray-700 mb-1">
-              <Tooltip content={t('tooltipQuantityReceived')}>
-                <span>{t('quantityReceived')}</span>
-              </Tooltip>
-            </label>
-            <input
-              type="number"
-              id="quantity_received"
-              {...register('quantity_received', { valueAsNumber: true })}
-              min="0"
-              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                errors.quantity_received ? 'border-red-300' : 'border-gray-300'
-              }`}
-            />
-          </div>
+
+      {issueCategory === 'visual' && (
+        <div className="relative">
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t('issueSubtypes') || 'Issue Subtypes'}</label>
+          <button
+            type="button"
+            onClick={() => setIsVisualDropdownOpen((v) => !v)}
+            className="w-full px-3 py-2 border rounded-md text-left bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            {issueSubtypes.length > 0
+              ? (issueSubtypes as string[]).map((s) => ({
+                  scratch: t('visualScratch') || 'Scratch',
+                  nicks: t('visualNicks') || 'Nicks',
+                  rust: t('visualRust') || 'Rust',
+                } as Record<string,string>)[s] || s).join(', ')
+              : (t('selectSubtypes') || 'Select subtypes')}
+          </button>
+          {isVisualDropdownOpen && (
+            <div className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg p-2 max-h-56 overflow-auto">
+              {([
+                { value: 'scratch', label: t('visualScratch') || 'Scratch' },
+                { value: 'nicks', label: t('visualNicks') || 'Nicks' },
+                { value: 'rust', label: t('visualRust') || 'Rust' },
+              ] as {value: VisualSubtype, label: string}[]).map((opt) => {
+                const checked = (issueSubtypes as any[]).includes(opt.value);
+                return (
+                  <label key={opt.value} className="flex items-center gap-2 px-2 py-1 hover:bg-gray-50 rounded cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={(e) => {
+                        const next = new Set(issueSubtypes as string[]);
+                        if (e.target.checked) next.add(opt.value);
+                        else next.delete(opt.value);
+                        setValue('issue_subtypes' as any, Array.from(next), { shouldValidate: true });
+                      }}
+                    />
+                    <span className="text-sm text-gray-700">{opt.label}</span>
+                  </label>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 
-      {issueType === 'wrong_part' && (
+      {issueCategory === 'packaging' && (
+        <div className="relative">
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t('issueSubtypes') || 'Issue Subtypes'}</label>
+          <button
+            type="button"
+            onClick={() => setIsPackagingDropdownOpen((v) => !v)}
+            className="w-full px-3 py-2 border rounded-md text-left bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            {issueSubtypes.length > 0
+              ? (issueSubtypes as string[]).map((s) => ({
+                  wrong_box: t('packagingWrongBox') || 'Wrong Box',
+                  wrong_bag: t('packagingWrongBag') || 'Wrong Bag',
+                  wrong_paper: t('packagingWrongPaper') || 'Wrong Paper',
+                  wrong_part: t('wrongPart') || 'Wrong Part',
+                  wrong_quantity: t('wrongQuantity') || 'Wrong Quantity',
+                  wrong_tags: t('packagingWrongTags') || 'Wrong Tags',
+                } as Record<string,string>)[s] || s).join(', ')
+              : (t('selectSubtypes') || 'Select subtypes')}
+          </button>
+          {isPackagingDropdownOpen && (
+            <div className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg p-2 max-h-64 overflow-auto">
+              {([
+                { value: 'wrong_box', label: t('packagingWrongBox') || 'Wrong Box' },
+                { value: 'wrong_bag', label: t('packagingWrongBag') || 'Wrong Bag' },
+                { value: 'wrong_paper', label: t('packagingWrongPaper') || 'Wrong Paper' },
+                { value: 'wrong_part', label: t('wrongPart') || 'Wrong Part' },
+                { value: 'wrong_quantity', label: t('wrongQuantity') || 'Wrong Quantity' },
+                { value: 'wrong_tags', label: t('packagingWrongTags') || 'Wrong Tags' },
+              ] as {value: PackagingSubtype, label: string}[]).map((opt) => {
+                const checked = (issueSubtypes as any[]).includes(opt.value);
+                return (
+                  <label key={opt.value} className="flex items-center gap-2 px-2 py-1 hover:bg-gray-50 rounded cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={(e) => {
+                        const next = new Set(issueSubtypes as string[]);
+                        if (e.target.checked) next.add(opt.value);
+                        else next.delete(opt.value);
+                        setValue('issue_subtypes' as any, Array.from(next), { shouldValidate: true });
+                      }}
+                    />
+                    <span className="text-sm text-gray-700">{opt.label}</span>
+                  </label>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {issueCategory === 'packaging' && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {(['wrong_box','wrong_bag','wrong_paper','wrong_quantity'] as PackagingSubtype[]).map((sub) => (
+            issueSubtypes.includes(sub) ? (
+              <div key={sub} className="space-y-2">
+                <div className="text-sm font-medium text-gray-700">{{
+                  wrong_box: t('packagingWrongBox') || 'Wrong Box',
+                  wrong_bag: t('packagingWrongBag') || 'Wrong Bag',
+                  wrong_paper: t('packagingWrongPaper') || 'Wrong Paper',
+                  wrong_quantity: t('wrongQuantity') || 'Wrong Quantity',
+                }[sub]}
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <input
+                    type="text"
+                    placeholder={t('packagingReceivedLabel') || 'Received'}
+                    value={packagingReceived[sub] || ''}
+                    onChange={(e) => setValue(`packaging_received.${sub}` as any, e.target.value)}
+                    className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <input
+                    type="text"
+                    placeholder={t('packagingExpectedLabel') || 'Expected'}
+                    value={packagingExpected[sub] || ''}
+                    onChange={(e) => setValue(`packaging_expected.${sub}` as any, e.target.value)}
+                    className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+            ) : null
+          ))}
+        </div>
+      )}
+
+      {issueCategory === 'packaging' && issueSubtypes.includes('wrong_part') && (
         <div>
           <label htmlFor="part_received" className="block text-sm font-medium text-gray-700 mb-1">
             <Tooltip content={t('tooltipPartReceived')}>

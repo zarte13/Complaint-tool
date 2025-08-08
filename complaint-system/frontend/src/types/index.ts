@@ -12,6 +12,9 @@ export interface Part {
 }
 
 export type IssueType = 'wrong_quantity' | 'wrong_part' | 'damaged' | 'other';
+export type IssueCategory = 'dimensional' | 'visual' | 'packaging' | 'other';
+export type VisualSubtype = 'scratch' | 'nicks' | 'rust';
+export type PackagingSubtype = 'wrong_box' | 'wrong_bag' | 'wrong_paper' | 'wrong_part' | 'wrong_quantity' | 'wrong_tags';
 export type ComplaintStatus = 'open' | 'in_progress' | 'resolved';
 
 export interface Complaint {
@@ -19,6 +22,10 @@ export interface Complaint {
   company: Company;
   part: Part;
   issue_type: IssueType;
+  issue_category?: IssueCategory;
+  issue_subtypes?: Array<VisualSubtype | PackagingSubtype>;
+  packaging_received?: Record<string, string>;
+  packaging_expected?: Record<string, string>;
   details: string;
   quantity_ordered?: number;
   quantity_received?: number;
@@ -36,7 +43,11 @@ export interface Complaint {
 export interface ComplaintCreate {
   company_id: number;
   part_id: number;
-  issue_type: IssueType;
+  issue_type: IssueType; // kept for backend compatibility
+  issue_category?: IssueCategory;
+  issue_subtypes?: Array<VisualSubtype | PackagingSubtype>;
+  packaging_received?: Record<string, string>;
+  packaging_expected?: Record<string, string>;
   details: string;
   quantity_ordered?: number;
   quantity_received?: number;

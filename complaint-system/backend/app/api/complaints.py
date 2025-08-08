@@ -10,7 +10,7 @@ from app.models.models import Complaint, Company, Part, ComplaintAttachment
 from app.schemas.schemas import (
     ComplaintCreate, ComplaintResponse, ComplaintUpdate,
     AttachmentResponse, AttachmentUploadResponse,
-    ComplaintSearchResponse
+    ComplaintSearchResponse, IssueCategory
 )
 from app.utils.file_handler import save_upload_file, validate_file, delete_file
 import mimetypes
@@ -57,6 +57,8 @@ async def get_complaints(
     part_number: Optional[str] = Query(None),
     date_from: Optional[str] = Query(None),
     date_to: Optional[str] = Query(None),
+    issue_category: Optional[IssueCategory] = Query(None),
+    issue_subtypes: Optional[str] = Query(None, description="Comma-separated subtypes"),
     sort_by: Optional[str] = Query(None, regex=r"^(created_at|updated_at|company|part|status)$"),
     sort_order: Optional[str] = Query("desc", regex="^(asc|desc)$"),
     db: Session = Depends(get_db)
@@ -126,6 +128,14 @@ async def get_complaints(
     # Issue type filter
     if issue_type:
         query = query.filter(Complaint.issue_type == issue_type)
+    # New filters (FF-002)
+    if issue_category:
+        query = query.filter(Complaint.issue_category == str(issue_category))
+    if issue_subtypes:
+        # Split comma-separated and match any overlap using LIKE for SQLite JSON/text storage
+        subtype_list = [s.strip() for s in issue_subtypes.split(',') if s.strip()]
+        for sub in subtype_list:
+            query = query.filter(Complaint.issue_subtypes.ilike(f"%{sub}%"))
     
     # Company filter
     if company_id:
@@ -370,6 +380,8 @@ async def export_csv(
     part_number: Optional[str] = Query(None),
     date_from: Optional[str] = Query(None),
     date_to: Optional[str] = Query(None),
+    issue_category: Optional[IssueCategory] = Query(None),
+    issue_subtypes: Optional[str] = Query(None, description="Comma-separated subtypes"),
     db: Session = Depends(get_db)
 ):
     """Export complaints to CSV format"""
@@ -409,6 +421,12 @@ async def export_csv(
     
     if issue_type:
         query = query.filter(Complaint.issue_type == issue_type)
+    if issue_category:
+        query = query.filter(Complaint.issue_category == str(issue_category))
+    if issue_subtypes:
+        subtype_list = [s.strip() for s in issue_subtypes.split(',') if s.strip()]
+        for sub in subtype_list:
+            query = query.filter(Complaint.issue_subtypes.ilike(f"%{sub}%"))
     
     if company_id:
         query = query.filter(Complaint.company_id == company_id)
@@ -466,6 +484,8 @@ async def export_excel(
     part_number: Optional[str] = Query(None),
     date_from: Optional[str] = Query(None),
     date_to: Optional[str] = Query(None),
+    issue_category: Optional[IssueCategory] = Query(None),
+    issue_subtypes: Optional[str] = Query(None, description="Comma-separated subtypes"),
     db: Session = Depends(get_db)
 ):
     """Export complaints to Excel format"""

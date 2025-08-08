@@ -1,12 +1,13 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Complaint, ComplaintStatus, IssueType } from '../types';
+import { Complaint, ComplaintStatus, IssueType, IssueCategory } from '../types';
 import { get, ensureTrailingSlash } from '../services/api';
 import { complaintsStore } from '../stores/complaintsStore';
 
 interface ComplaintFilters {
   status?: ComplaintStatus[];
-  issue_type?: IssueType;
+  issue_type?: IssueType; // legacy support
+  issue_category?: IssueCategory; // new FF-002 filter
   company_id?: number;
   dateRange?: { from: string; to: string };
 }
@@ -75,6 +76,7 @@ export function useComplaints(): UseComplaintsReturn {
       searchParams.get('status')!.split(',').map(s => s.trim() as ComplaintStatus) : 
       undefined,
     issue_type: (searchParams.get('issue_type') as IssueType) || undefined,
+    issue_category: (searchParams.get('issue_category') as IssueCategory) || undefined,
     company_id: searchParams.get('company_id') ? parseInt(searchParams.get('company_id')!, 10) : undefined,
     dateRange: searchParams.get('date_from') && searchParams.get('date_to') 
       ? { from: searchParams.get('date_from')!, to: searchParams.get('date_to')! }
@@ -96,6 +98,7 @@ export function useComplaints(): UseComplaintsReturn {
       search: search || undefined,
       status: filters.status,
       issue_type: filters.issue_type,
+      issue_category: filters.issue_category,
       company_id: filters.company_id,
       part_number: undefined, // This hook doesn't handle part_number yet
       date_from: filters.dateRange?.from,
@@ -134,6 +137,7 @@ export function useComplaints(): UseComplaintsReturn {
         filters.status.forEach(status => params.append('status', status));
       }
       if (filters.issue_type) params.append('issue_type', filters.issue_type);
+      if (filters.issue_category) params.append('issue_category', filters.issue_category);
       if (filters.company_id) params.append('company_id', filters.company_id.toString());
       if (filters.dateRange) {
         params.append('date_from', filters.dateRange.from);
@@ -183,6 +187,7 @@ export function useComplaints(): UseComplaintsReturn {
       newParams.set('status', filters.status.join(','));
     }
     if (filters.issue_type) newParams.set('issue_type', filters.issue_type);
+    if (filters.issue_category) newParams.set('issue_category', filters.issue_category);
     if (filters.company_id) newParams.set('company_id', filters.company_id.toString());
     if (filters.dateRange) {
       newParams.set('date_from', filters.dateRange.from);
@@ -245,6 +250,7 @@ export function useComplaints(): UseComplaintsReturn {
       filters.status.forEach(status => params.append('status', status));
     }
     if (filters.issue_type) params.append('issue_type', filters.issue_type);
+    if (filters.issue_category) params.append('issue_category', filters.issue_category);
     if (filters.company_id) params.append('company_id', filters.company_id.toString());
     if (filters.dateRange) {
       params.append('date_from', filters.dateRange.from);

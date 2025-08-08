@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
-import { Complaint, ComplaintStatus, IssueType } from '../types';
+import { Complaint, ComplaintStatus, IssueType, IssueCategory } from '../types';
 import { get, put, ensureTrailingSlash } from '../services/api';
 import ComplaintList from '../components/ComplaintList/ComplaintList';
 import EnhancedComplaintDetailDrawer from '../components/ComplaintDetailDrawer/EnhancedComplaintDetailDrawer';
@@ -10,7 +10,7 @@ export default function ComplaintsPage() {
   const { t } = useLanguage();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<ComplaintStatus[]>([]);
-  const [issueTypeFilter, setIssueTypeFilter] = useState<IssueType | ''>('');
+  const [issueCategoryFilter, setIssueCategoryFilter] = useState<IssueCategory | ''>('');
   const [page] = useState(1);
   const [pageSize] = useState(10);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
@@ -24,7 +24,7 @@ export default function ComplaintsPage() {
       if (statusFilter.length > 0) {
         statusFilter.forEach(status => params.append('status', status));
       }
-      if (issueTypeFilter) params.append('issue_type', issueTypeFilter);
+      if (issueCategoryFilter) params.append('issue_category', issueCategoryFilter);
       
       const response = await get(`${ensureTrailingSlash('/api/complaints')}export/${format}?${params.toString()}`, {
         responseType: 'blob'
@@ -99,15 +99,15 @@ export default function ComplaintsPage() {
               />
 
               <select
-                value={issueTypeFilter}
-                onChange={(e) => setIssueTypeFilter(e.target.value as IssueType | '')}
+                value={issueCategoryFilter}
+                onChange={(e) => setIssueCategoryFilter(e.target.value as IssueCategory | '')}
                 className="px-3 py-2 border border-gray-300 rounded-md"
               >
                 <option value="">{t('allIssueTypes')}</option>
-                <option value="wrong_quantity">{t('wrongQuantity')}</option>
-                <option value="wrong_part">{t('wrongPart')}</option>
-                <option value="damaged">{t('damaged')}</option>
-                <option value="other">{t('other')}</option>
+                <option value="dimensional">{t('categoryDimensional') || 'Dimensional'}</option>
+                <option value="visual">{t('categoryVisual') || 'Visual'}</option>
+                <option value="packaging">{t('categoryPackaging') || 'Packaging'}</option>
+                <option value="other">{t('other') || 'Other'}</option>
               </select>
 
               <button
@@ -123,7 +123,7 @@ export default function ComplaintsPage() {
             refreshTrigger={refreshTrigger}
             searchTerm={searchTerm}
             statusFilter={statusFilter}
-            issueTypeFilter={issueTypeFilter}
+            issueTypeFilter={''}
             page={page}
             pageSize={pageSize}
           />
