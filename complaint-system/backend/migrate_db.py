@@ -30,6 +30,13 @@ def migrate_database():
     
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
+    # Companies: add company_short
+    try:
+        if not has_column(conn, 'companies', 'company_short'):
+            cursor.execute("ALTER TABLE companies ADD COLUMN company_short VARCHAR(100);")
+    except sqlite3.OperationalError as e:
+        print(f"Skipping companies.company_short: {e}")
+
     
     # Work in small, idempotent steps so one failure doesn't stop others
     try:

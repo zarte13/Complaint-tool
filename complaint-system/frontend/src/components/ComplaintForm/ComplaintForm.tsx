@@ -150,10 +150,14 @@ export default function ComplaintForm({ onSuccess }: ComplaintFormProps) {
     setValue('company_id', company.id);
   };
 
-  const handlePartChange = (part: Part) => {
-    if (!part) return;
+  const handlePartChange = (part: Part | null) => {
+    if (!part) {
+      setSelectedPart(null);
+      setValue('part_id' as any, undefined, { shouldValidate: true });
+      return;
+    }
     setSelectedPart(part);
-    setValue('part_id', part.id);
+    setValue('part_id', part.id, { shouldValidate: true });
   };
 
   const deriveIssueType = (category: IssueCategory, subtypes: Array<VisualSubtype | PackagingSubtype> | undefined): 'wrong_quantity' | 'wrong_part' | 'damaged' | 'other' => {

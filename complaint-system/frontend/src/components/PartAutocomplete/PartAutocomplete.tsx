@@ -5,7 +5,7 @@ import { Part } from '../../types';
 
 interface PartAutocompleteProps {
   value: Part | null;
-  onChange: (part: Part) => void;
+  onChange: (part: Part | null) => void;
   error?: string;
 }
 
@@ -61,7 +61,7 @@ export default function PartAutocomplete({ value, onChange, error }: PartAutocom
           </div>
           <button
             type="button"
-            onClick={() => onChange(null as any)}
+            onClick={() => onChange(null)}
             className="text-sm text-blue-600 hover:text-blue-800"
           >
             Change

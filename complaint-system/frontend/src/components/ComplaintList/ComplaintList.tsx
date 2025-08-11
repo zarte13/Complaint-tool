@@ -31,7 +31,7 @@ export default function ComplaintList({
   showPagination = true,
 }: ComplaintListProps) {
   const [complaints, setComplaints] = useState<Complaint[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [/* loading */ _, setLoading] = useState(true);
   const [perceivedLoading, setPerceivedLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState<number>(page);

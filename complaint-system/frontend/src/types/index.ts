@@ -1,6 +1,7 @@
 export interface Company {
   id: number;
   name: string;
+  company_short?: string;
   created_at: string;
 }
 

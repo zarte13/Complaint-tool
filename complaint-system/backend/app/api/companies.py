@@ -16,11 +16,12 @@ async def search_companies(
     limit: int = Query(10, ge=1, le=100),
     db: Session = Depends(get_db)
 ):
-    """Search companies by name"""
+    """Search companies by name or company_short"""
     query = db.query(Company)
     
     if search:
-        query = query.filter(Company.name.ilike(f"%{search}%"))
+        like = f"%{search}%"
+        query = query.filter((Company.name.ilike(like)) | (Company.company_short.ilike(like)))
     
     companies = query.order_by(Company.name).limit(limit).all()
     return companies
@@ -38,7 +39,7 @@ async def create_company(
     if existing:
         return existing
     
-    db_company = Company(name=company.name)
+    db_company = Company(name=company.name, company_short=company.company_short)
     db.add(db_company)
     db.commit()
     db.refresh(db_company)

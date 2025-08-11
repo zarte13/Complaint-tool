@@ -38,6 +38,7 @@ ALLOWED_PACKAGING_SUBTYPES = {
 # Company schemas
 class CompanyBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=255)
+    company_short: Optional[str] = Field(None, max_length=100)
 
 class CompanyCreate(CompanyBase):
     pass

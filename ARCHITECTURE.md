@@ -307,6 +307,7 @@ CI quality gate:
 CREATE TABLE companies (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name VARCHAR(255) UNIQUE NOT NULL,
+    company_short VARCHAR(100),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 ```
@@ -471,10 +472,12 @@ http://localhost:8000/api/
 ```python
 class CompanyCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=255)
+    company_short: Optional[str] = Field(None, max_length=100)
 
 class CompanyResponse(BaseModel):
     id: int
     name: str
+    company_short: Optional[str]
     created_at: datetime
 ```
 
@@ -547,6 +550,7 @@ class AttachmentResponse(BaseModel):
 export interface Company {
   id: number;
   name: string;
+  company_short?: string;
   created_at: string;
 }
 
@@ -779,7 +783,7 @@ ENV=dev
   - Example:
     ```
     cd complaint-system/backend
-    python scripts/create_user.py --username admin --role admin
+    python scripts/create_user.py --username admin --role admin --password password12
     ```
   - You will be prompted for password; policy enforced
 
@@ -820,6 +824,110 @@ npm run build
 cd backend
 python -m uvicorn main:app --host 0.0.0.0 --port 8000
 ```
+
+---
+
+## Data Import (Companies and Parts)
+
+### Overview
+The backend includes CSV import scripts to seed or update `companies` and `parts`. These scripts support:
+- Safe clearing with complaint-protection (refuses to clear when complaints exist unless forced)
+- Upsert by unique keys (`companies.name`, `parts.part_number`)
+- Flexible CSV encodings and delimiters
+- Header auto-detection and optional overrides
+
+Location:
+- `complaint-system/backend/scripts/import_companies.py`
+- `complaint-system/backend/scripts/import_parts.py`
+
+Prerequisites:
+- Ensure the database schema is up to date:
+  - PowerShell: `cd complaint-system/backend; python migrate_db.py`
+
+### Companies Import
+
+Accepted headers:
+- Required: `name` (or aliases: `company`, `client`, `raisonsociale`, `nom`, `societe`/`société`)
+- Optional: `company_short` (aliases: `short`, `shortname`, `abbr`, `acronym`, `sigle`, `code`)
+
+Examples (PowerShell):
+- Dry-run (detects encoding and delimiter; here forcing cp1252 and `;`):
+```
+cd complaint-system/backend
+python scripts/import_companies.py --csv .\scripts\imports\Clients.csv --dry-run --encoding cp1252 --delimiter ';'
+```
+
+- Clear companies first (refuses if complaints exist):
+```
+cd complaint-system/backend
+python scripts/import_companies.py --csv .\scripts\imports\Clients.csv --clear --encoding cp1252 --delimiter ';'
+```
+
+- Clear companies and all complaints (destructive):
+```
+cd complaint-system/backend
+python scripts/import_companies.py --csv .\scripts\imports\Clients.csv --clear --cascade-complaints --encoding cp1252 --delimiter ';'
+```
+
+- Specify custom header names:
+```
+python scripts/import_companies.py --csv .\scripts\imports\Clients.csv --name-column "Client" --short-column "Abbrev"
+```
+
+Behavior:
+- Upsert by `name` (case-insensitive):
+  - If exists, updates `company_short` when provided and different
+  - If missing, creates `{ name, company_short }`
+- Clear mode:
+  - `--clear`: deletes all companies; refuses if any complaints exist unless `--cascade-complaints`
+  - `--cascade-complaints`: also deletes all complaints
+
+### Parts Import
+
+Accepted headers:
+- Required: `part_number` (aliases: `pn`, `number`, `ref`, `reference`, `numero`/`numéro`)
+- Optional: `description` (aliases: `libelle`/`libellé`, `designation`, `label`)
+
+Examples (PowerShell):
+- Dry-run:
+```
+cd complaint-system/backend
+python scripts/import_parts.py --csv .\scripts\imports\Parts.csv --dry-run --encoding cp1252 --delimiter ';'
+```
+
+- Clear parts first (refuses if complaints exist):
+```
+cd complaint-system/backend
+python scripts/import_parts.py --csv .\scripts\imports\Parts.csv --clear --encoding cp1252 --delimiter ';'
+```
+
+- Clear parts and all complaints (destructive):
+```
+cd complaint-system/backend
+python scripts/import_parts.py --csv .\scripts\imports\Parts.csv --clear --cascade-complaints --encoding cp1252 --delimiter ';'
+```
+
+- Specify custom header names:
+```
+python scripts/import_parts.py --csv .\scripts\imports\Parts.csv --part-number-column "PN" --description-column "Desc"
+```
+
+Behavior:
+- Upsert by `part_number` (case-insensitive):
+  - If exists and `description` provided and different, updates it
+  - If missing, creates `{ part_number, description }`
+- Clear mode:
+  - `--clear`: deletes all parts; refuses if any complaints exist unless `--cascade-complaints`
+  - `--cascade-complaints`: also deletes all complaints
+
+### Encoding and Delimiters
+- The scripts attempt to sniff encodings and delimiters, but you can force them via `--encoding` and `--delimiter`.
+- Common encodings: `utf-8`, `utf-8-sig`, `cp1252`, `latin-1`.
+- Delimiters: `,` `;` `\t` `|`
+
+### Safety Notes
+- Always run with `--dry-run` first to verify column detection and actions.
+- `--clear --cascade-complaints` is destructive; ensure you have backups.
 
 ---
 

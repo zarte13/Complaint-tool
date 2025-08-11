@@ -55,7 +55,12 @@ export default function CompanySearch({ value, onChange, error }: CompanySearchP
       
       {value ? (
         <div className="flex items-center justify-between p-3 bg-gray-50 rounded-md">
-          <span className="text-gray-900">{value.name}</span>
+          <div>
+            <span className="font-medium text-gray-900">{value.name}</span>
+            {value.company_short && (
+              <p className="text-xs text-gray-600">{value.company_short}</p>
+            )}
+          </div>
           <button
             type="button"
             onClick={() => onChange(null as any)}
@@ -95,7 +100,10 @@ export default function CompanySearch({ value, onChange, error }: CompanySearchP
                       onClick={() => handleSelect(company)}
                       className="w-full px-3 py-2 text-left text-sm hover:bg-gray-100"
                     >
-                      {company.name}
+                      <div className="font-medium">{company.name}</div>
+                      {company.company_short && (
+                        <div className="text-xs text-gray-600">{company.company_short}</div>
+                      )}
                     </button>
                   ))}
                 </>

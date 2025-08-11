@@ -14,6 +14,8 @@ class Company(Base):
     
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(255), unique=True, nullable=False, index=True)
+    # Optional short display label/acronym for UI (e.g., "ACME")
+    company_short = Column(String(100), nullable=True, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
     complaints = relationship("Complaint", back_populates="company")
