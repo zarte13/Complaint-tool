@@ -42,6 +42,10 @@ export interface Translations {
   
   // Complaint Form
   submitComplaint: string;
+  complaintKind?: string;
+  officialComplaint?: string;
+  notificationComplaint?: string;
+  ncrNumber?: string;
   customerCompany: string;
   partNumber: string;
   issueType: string;
@@ -85,6 +89,7 @@ export interface Translations {
   workOrderNumber: string;
   workOrderAbbrev: string;
   occurrence: string;
+  dateReceived?: string;
   partReceived: string;
   humanFactor: string;
   createdAt: string;
@@ -104,6 +109,7 @@ export interface Translations {
   pleaseLoginToSubmit?: string;
   tooltipWorkOrderNumber: string;
   tooltipOccurrence: string;
+  tooltipDateReceived?: string;
   tooltipPartReceived: string;
   tooltipHumanFactor: string;
   
@@ -303,6 +309,10 @@ export const translations: Record<'en' | 'fr', Partial<Translations>> = {
     attachFiles: 'Attach Files',
     submitButton: 'Submit Complaint',
     submitting: 'Submitting...',
+    complaintKind: 'Type',
+    officialComplaint: 'Official Complaint',
+    notificationComplaint: 'Notification',
+    ncrNumber: 'NCR Number',
     
     // Form Options
     selectIssueType: 'Select issue type',
@@ -337,6 +347,7 @@ export const translations: Record<'en' | 'fr', Partial<Translations>> = {
     workOrderNumber: 'Work Order Number *',
     workOrderAbbrev: 'WO',
     occurrence: 'Occurrence',
+    dateReceived: 'Date Received',
     partReceived: 'Part Received',
     humanFactor: 'Cause with Human Factor',
     createdAt: 'Created At',
@@ -356,6 +367,7 @@ export const translations: Record<'en' | 'fr', Partial<Translations>> = {
     pleaseLoginToSubmit: 'Please log in to submit a complaint.',
     tooltipWorkOrderNumber: 'Enter the work order number for tracking purposes',
     tooltipOccurrence: 'Specify the occurrence or instance number',
+    tooltipDateReceived: 'Select the date when this complaint/notification was received',
     tooltipPartReceived: 'Enter the part number that was actually received',
     tooltipHumanFactor: 'Human error was involved in this issue',
     
@@ -529,6 +541,10 @@ export const translations: Record<'en' | 'fr', Partial<Translations>> = {
     attachFiles: 'Joindre des Fichiers',
     submitButton: 'Soumettre la Plainte',
     submitting: 'Envoi en cours...',
+    complaintKind: 'Type',
+    officialComplaint: 'Plainte officielle',
+    notificationComplaint: 'Notification',
+    ncrNumber: 'Numéro NCR',
     
     // Form Options
     selectIssueType: 'Sélectionner le type de problème',
@@ -563,6 +579,7 @@ export const translations: Record<'en' | 'fr', Partial<Translations>> = {
     workOrderNumber: 'Numéro de bon de travail (BT) *',
     workOrderAbbrev: 'BT',
     occurrence: 'Occurrence',
+    dateReceived: 'Date de réception',
     partReceived: 'Pièce reçue',
     humanFactor: 'Cause avec facteur humain',
     createdAt: 'Créé le',
@@ -582,6 +599,7 @@ export const translations: Record<'en' | 'fr', Partial<Translations>> = {
     pleaseLoginToSubmit: 'Veuillez vous connecter pour soumettre une réclamation.',
     tooltipWorkOrderNumber: 'Entrer le numéro de bon de travail (BT) pour le suivi',
     tooltipOccurrence: 'Spécifier l\'occurrence ou le numéro d\'instance',
+    tooltipDateReceived: 'Sélectionnez la date de réception de cette plainte/notification',
     tooltipPartReceived: 'Entrer le numéro de pièce qui a été réellement reçu',
     tooltipHumanFactor: 'Une erreur humaine est impliquée dans cette plainte',
     

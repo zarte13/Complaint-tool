@@ -56,7 +56,8 @@ export default function ComplaintsPage() {
     if (!selectedComplaint) return;
 
     try {
-      const response = await put(`${ensureTrailingSlash('/api/complaints')}${selectedComplaint.id}/`, updatedData);
+      // Item endpoint: no trailing slash with redirect_slashes disabled
+      const response = await put(`/api/complaints/${selectedComplaint.id}`, updatedData);
       
       // Update the local state
       setSelectedComplaint(response.data as Complaint);

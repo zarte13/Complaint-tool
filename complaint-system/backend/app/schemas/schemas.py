@@ -70,6 +70,9 @@ class ComplaintBase(BaseModel):
     part_id: int
     issue_type: IssueType
     details: str = Field(..., min_length=10)
+    date_received: date
+    complaint_kind: str = Field(..., pattern=r"^(official|notification)$")
+    ncr_number: Optional[str] = Field(None, max_length=100)
     quantity_ordered: Optional[int] = Field(None, ge=0)
     quantity_received: Optional[int] = Field(None, ge=0)
     work_order_number: str = Field(..., min_length=1, max_length=100)
@@ -132,6 +135,14 @@ class ComplaintBase(BaseModel):
                         raise ValueError(f"packaging_expected['{subtype}'] is required")
         return self
 
+    @model_validator(mode='after')
+    def validate_ncr_requirement(self):
+        # NCR number required when complaint is official
+        if getattr(self, 'complaint_kind', None) == 'official':
+            if not getattr(self, 'ncr_number', None):
+                raise ValueError('ncr_number is required when complaint_kind is official')
+        return self
+
 class ComplaintCreate(ComplaintBase):
     pass
 
@@ -144,6 +155,9 @@ class ComplaintUpdate(BaseModel):
     issue_subtypes: Optional[List[str]] = None
     packaging_received: Optional[Dict[str, str]] = None
     packaging_expected: Optional[Dict[str, str]] = None
+    date_received: Optional[date] = None
+    complaint_kind: Optional[str] = Field(None, pattern=r"^(official|notification)$")
+    ncr_number: Optional[str] = Field(None, max_length=100)
 
     @validator('status')
     def normalize_status(cls, v: Optional[str]) -> Optional[str]:
@@ -169,6 +183,9 @@ class ComplaintResponse(BaseModel):
     packaging_received: Optional[Dict[str, str]]
     packaging_expected: Optional[Dict[str, str]]
     details: str
+    date_received: date
+    complaint_kind: str
+    ncr_number: Optional[str]
     quantity_ordered: Optional[int]
     quantity_received: Optional[int]
     work_order_number: str

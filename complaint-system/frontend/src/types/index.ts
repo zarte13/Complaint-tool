@@ -27,6 +27,9 @@ export interface Complaint {
   packaging_received?: Record<string, string>;
   packaging_expected?: Record<string, string>;
   details: string;
+  date_received: string;
+  complaint_kind: 'official' | 'notification';
+  ncr_number?: string;
   quantity_ordered?: number;
   quantity_received?: number;
   work_order_number: string;
@@ -49,9 +52,13 @@ export interface ComplaintCreate {
   packaging_received?: Record<string, string>;
   packaging_expected?: Record<string, string>;
   details: string;
+  date_received: string; // YYYY-MM-DD
+  complaint_kind: 'official' | 'notification';
+  ncr_number?: string;
   quantity_ordered?: number;
   quantity_received?: number;
   work_order_number: string;
+  // occurrence removed from form usage; kept here for legacy but not used
   occurrence?: string;
   part_received?: string;
   human_factor: boolean;

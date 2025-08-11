@@ -43,6 +43,11 @@ class Complaint(Base):
     packaging_received = Column(SQLITE_JSON, nullable=True)
     packaging_expected = Column(SQLITE_JSON, nullable=True)
     details = Column(Text, nullable=False)
+    # New intake metadata
+    date_received = Column(Date, nullable=False)
+    # complaint_kind: 'official' or 'notification'
+    complaint_kind = Column(String(20), nullable=False)
+    ncr_number = Column(String(100), nullable=True)
     quantity_ordered = Column(Integer)
     quantity_received = Column(Integer)
     work_order_number = Column(String(100), nullable=False)  # Numero de bon de travail

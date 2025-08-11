@@ -17,7 +17,10 @@ const PackagingSubtypeEnum = z.enum(['wrong_box', 'wrong_bag', 'wrong_paper', 'w
 const complaintSchema = z.object({
   company_id: z.number().min(1, 'selectCompany'),
   part_id: z.number().min(1, 'selectPart'),
+  complaint_kind: z.enum(['official','notification']),
+  date_received: z.string().min(1, 'requiredField'),
   issue_category: IssueCategoryEnum,
+  ncr_number: z.string().optional(),
   issue_subtypes: z.array(z.union([VisualSubtypeEnum, PackagingSubtypeEnum])).optional(),
   packaging_received: z.record(z.string()).optional(),
   packaging_expected: z.record(z.string()).optional(),
@@ -27,7 +30,7 @@ const complaintSchema = z.object({
   quantity_ordered: z.number().optional(),
   quantity_received: z.number().optional(),
   work_order_number: z.string().min(1, 'requiredField'),
-  occurrence: z.string().optional(),
+  // occurrence removed per spec
   part_received: z.string().optional(),
   human_factor: z.boolean().default(false),
 }).refine((data) => {
@@ -55,6 +58,27 @@ const complaintSchema = z.object({
 }, {
   message: 'Received and Expected values are required for selected packaging subtypes',
   path: ['packaging_expected'],
+}).refine((data) => {
+  // If wrong_quantity is among selected packaging subtypes, quantities must be provided and valid
+  if (data.issue_category === 'packaging' && data.issue_subtypes?.includes('wrong_quantity')) {
+    const qo = data.quantity_ordered;
+    const qr = data.quantity_received;
+    if (qo === undefined || qo === null || Number.isNaN(qo) || qo < 1) return false;
+    if (qr === undefined || qr === null || Number.isNaN(qr) || qr < 0) return false;
+  }
+  return true;
+}, {
+  message: 'Quantities are required for wrong quantity issues',
+  path: ['quantity_ordered'],
+}).refine((data) => {
+  // NCR required only for official complaints
+  if (data.complaint_kind === 'official') {
+    return !!(data.ncr_number && data.ncr_number.trim().length > 0);
+  }
+  return true;
+}, {
+  message: 'NCR number is required for official complaints',
+  path: ['ncr_number'],
 });
 
 type ComplaintFormData = z.infer<typeof complaintSchema>;
@@ -83,6 +107,7 @@ export default function ComplaintForm({ onSuccess }: ComplaintFormProps) {
   } = useForm<ComplaintFormData>({
     resolver: zodResolver(complaintSchema),
   });
+  const kind = watch('complaint_kind');
 
   const issueCategory = watch('issue_category');
   const issueSubtypes = watch('issue_subtypes') || [];
@@ -167,8 +192,11 @@ export default function ComplaintForm({ onSuccess }: ComplaintFormProps) {
       const payload: ComplaintCreate = {
         company_id: data.company_id,
         part_id: data.part_id,
+        complaint_kind: data.complaint_kind,
+        date_received: data.date_received,
         issue_category: data.issue_category as IssueCategory,
         issue_subtypes: data.issue_subtypes as any,
+        ncr_number: data.complaint_kind === 'official' ? (data.ncr_number || '') : undefined,
         packaging_received: data.packaging_received,
         packaging_expected: data.packaging_expected,
         issue_type: deriveIssueType(data.issue_category as IssueCategory, data.issue_subtypes as any),
@@ -176,7 +204,7 @@ export default function ComplaintForm({ onSuccess }: ComplaintFormProps) {
         quantity_ordered: data.quantity_ordered,
         quantity_received: data.quantity_received,
         work_order_number: data.work_order_number,
-        occurrence: data.occurrence,
+        // occurrence removed
         part_received: data.part_received,
         human_factor: data.human_factor ?? false,
       };
@@ -241,9 +269,50 @@ export default function ComplaintForm({ onSuccess }: ComplaintFormProps) {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+      {/* Kind selector buttons */}
       <div>
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('submitComplaint')}</h2>
+        <div className="flex items-center justify-between mb-2">
+          <span className="block text-sm font-medium text-gray-700">{t('complaintKind') || 'Type'}</span>
+        </div>
+        <div className="inline-flex rounded-md shadow-sm" role="group">
+          <button
+            type="button"
+            onClick={() => setValue('complaint_kind' as any, 'notification', { shouldValidate: true })}
+            className={`px-3 py-1.5 text-sm border ${kind === 'notification' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-300'} rounded-l-md`}
+          >
+            {t('notificationComplaint') || 'Notification'}
+          </button>
+          <button
+            type="button"
+            onClick={() => setValue('complaint_kind' as any, 'official', { shouldValidate: true })}
+            className={`px-3 py-1.5 text-sm border ${kind === 'official' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-300'} rounded-r-md`}
+          >
+            {t('officialComplaint') || 'Official Complaint'}
+          </button>
+        </div>
       </div>
+
+      {/* Date received */}
+      <div>
+        <label htmlFor="date_received" className="block text-sm font-medium text-gray-700 mb-1">
+          <Tooltip content={t('tooltipDateReceived') || ''}>
+            <span>{t('dateReceived') || 'Date Received'} *</span>
+          </Tooltip>
+        </label>
+        <input
+          type="date"
+          id="date_received"
+          {...register('date_received')}
+          className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+            (errors as any).date_received ? 'border-red-300' : 'border-gray-300'
+          }`}
+        />
+        {(errors as any).date_received && (
+          <p className="mt-1 text-sm text-red-600">{(errors as any).date_received.message as any}</p>
+        )}
+      </div>
+
+      {/* NCR number moved below Work Order Number */}
 
       {error && (
         <div className="flex items-center p-4 bg-red-50 border border-red-200 rounded-md">
@@ -303,21 +372,25 @@ export default function ComplaintForm({ onSuccess }: ComplaintFormProps) {
         )}
       </div>
 
+      {/* NCR number (conditional) under Work Order Number */}
       <div>
-        <label htmlFor="occurrence" className="block text-sm font-medium text-gray-700 mb-1">
-          <Tooltip content={t('tooltipOccurrence')}>
-            <span>{t('occurrence')}</span>
-          </Tooltip>
+        <label htmlFor="ncr_number" className="block text-sm font-medium text-gray-700 mb-1">
+          <span>{t('ncrNumber') || 'NCR Number'}{kind === 'official' ? ' *' : ''}</span>
         </label>
         <input
           type="text"
-          id="occurrence"
-          {...register('occurrence')}
+          id="ncr_number"
+          {...register('ncr_number')}
           className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-            errors.occurrence ? 'border-red-300' : 'border-gray-300'
+            (errors as any).ncr_number ? 'border-red-300' : 'border-gray-300'
           }`}
         />
+        {(errors as any).ncr_number && (
+          <p className="mt-1 text-sm text-red-600">{(errors as any).ncr_number.message as any}</p>
+        )}
       </div>
+
+      {/* Occurrence removed per spec */}
       <div>
         <div className="flex items-center mb-1">
           <label className="block text-sm font-medium text-gray-700">

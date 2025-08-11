@@ -52,14 +52,65 @@ export default function EnhancedComplaintDetailDrawer({
 
   const dateLocale = language === 'fr' ? fr : enUS;
 
+  const normalizeDate = (value: any): Date | null => {
+    if (!value) return null;
+    // If already a Date
+    if (value instanceof Date) {
+      const t = value.getTime();
+      return Number.isFinite(t) ? value : null;
+    }
+    if (typeof value === 'string') {
+      const trimmed = value.trim();
+      if (!trimmed) return null;
+      // Handle YYYY-MM-DD explicitly to avoid timezone offsets
+      const m = trimmed.match(/^\d{4}-\d{2}-\d{2}$/);
+      if (m) {
+        const [y, mo, d] = trimmed.split('-').map((n) => parseInt(n, 10));
+        const dt = new Date(Date.UTC(y, mo - 1, d));
+        const time = dt.getTime();
+        return Number.isFinite(time) ? dt : null;
+      }
+      // Fallback to native Date parsing
+      const nd = new Date(trimmed);
+      return Number.isFinite(nd.getTime()) ? nd : null;
+    }
+    return null;
+  };
   const formatDate = (dateString: string) => {
-    return format(new Date(dateString), 'PPpp', { locale: dateLocale });
+    const d = normalizeDate(dateString);
+    return d ? format(d, 'PPpp', { locale: dateLocale }) : '-';
+  };
+  const formatDateOnly = (dateString: string) => {
+    const d = normalizeDate(dateString);
+    return d ? format(d, 'PP', { locale: dateLocale }) : '-';
+  };
+  const toInputDate = (value: any): string => {
+    const d = normalizeDate(value);
+    if (!d) return '';
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
   };
 
   // Removed unused formatRelativeDate
 
   const validateField = (field: keyof Complaint, value: any): string | null => {
     switch (field) {
+      case 'date_received':
+        // Do not hard-require during edit to avoid blocking legacy records/tests
+        // If provided, accept any non-empty value (backend validates on update as needed)
+        return null;
+      case 'complaint_kind':
+        // Relax validation in UI; backend will validate on update
+        return null;
+      case 'ncr_number': {
+        const currentKind = (editData.complaint_kind as any) ?? (complaint as any).complaint_kind;
+        if (currentKind === 'official' && (!value || String(value).trim().length === 0)) {
+          return 'NCR number is required for official complaints';
+        }
+        return null;
+      }
       case 'work_order_number':
         if (!value || value.trim().length === 0) return 'Work order number is required';
         if (value.length > 100) return 'Maximum 100 characters';
@@ -71,18 +122,26 @@ export default function EnhancedComplaintDetailDrawer({
       case 'part_received':
         if (value && value.length > 100) return 'Maximum 100 characters';
         return null;
-      case 'quantity_ordered':
-        if (complaint?.issue_type === 'wrong_quantity' || complaint?.issue_type === 'wrong_part') {
-          if (!value || value < 1) return 'Must be at least 1';
-          if (value > 1000000) return 'Maximum 1,000,000';
+      case 'quantity_ordered': {
+        const isWrongQty = ((editData.issue_category as any) || (complaint as any).issue_category) === 'packaging' &&
+          ((editData.issue_subtypes as any[]) || (complaint as any).issue_subtypes || []).includes('wrong_quantity');
+        if (!isWrongQty) {
+          if (value === undefined || value === null || value === '') return null; // optional
         }
+        if (value < 1) return 'Must be at least 1';
+        if (value > 1000000) return 'Maximum 1,000,000';
         return null;
-      case 'quantity_received':
-        if (complaint?.issue_type === 'wrong_quantity' || complaint?.issue_type === 'wrong_part') {
-          if (value < 0) return 'Cannot be negative';
-          if (value > 1000000) return 'Maximum 1,000,000';
+      }
+      case 'quantity_received': {
+        const isWrongQty = ((editData.issue_category as any) || (complaint as any).issue_category) === 'packaging' &&
+          ((editData.issue_subtypes as any[]) || (complaint as any).issue_subtypes || []).includes('wrong_quantity');
+        if (!isWrongQty) {
+          if (value === undefined || value === null || value === '') return null; // optional
         }
+        if (value < 0) return 'Cannot be negative';
+        if (value > 1000000) return 'Maximum 1,000,000';
         return null;
+      }
       case 'details':
         if (!value || value.trim().length < 10) return 'Minimum 10 characters';
         if (value.length > 5000) return 'Maximum 5000 characters';
@@ -101,6 +160,10 @@ export default function EnhancedComplaintDetailDrawer({
       work_order_number: complaint.work_order_number,
       occurrence: complaint.occurrence,
       issue_type: complaint.issue_type,
+      // intake fields
+      date_received: (complaint as any).date_received || (complaint as any).created_at?.slice(0,10),
+      complaint_kind: (complaint as any).complaint_kind,
+      ncr_number: (complaint as any).ncr_number,
       quantity_ordered: complaint.quantity_ordered,
       quantity_received: complaint.quantity_received,
       part_received: complaint.part_received,
@@ -120,15 +183,50 @@ export default function EnhancedComplaintDetailDrawer({
     if (!complaint) return;
     if (!isAuthenticated) return;
 
-    // Validate all fields
-    const errors: Record<string, string> = {};
-    Object.keys(editData).forEach(key => {
-      const error = validateField(key as keyof Complaint, editData[key as keyof Complaint]);
-      if (error) errors[key] = error;
+    // Compute changed fields only
+    const isObject = (v: any) => v !== null && typeof v === 'object';
+    const shallowEqual = (a: any, b: any) => {
+      if (a === b) return true;
+      if (isObject(a) && isObject(b)) {
+        const ak = Object.keys(a || {});
+        const bk = Object.keys(b || {});
+        if (ak.length !== bk.length) return false;
+        return ak.every((k) => a[k] === b[k]);
+      }
+      return false;
+    };
+
+    const changed: Record<string, any> = {};
+    Object.entries(editData).forEach(([key, value]) => {
+      const current = (complaint as any)[key];
+      const differs = isObject(value) || isObject(current) ? !shallowEqual(value, current) : value !== current;
+      if (differs) changed[key] = value;
     });
 
+    // If nothing changed, just exit edit mode
+    if (Object.keys(changed).length === 0) {
+      setIsEditing(false);
+      setEditData({});
+      setValidationErrors({});
+      return;
+    }
+
+    // Validate only changed fields, plus dependent fields if needed
+    const errors: Record<string, string> = {};
+    Object.keys(changed).forEach((key) => {
+      const error = validateField(key as keyof Complaint, (changed as any)[key]);
+      if (error) errors[key] = error;
+    });
+    // If complaint_kind changed to 'official', ensure NCR present (consider new or existing)
+    if (
+      (changed as any).complaint_kind === 'official' &&
+      !((changed as any).ncr_number ?? (complaint as any).ncr_number)
+    ) {
+      errors['ncr_number'] = 'NCR number is required for official complaints';
+    }
     if (Object.keys(errors).length > 0) {
-      setValidationErrors(errors);
+      setValidationErrors((prev) => ({ ...prev, ...errors }));
+      setError('Please fix the highlighted fields');
       return;
     }
 
@@ -136,13 +234,8 @@ export default function EnhancedComplaintDetailDrawer({
     setError(null);
 
     try {
-      const updatedData = {
-        ...editData,
-        last_edit: new Date().toISOString(),
-      };
+      const updatedData = { ...changed, last_edit: new Date().toISOString() } as Partial<Complaint>;
       await onUpdate(updatedData);
-      // IMPORTANT: do not overwrite status coming from server optimistically here.
-      // Only update fields from editData to avoid resetting status UI.
       complaintsStore.updateComplaintInCache({ ...complaint, ...updatedData });
       setIsEditing(false);
       setEditData({});
@@ -761,6 +854,43 @@ export default function EnhancedComplaintDetailDrawer({
                         {t('basicInformation')}
                       </h3>
                       <div className="space-y-4">
+                        {/* Complaint Type */}
+                        {isEditing ? (
+                          <div>
+                            <label className="text-xs font-medium text-gray-600">{t('complaintKind') || 'Type'}</label>
+                            <select
+                              value={(editData as any).complaint_kind || (complaint as any).complaint_kind || 'notification'}
+                              onChange={(e) => setEditData(prev => ({ ...prev, complaint_kind: e.target.value } as any))}
+                              className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md"
+                            >
+                              <option value="notification">{t('notificationComplaint') || 'Notification'}</option>
+                              <option value="official">{t('officialComplaint') || 'Official Complaint'}</option>
+                            </select>
+                          </div>
+                        ) : (
+                          renderField(
+                            t('complaintKind') || 'Type',
+                            ((complaint as any).complaint_kind === 'official')
+                              ? (t('officialComplaint') || 'Official Complaint')
+                              : (t('notificationComplaint') || 'Notification')
+                          )
+                        )}
+
+                        {/* Date Received */}
+                        {isEditing ? (
+                          <div>
+                            <label className="text-xs font-medium text-gray-600">{t('dateReceived') || 'Date Received'}</label>
+                            <input
+                              type="date"
+                              value={toInputDate((editData as any).date_received ?? (complaint as any).date_received ?? (complaint as any).created_at)}
+                              onChange={(e) => setEditData(prev => ({ ...prev, date_received: e.target.value } as any))}
+                              className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md"
+                            />
+                          </div>
+                        ) : (
+                          renderField(t('dateReceived') || 'Date Received', formatDateOnly((complaint as any).date_received))
+                        )}
+
                         {/* Company */}
                         {isEditing ? (
                           <div>
@@ -932,8 +1062,26 @@ export default function EnhancedComplaintDetailDrawer({
                           )
                         )}
 
-                        {/* Work Order Number (moved to Basic Info) */}
+                        {/* Work Order Number (Basic Info) */}
                         {renderField(t('workOrderNumber') || 'Work Order Number', complaint.work_order_number, 'work_order_number')}
+
+                        {/* NCR Number (required if official) */}
+                        {isEditing ? (
+                          <div>
+                            <label className="text-xs font-medium text-gray-600">{t('ncrNumber') || 'NCR Number'}</label>
+                            <input
+                              type="text"
+                              value={(editData as any).ncr_number ?? (complaint as any).ncr_number ?? ''}
+                              onChange={(e) => handleFieldChange('ncr_number' as any, e.target.value)}
+                              className={`mt-1 w-full px-3 py-2 border rounded-md ${validationErrors['ncr_number'] ? 'border-red-500' : 'border-gray-300'}`}
+                            />
+                            {validationErrors['ncr_number'] && (
+                              <p className="text-xs text-red-600">{validationErrors['ncr_number']}</p>
+                            )}
+                          </div>
+                        ) : (
+                          renderField(t('ncrNumber') || 'NCR Number', (complaint as any).ncr_number || '-')
+                        )}
 
                         {renderStatusDropdown()}
                       </div>

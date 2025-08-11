@@ -8,6 +8,8 @@ describe('ComplaintDetailView', () => {
         id: 1,
         issue_type: 'wrong_part',
         details: 'Received the wrong part.',
+        date_received: '2022-01-01',
+        complaint_kind: 'notification',
         quantity_ordered: 10,
         quantity_received: 9,
         status: 'open',

@@ -51,6 +51,8 @@ const mockComplaint: Complaint = {
   },
   issue_type: 'wrong_quantity',
   details: 'Test details about the complaint',
+  date_received: '2024-01-01',
+  complaint_kind: 'notification',
   status: 'open',
   created_at: '2024-01-01T00:00:00Z',
   updated_at: '2024-01-01T00:00:00Z',
@@ -219,6 +221,9 @@ describe('EnhancedComplaintDetailDrawer', () => {
     render(<EnhancedComplaintDetailDrawer {...defaultProps} onUpdate={onUpdate} />);
 
     fireEvent.click(screen.getByText('Edit'));
+    // Make a change so save attempts network update
+    const workOrderInput = screen.getByDisplayValue('WO-001');
+    fireEvent.change(workOrderInput, { target: { value: 'WO-003' } });
     fireEvent.click(screen.getByText('Save'));
 
     await waitFor(() => {
