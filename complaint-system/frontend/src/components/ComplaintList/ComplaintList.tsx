@@ -32,6 +32,7 @@ export default function ComplaintList({
 }: ComplaintListProps) {
   const [complaints, setComplaints] = useState<Complaint[]>([]);
   const [loading, setLoading] = useState(true);
+  const [perceivedLoading, setPerceivedLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState<number>(page);
   const [currentSize, setCurrentSize] = useState<number>(pageSize);
@@ -48,6 +49,9 @@ export default function ComplaintList({
   const lastRefreshTriggerRef = useRef<number>(0);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const loadStartRef = useRef<number | null>(null);
+  const skeletonTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const MIN_SKELETON_MS = 180;
  
   const buildParams = useCallback(() => {
     const params = new URLSearchParams();
@@ -81,6 +85,8 @@ export default function ComplaintList({
  
     try {
       setLoading(true);
+      setPerceivedLoading(true);
+      loadStartRef.current = Date.now();
       // Avoid passing an unsupported signal to our wrapped axios if environment doesn't support it
       const response = await get(`/api/complaints?${paramString}` as any);
       const data = response.data as any;
@@ -113,8 +119,16 @@ export default function ComplaintList({
       setTotalPages(1);
     } finally {
       setLoading(false);
+      const startedAt = loadStartRef.current ?? Date.now();
+      const elapsed = Date.now() - startedAt;
+      if (elapsed < MIN_SKELETON_MS) {
+        if (skeletonTimerRef.current) clearTimeout(skeletonTimerRef.current);
+        skeletonTimerRef.current = setTimeout(() => setPerceivedLoading(false), MIN_SKELETON_MS - elapsed);
+      } else {
+        setPerceivedLoading(false);
+      }
     }
-  }, [buildParams, refreshTrigger]);
+  }, [buildParams, refreshTrigger, showPagination]);
  
   // Debounce prop-driven fetches to coalesce rapid changes and avoid duplicate identical-param refetch
   useEffect(() => {
@@ -143,6 +157,12 @@ export default function ComplaintList({
   useEffect(() => {
     setPageInput(String(currentPage));
   }, [currentPage]);
+
+  useEffect(() => {
+    return () => {
+      if (skeletonTimerRef.current) clearTimeout(skeletonTimerRef.current);
+    };
+  }, []);
 
   const commitPageInput = useCallback(() => {
     let next = parseInt(pageInput, 10);
@@ -215,16 +235,31 @@ export default function ComplaintList({
         </motion.h2>
         
         <AnimatePresence mode="wait">
-          {loading ? (
+          {perceivedLoading ? (
             <motion.div
-              key="loading"
-              className="flex justify-center py-8"
+              key="skeleton"
+              className="space-y-4"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.3 }}
+              transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
             >
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" aria-label="loading"></div>
+              {Array.from({ length: showPagination ? currentSize : 5 }).map((_, i) => (
+                <motion.div
+                  key={i}
+                  className="bg-white border border-gray-100 rounded-lg p-4"
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.22, delay: i * 0.03, ease: [0.22, 1, 0.36, 1] }}
+                >
+                  <div className="animate-pulse">
+                    <div className="h-4 w-40 bg-gray-200 rounded mb-3" />
+                    <div className="h-3 w-full bg-gray-200 rounded mb-2" />
+                    <div className="h-3 w-11/12 bg-gray-200 rounded mb-2" />
+                    <div className="h-3 w-2/3 bg-gray-200 rounded" />
+                  </div>
+                </motion.div>
+              ))}
             </motion.div>
           ) : error ? (
             <motion.div
@@ -233,7 +268,7 @@ export default function ComplaintList({
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.3 }}
+              transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
             >
               <div className="flex items-center text-red-600">
                 <AlertCircle className="h-5 w-5 mr-2" />
@@ -247,7 +282,7 @@ export default function ComplaintList({
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.3 }}
+              transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
             >
               <p className="text-gray-500">{t('noComplaints')}</p>
             </motion.div>
@@ -256,14 +291,14 @@ export default function ComplaintList({
               className="space-y-4"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ duration: 0.3, delay: 0.2 }}
+              transition={{ duration: 0.2, delay: 0.05, ease: [0.22, 1, 0.36, 1] }}
             >
               {complaints.map((complaint, index) => (
                 <motion.div
                   key={complaint.id}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: index * 0.1 }}
+                  transition={{ duration: 0.25, delay: index * 0.05, ease: [0.22, 1, 0.36, 1] }}
                 >
                   <ComplaintTile
                     complaint={complaint}
