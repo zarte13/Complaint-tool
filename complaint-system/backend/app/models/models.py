@@ -51,6 +51,8 @@ class Complaint(Base):
     human_factor = Column(Boolean, default=False)  # Cause avec facteur humain
     status = Column(String(20), default="open")  # open, in_progress, resolved (DB enforced enum)
     has_attachments = Column(Boolean, default=False)
+    # Audit: username of creator (users live in separate DB; no FK here)
+    created_by = Column(String(150), nullable=True)
     # Soft delete flag: when True, the complaint is hidden from all list/detail APIs
     is_deleted = Column(Boolean, default=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -96,6 +98,8 @@ class FollowUpAction(Base):
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     started_at = Column(DateTime(timezone=True), nullable=True)
     completed_at = Column(DateTime(timezone=True), nullable=True)
+    # Audit: username of creator (users live in separate DB; no FK here)
+    created_by = Column(String(150), nullable=True)
     
     # Relationships
     complaint = relationship("Complaint", back_populates="follow_up_actions")

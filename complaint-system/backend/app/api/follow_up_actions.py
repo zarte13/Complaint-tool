@@ -17,6 +17,7 @@ from app.schemas.schemas import (
 )
 
 from app.auth.dependencies import get_current_user, require_admin
+from app.auth.models import User
 router = APIRouter(prefix="/api/complaints/{complaint_id}/actions", tags=["follow-up-actions"])
 
 # Helper functions
@@ -80,7 +81,7 @@ async def create_action(
     complaint_id: int = Path(..., description="Complaint ID"),
     changed_by: str = Query("System", description="Who is creating this action"),
     db: Session = Depends(get_db),
-    _user = Depends(get_current_user),
+    user: User = Depends(get_current_user),
 ):
     """Create a new follow-up action for a complaint"""
     
@@ -122,6 +123,7 @@ async def create_action(
         db_action = FollowUpAction(
             complaint_id=complaint_id,
             action_number=action_number,
+            created_by=user.username,
             **action.dict()
         )
         
@@ -132,7 +134,7 @@ async def create_action(
         # Create audit trail
         create_action_history(
             db, db_action.id, "created", None, 
-            f"Action #{action_number} created", changed_by
+            f"Action #{action_number} created", user.username or changed_by
         )
         
         return db_action

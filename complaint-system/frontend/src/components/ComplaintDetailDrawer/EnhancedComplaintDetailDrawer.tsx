@@ -100,6 +100,7 @@ export default function EnhancedComplaintDetailDrawer({
     setEditData({
       work_order_number: complaint.work_order_number,
       occurrence: complaint.occurrence,
+      issue_type: complaint.issue_type,
       quantity_ordered: complaint.quantity_ordered,
       quantity_received: complaint.quantity_received,
       part_received: complaint.part_received,
@@ -828,6 +829,25 @@ export default function EnhancedComplaintDetailDrawer({
                           renderField(t('issueCategory') || 'Issue Category', getCategoryLabel(complaint.issue_category as any))
                         )}
 
+                        {/* Issue Type (editable in edit mode) */}
+                        {isEditing ? (
+                          <div>
+                            <label className="text-xs font-medium text-gray-600">{t('issueType') || 'Issue Type'}</label>
+                            <select
+                              value={(editData as any).issue_type || complaint.issue_type || ''}
+                              onChange={(e) => setEditData(prev => ({ ...prev, issue_type: e.target.value } as any))}
+                              className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md"
+                            >
+                              <option value="wrong_quantity">{t('wrongQuantity') || 'Wrong Quantity'}</option>
+                              <option value="wrong_part">{t('wrongPart') || 'Wrong Part'}</option>
+                              <option value="damaged">{t('damaged') || 'Damaged'}</option>
+                              <option value="other">{t('other') || 'Other'}</option>
+                            </select>
+                          </div>
+                        ) : (
+                          renderField(t('issueType') || 'Issue Type', getSubtypeLabel(complaint.issue_type || 'other'))
+                        )}
+
                         {/* Issue Subtypes */}
                         {isEditing ? (
                           <div className="relative">
@@ -935,8 +955,11 @@ export default function EnhancedComplaintDetailDrawer({
                       </h3>
                       <div className="space-y-4">
                         {renderField(t('occurrence') || 'Occurrence', complaint.occurrence, 'occurrence')}
-                        {renderField(t('quantityOrdered') || 'Quantity Ordered', complaint.quantity_ordered, 'quantity_ordered', 'number')}
-                        {renderField(t('quantityReceived') || 'Quantity Received', complaint.quantity_received, 'quantity_received', 'number')}
+                        {/* Show quantities in read-only only when meaningful */}
+                        {(isEditing || (typeof complaint.quantity_ordered === 'number' && complaint.quantity_ordered > 0)) &&
+                          renderField(t('quantityOrdered') || 'Quantity Ordered', complaint.quantity_ordered, 'quantity_ordered', 'number')}
+                        {(isEditing || (typeof complaint.quantity_received === 'number' && complaint.quantity_received > 0)) &&
+                          renderField(t('quantityReceived') || 'Quantity Received', complaint.quantity_received, 'quantity_received', 'number')}
                         {renderField(t('humanFactor') || 'Human Factor', complaint.human_factor, 'human_factor', 'toggle')}
                         {renderField(t('details') || 'Details', complaint.details, 'details', 'textarea')}
                         {/* Show received part number only when relevant */}
@@ -951,19 +974,53 @@ export default function EnhancedComplaintDetailDrawer({
                             {(complaint.issue_subtypes as string[]).map((sub) => {
                               const showPair = ['wrong_box','wrong_bag','wrong_paper','wrong_quantity'].includes(sub);
                               if (!showPair) return null;
-                              const recv = (complaint.packaging_received as any)?.[sub] || '';
-                              const exp = (complaint.packaging_expected as any)?.[sub] || '';
+                              const recv = (isEditing ? ((editData as any).packaging_received as any)?.[sub] : (complaint.packaging_received as any)?.[sub]) || '';
+                              const exp = (isEditing ? ((editData as any).packaging_expected as any)?.[sub] : (complaint.packaging_expected as any)?.[sub]) || '';
                               return (
                                 <div key={sub} className="border rounded-md p-3 bg-gray-50">
                                   <div className="text-sm font-medium text-gray-800 mb-2">{getSubtypeLabel(sub)}</div>
                                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
                                     <div>
                                       <div className="text-gray-600">{t('packagingReceivedLabel') || 'Received'}</div>
-                                      <div className="text-gray-900">{recv || '-'}</div>
+                                      {isEditing ? (
+                                        <input
+                                          type="text"
+                                          value={recv}
+                                          onChange={(e) => {
+                                            const val = e.target.value;
+                                            setEditData(prev => {
+                                              const next: any = { ...prev };
+                                              const current = (next.packaging_received as any) || {};
+                                              next.packaging_received = { ...current, [sub]: val };
+                                              return next;
+                                            });
+                                          }}
+                                          className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        />
+                                      ) : (
+                                        <div className="text-gray-900">{recv || '-'}</div>
+                                      )}
                                     </div>
                                     <div>
                                       <div className="text-gray-600">{t('packagingExpectedLabel') || 'Expected'}</div>
-                                      <div className="text-gray-900">{exp || '-'}</div>
+                                      {isEditing ? (
+                                        <input
+                                          type="text"
+                                          value={exp}
+                                          onChange={(e) => {
+                                            const val = e.target.value;
+                                            setEditData(prev => {
+                                              const next: any = { ...prev };
+                                              const current = (next.packaging_expected as any) || {};
+                                              next.packaging_expected = { ...current, [sub]: val };
+                                              return next;
+                                            });
+                                          }}
+                                          className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        />
+                                      ) : (
+                                        <div className="text-gray-900">{exp || '-'}</div>
+                                      )}
                                     </div>
                                   </div>
                                 </div>

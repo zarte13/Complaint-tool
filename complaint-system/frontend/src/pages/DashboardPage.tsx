@@ -1,7 +1,10 @@
 import { useQuery } from 'react-query';
 import { get } from '../services/api';
 import { motion } from 'framer-motion';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
+// import EvilLineChartCard from '../components/EvilCharts/EvilLineChartCard';
+// import EvilBarChartCard from '../components/EvilCharts/EvilBarChartCard';
+import EvilPieChartCard from '../components/EvilCharts/EvilPieChartCard';
+import EvilStackedGlowingBarCard from '../components/EvilCharts/EvilStackedGlowingBarCard';
 import { TrendingUp, AlertTriangle, CheckCircle } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 
@@ -30,6 +33,14 @@ interface Trends {
   data: number[];
 }
 
+type WeeklyTypeRow = {
+  week: string;
+  wrong_quantity: number;
+  wrong_part: number;
+  damaged: number;
+  other: number;
+};
+
 const DashboardPage: React.FC = () => {
   const { t } = useLanguage();
   const { data: rarMetrics, isLoading: loadingRAR } = useQuery<RARMetrics>(
@@ -50,12 +61,17 @@ const DashboardPage: React.FC = () => {
     () => get<FailureMode[]>('/api/analytics/failure-modes').then(res => res.data)
   );
 
-  const { data: trends, isLoading: loadingTrends } = useQuery<Trends>(
+  const { isLoading: loadingTrends } = useQuery<Trends>(
     'trends',
     () => get<Trends>('/api/analytics/trends').then(res => res.data)
   );
 
-  if (loadingRAR || loadingFailure || loadingTrends || loadingStatusCounts) {
+  const { data: weeklyTypeTrends, isLoading: loadingWeeklyTypes } = useQuery<WeeklyTypeRow[]>(
+    'weeklyTypeTrends',
+    () => get<WeeklyTypeRow[]>('/api/analytics/weekly-type-trends').then(res => res.data)
+  );
+
+  if (loadingRAR || loadingFailure || loadingTrends || loadingStatusCounts || loadingWeeklyTypes) {
     return (
       <motion.div
         className="min-h-screen bg-gray-50 flex items-center justify-center"
@@ -83,10 +99,10 @@ const DashboardPage: React.FC = () => {
     );
   }
 
-  const chartData = trends?.labels?.map((label, index) => ({
-    date: label,
-    complaints: trends?.data?.[index] ?? 0
-  })) || [];
+  // const chartData = trends?.labels?.map((label, index) => ({
+  //   date: label,
+  //   complaints: trends?.data?.[index] ?? 0
+  // })) || [];
 
   return (
     <motion.div 
@@ -178,42 +194,53 @@ const DashboardPage: React.FC = () => {
 </motion.div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Complaint Trends */}
-          <motion.div 
-            className="bg-white rounded-lg shadow p-6"
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, delay: 0.4 }}
-          >
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('trendsTitle')}</h2>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" />
-                <YAxis />
-                <Tooltip />
-                <Line type="monotone" dataKey="complaints" stroke="#3b82f6" strokeWidth={2} />
-              </LineChart>
-            </ResponsiveContainer>
+          {/* Complaint Trends (12 weeks stacked per type) */}
+          <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5, delay: 0.4 }}>
+            <EvilStackedGlowingBarCard
+              title={t('trendsTitle')}
+              data={weeklyTypeTrends || []}
+              labels={{
+                wrong_quantity: t('wrongQuantity'),
+                wrong_part: t('wrongPart'),
+                damaged: t('damaged'),
+                other: t('other'),
+              }}
+            />
           </motion.div>
 
-          {/* Top Failure Modes */}
-          <motion.div 
-            className="bg-white rounded-lg shadow p-6"
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, delay: 0.4 }}
-          >
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('failureModesTitle')}</h2>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={failureModes || []}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="issueType" />
-                <YAxis />
-                <Tooltip />
-                <Bar dataKey="count" fill="#8b5cf6" />
-              </BarChart>
-            </ResponsiveContainer>
+          {/* Failure Modes (all four main categories) as Pie */}
+          <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5, delay: 0.4 }}>
+            {(() => {
+              // Normalize API keys into our 4 canonical buckets
+              const normalize = (s: string) => {
+                const key = (s || '').toString().trim().toLowerCase().replace(/\s+/g, '_');
+                if (key === 'wrong_quantity' || key === 'wrong_part' || key === 'damaged' || key === 'other') return key;
+                // fallback
+                return 'other';
+              };
+              const counts: Record<'wrong_quantity'|'wrong_part'|'damaged'|'other', number> = {
+                wrong_quantity: 0,
+                wrong_part: 0,
+                damaged: 0,
+                other: 0,
+              };
+              (failureModes || []).forEach((f) => {
+                const k = normalize(f.issueType);
+                counts[k as keyof typeof counts] = (counts[k as keyof typeof counts] || 0) + (f.count || 0);
+              });
+              const data = [
+                { label: t('wrongQuantity'), value: counts.wrong_quantity },
+                { label: t('wrongPart'), value: counts.wrong_part },
+                { label: t('damaged'), value: counts.damaged },
+                { label: t('other'), value: counts.other },
+              ];
+              return (
+                <EvilPieChartCard
+                  title={t('failureModesTitle')}
+                  data={data}
+                />
+              );
+            })()}
           </motion.div>
         </div>
       </div>

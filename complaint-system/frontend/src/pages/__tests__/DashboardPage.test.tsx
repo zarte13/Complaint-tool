@@ -6,7 +6,7 @@ import DashboardPage from '../DashboardPage';
 // Use global API mocks provided by test/setup.ts
 const { getMock } = (global as any).__API_MOCKS__;
 
-// Mock recharts components
+// Mock recharts components (including PieChart for failure modes)
 vi.mock('recharts', () => ({
   LineChart: ({ children }: any) => <div data-testid="line-chart">{children}</div>,
   Line: () => <div data-testid="line" />,
@@ -17,6 +17,9 @@ vi.mock('recharts', () => ({
   ResponsiveContainer: ({ children }: any) => <div data-testid="responsive-container">{children}</div>,
   BarChart: ({ children }: any) => <div data-testid="bar-chart">{children}</div>,
   Bar: () => <div data-testid="bar" />,
+  PieChart: ({ children }: any) => <div data-testid="pie-chart">{children}</div>,
+  Pie: ({ children }: any) => <div data-testid="pie">{children}</div>,
+  Cell: () => <div data-testid="cell" />,
 }));
 
 const queryClient = new QueryClient({
@@ -96,10 +99,10 @@ describe('DashboardPage', () => {
     renderWithQueryClient(<DashboardPage />);
 
     await waitFor(() => {
-      expect(screen.getByText('Top 3 Failure Modes')).toBeInTheDocument();
+      expect(screen.getByText('Failure Modes')).toBeInTheDocument();
     });
 
-    expect(screen.getByTestId('bar-chart')).toBeInTheDocument();
+    expect(screen.getByTestId('evil-pie-chart')).toBeInTheDocument();
   });
 
   it('renders trends chart correctly', async () => {
@@ -111,11 +114,14 @@ describe('DashboardPage', () => {
         return Promise.resolve({ data: [] });
       }
       if (url === '/api/analytics/trends') {
+        return Promise.resolve({ data: { labels: [], data: [] } });
+      }
+      if (url === '/api/analytics/weekly-type-trends') {
         return Promise.resolve({
-          data: {
-            labels: ['2024-01-01'],
-            data: [5]
-          }
+          data: [
+            { week: '2025-W01', wrong_quantity: 1, wrong_part: 2, damaged: 3, other: 4 },
+            { week: '2025-W02', wrong_quantity: 0, wrong_part: 1, damaged: 1, other: 0 },
+          ],
         });
       }
       return Promise.reject(new Error('Unknown URL'));
@@ -124,9 +130,9 @@ describe('DashboardPage', () => {
     renderWithQueryClient(<DashboardPage />);
 
     await waitFor(() => {
-      expect(screen.getByText('Complaint Trends (30 Days)')).toBeInTheDocument();
+      expect(screen.getByText('Complaint Trends (12 Weeks)')).toBeInTheDocument();
     });
 
-    expect(screen.getByTestId('line-chart')).toBeInTheDocument();
+    expect(screen.getByTestId('evil-stacked-bar')).toBeInTheDocument();
   });
 });

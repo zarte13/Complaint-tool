@@ -16,6 +16,7 @@ from app.utils.file_handler import save_upload_file, validate_file, delete_file
 import mimetypes
 import os
 from app.auth.dependencies import require_admin, get_current_user
+from app.auth.models import User
 
 router = APIRouter(prefix="/api/complaints", tags=["complaints"])
 # Register alias routes to support both "/api/complaints" and "/api/complaints/" without 307 redirects
@@ -26,7 +27,7 @@ router = APIRouter(prefix="/api/complaints", tags=["complaints"])
 async def create_complaint(
     complaint: ComplaintCreate,
     db: Session = Depends(get_db),
-    _user = Depends(get_current_user),
+    user: User = Depends(get_current_user),
 ):
     """Create a new complaint"""
     # Verify company exists
@@ -39,7 +40,7 @@ async def create_complaint(
     if not part:
         raise HTTPException(status_code=404, detail="Part not found")
     
-    db_complaint = Complaint(**complaint.dict())
+    db_complaint = Complaint(**complaint.dict(), created_by=user.username)
     db.add(db_complaint)
     db.commit()
     db.refresh(db_complaint)

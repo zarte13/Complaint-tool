@@ -181,6 +181,7 @@ class ComplaintResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
     last_edit: Optional[datetime]
+    created_by: Optional[str]
     
     class Config:
         from_attributes = True
@@ -309,6 +310,7 @@ class FollowUpActionResponse(BaseModel):
     updated_at: datetime
     started_at: Optional[datetime]
     completed_at: Optional[datetime]
+    created_by: Optional[str]
     
     class Config:
         from_attributes = True

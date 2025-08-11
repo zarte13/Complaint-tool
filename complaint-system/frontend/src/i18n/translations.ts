@@ -449,8 +449,8 @@ export const translations: Record<'en' | 'fr', Partial<Translations>> = {
     kpiOpenCount: 'Number of open complaints',
     kpiInProgressCount: 'Number of in progress complaints',
     kpiResolvedCount: 'Number of resolved complaints',
-    trendsTitle: 'Complaint Trends (30 Days)',
-    failureModesTitle: 'Top 3 Failure Modes',
+    trendsTitle: 'Complaint Trends (12 Weeks)',
+    failureModesTitle: 'Failure Modes',
 
     // Authentication (Login)
     loginTitle: 'Login',
@@ -675,8 +675,8 @@ export const translations: Record<'en' | 'fr', Partial<Translations>> = {
     kpiOpenCount: 'Nombre de réclamations ouvertes',
     kpiInProgressCount: 'Nombre de réclamations en cours',
     kpiResolvedCount: 'Nombre de réclamations résolues',
-    trendsTitle: 'Tendances des plaintes (30 jours)',
-    failureModesTitle: 'Top 3 des modes de défaillance',
+    trendsTitle: 'Tendances des plaintes (12 semaines)',
+    failureModesTitle: 'Modes de défaillance',
 
     // Authentication (Login)
     loginTitle: 'Connexion',
