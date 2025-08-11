@@ -98,7 +98,9 @@ describe('Complaints request frequency', () => {
       search.dispatchEvent(new Event('input', { bubbles: true }));
     });
 
-    const select = screen.getByRole('combobox');
+    // Pick the issue category combobox (first select in the toolbar)
+    const selects = screen.getAllByRole('combobox');
+    const select = selects.find(el => (el as HTMLSelectElement).tagName.toLowerCase() === 'select' && (el as HTMLSelectElement).options?.length >= 5) as HTMLSelectElement;
     await act(async () => {
       (select as HTMLSelectElement).value = 'wrong_part';
       select.dispatchEvent(new Event('change', { bubbles: true }));
