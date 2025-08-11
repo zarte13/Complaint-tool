@@ -5,7 +5,7 @@ This document operationalizes the orchestration plan into executable steps, opti
 ## 1) Summary of Issues and Objectives
 
 - Redirect loops (307): Caused by trailing slash mismatch between FastAPI collection routes (defined at "/") and frontend slashless requests. Objective: eliminate loops by backend dual-acceptance of "" and "/" and frontend normalization to a canonical trailing slash.
-- Schema drift: Live SQLite (database/complaints.db) includes companies, complaints, parts, but may lack constraints and tables (status enum constraint, attachments, follow-up actions, search indexes). Objective: codify target schema in complaint-system/backend/schema_expected.json and converge with idempotent, rollbackable migrations.
+- Schema drift: Live SQLite (complaint-system/backend/database/complaints.db) includes companies, complaints, parts, but may lack constraints and tables (status enum constraint, attachments, follow-up actions, search indexes). Objective: codify target schema in complaint-system/backend/schema_expected.json and converge with idempotent, rollbackable migrations.
 - Migration reliability: Objective: migrations are idempotent, transactional, fast, and verified by schema_checker.py in CI.
 
 ## 2) Prioritized Task List
@@ -48,7 +48,7 @@ Gantt-lite:
 
 - Data violating new constraints
   - Mitigation: Pre-migration audit; transform (e.g., map closed→resolved); run on DB copy.
-  - Rollback: Backup database/complaints.db; restore on failure.
+  - Rollback: Backup complaint-system/backend/database/complaints.db; restore on failure.
 
 - Legacy clients using slashless paths
   - Mitigation: Dual-accept routes; frontend normalization; monitor redirects.
@@ -87,7 +87,7 @@ Stakeholders: Eng Lead, Product Owner, Ops, QA Lead.
 
 ## 7) Resources and Tooling
 
-- DB: database/complaints.db; backend/test_*.db for ephemeral runs.
+- DB: complaint-system/backend/database/complaints.db; backend/test_*.db for ephemeral runs.
 - CI: schema_checker.py with EXPECTED_SCHEMA_FILE; migrations; pytest; vitest/playwright; npm/pip audit.
 - Linters/Formatters: ruff/flake8 + black; eslint + prettier.
 - Observability: log 3xx counts; basic DB query timing for spot checks.

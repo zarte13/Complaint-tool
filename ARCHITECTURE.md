@@ -272,7 +272,7 @@ Users DB path resolution:
 - See [`python.app/database/users_db.py`](complaint-system/backend/app/database/users_db.py:1)
 
 ### Schema Validation Status (SQLite) — Domain DB
-This section captures the current live domain database schema vs the target expected schema and enumerates actionable diffs. Source of truth DB: database/complaints.db.
+This section captures the current live domain database schema vs the target expected schema and enumerates actionable diffs. Source of truth DB: complaint-system/backend/database/complaints.db.
 
 Command used:
 - Text: [`bash.python`](complaint-system/backend/schema_checker.py:1) invocation

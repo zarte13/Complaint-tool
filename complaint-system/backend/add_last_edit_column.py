@@ -9,7 +9,7 @@ import os
 from datetime import datetime
 
 def add_last_edit_column():
-    # Get the database path
+    # Get the database path (canonical backend location)
     db_path = os.path.join(os.path.dirname(__file__), "database", "complaints.db")
     
     if not os.path.exists(db_path):

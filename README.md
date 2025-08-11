@@ -50,7 +50,7 @@ npm run dev
 ## Structure
 ```
 complaint-system/
-  backend/        # FastAPI app, databases (complaints.db, users.db), scripts/
+  backend/        # FastAPI app, databases (database/complaints.db, users.db), scripts/
   frontend/       # React app (src/services/api.ts, pages/LoginPage.tsx, i18n/)
 ```
 

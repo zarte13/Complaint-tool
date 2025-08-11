@@ -3,16 +3,8 @@ import { screen, waitFor } from '@testing-library/react';
 import { render } from '../../test/test-utils';
 import { QueryClient, QueryClientProvider } from 'react-query';
 import DashboardPage from '../DashboardPage';
-import axios from 'axios';
-
-// Mock axios completely
-vi.mock('axios', () => ({
-  default: {
-    get: vi.fn()
-  }
-}));
-
-const mockedAxios = axios as any;
+// Use global API mocks provided by test/setup.ts
+const { getMock } = (global as any).__API_MOCKS__;
 
 // Mock recharts components
 vi.mock('recharts', () => ({
@@ -46,7 +38,7 @@ describe('DashboardPage', () => {
   });
 
   it('renders loading state initially', () => {
-    mockedAxios.get.mockImplementation(() => new Promise(() => {}));
+    getMock.mockImplementation(() => new Promise(() => {}));
     
     renderWithQueryClient(<DashboardPage />);
     
@@ -54,7 +46,7 @@ describe('DashboardPage', () => {
   });
 
   it('renders RAR metrics correctly', async () => {
-    mockedAxios.get.mockImplementation((url: string) => {
+    getMock.mockImplementation((url: string) => {
       if (url === '/api/analytics/rar-metrics') {
         return Promise.resolve({
           data: {
@@ -84,7 +76,7 @@ describe('DashboardPage', () => {
   });
 
   it('renders failure modes correctly', async () => {
-    mockedAxios.get.mockImplementation((url: string) => {
+    getMock.mockImplementation((url: string) => {
       if (url === '/api/analytics/rar-metrics') {
         return Promise.resolve({ data: { returnRate: 0, authorizationRate: 0, rejectionRate: 0, totalComplaints: 0, period: 'all_time' } });
       }
@@ -111,7 +103,7 @@ describe('DashboardPage', () => {
   });
 
   it('renders trends chart correctly', async () => {
-    mockedAxios.get.mockImplementation((url: string) => {
+    getMock.mockImplementation((url: string) => {
       if (url === '/api/analytics/rar-metrics') {
         return Promise.resolve({ data: { returnRate: 0, authorizationRate: 0, rejectionRate: 0, totalComplaints: 0, period: 'all_time' } });
       }

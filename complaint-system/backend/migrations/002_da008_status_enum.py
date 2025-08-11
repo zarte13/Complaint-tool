@@ -14,23 +14,10 @@ from pathlib import Path
 def migrate_da008_status_enum():
     """Add enum constraint to status field in complaints table."""
     
-    # Find database files
-    possible_db_paths = [
-        Path(__file__).parent.parent / "database" / "complaints.db",
-        Path(__file__).parent.parent / "complaints.db",
-        Path(__file__).parent.parent.parent / "database" / "complaints.db"
-    ]
-    
-    db_path = None
-    for path in possible_db_paths:
-        if path.exists():
-            db_path = path
-            break
-    
-    if not db_path:
-        print(f"❌ Database not found. Searched paths:")
-        for path in possible_db_paths:
-            print(f"   - {path}")
+    # Use the canonical backend database path only
+    db_path = Path(__file__).parent.parent / "database" / "complaints.db"
+    if not db_path.exists():
+        print(f"❌ Database not found at: {db_path}")
         return
     
     print(f"📁 Using database: {db_path}")

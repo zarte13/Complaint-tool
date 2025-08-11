@@ -222,7 +222,7 @@ curl "http://localhost:8000/api/complaints?issue_type=other&page=1&size=10"
 ### Verify backend filter application
 ```bash
 # Check database directly
-sqlite3 backend/database/complaints.db "SELECT issue_type, COUNT(*) FROM complaints GROUP BY issue_type"
+sqlite3 complaint-system/backend/database/complaints.db "SELECT issue_type, COUNT(*) FROM complaints GROUP BY issue_type"
 ```
 
 ## Summary

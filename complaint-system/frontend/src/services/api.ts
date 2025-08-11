@@ -258,24 +258,54 @@ async function del<T>(url: string, config?: AxiosRequestConfig): Promise<AxiosRe
   } as AxiosResponse<T>);
 }
 
-export function ensureTrailingSlash(path: string): string {
-  if (!path) return path;
-  // Preserve query/hash by splitting first
-  const match = path.match(/^([^?#]+)([?#].*)?$/);
-  if (!match) return path;
+export function ensureTrailingSlash(inputUrl: string): string {
+  if (!inputUrl) return inputUrl;
+
+  const skipPrefixes = ["/api/analytics", "/auth"]; // do not force trailing slash here
+
+  // Absolute URL handling
+  if (/^https?:\/\//i.test(inputUrl)) {
+    try {
+      const u = new URL(inputUrl);
+      const pathname = u.pathname || "/";
+
+      // Skip certain prefixes
+      if (skipPrefixes.some((p) => pathname.startsWith(p))) {
+        return inputUrl;
+      }
+
+      // Already ends with slash
+      if (pathname.endsWith("/")) return inputUrl;
+
+      // Do not add slash for likely item paths (numeric last segment)
+      const segments = pathname.split("/").filter(Boolean);
+      const last = segments[segments.length - 1] ?? "";
+      const isLikelyItem = /^\d+$/.test(last);
+      if (isLikelyItem) return inputUrl;
+
+      // Add slash to pathname only
+      u.pathname = `${pathname}/`;
+      return u.toString();
+    } catch {
+      // Fallback to relative logic if URL parsing fails
+    }
+  }
+
+  // Relative path logic
+  const match = inputUrl.match(/^([^?#]+)([?#].*)?$/);
+  if (!match) return inputUrl;
   const base = match[1];
   const rest = match[2] ?? "";
 
-  // If base already ends with slash, simply recombine parts to avoid double slashes
+  if (skipPrefixes.some((p) => base.startsWith(p))) {
+    return `${base}${rest}`;
+  }
+
   if (base.endsWith("/")) return `${base}${rest}`;
 
-  // Heuristic: if base appears to target a resource item like "/api/complaints/123",
-  // do not append a slash; only append for collection roots without trailing slash.
-  // We treat last segment with only digits as an item; adjust if IDs are non-numeric.
   const segments = base.split("/").filter(Boolean);
   const last = segments[segments.length - 1] ?? "";
   const isLikelyItem = /^\d+$/.test(last);
-
   if (isLikelyItem) return `${base}${rest}`;
 
   return `${base}/${rest}`;

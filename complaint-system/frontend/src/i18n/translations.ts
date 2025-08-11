@@ -233,6 +233,10 @@ export interface Translations {
   loginLink: string;
   logoutButton: string;
 
+  // Offline banner
+  offlineModeTitle?: string;
+  offlineModeMessage?: string;
+
   // Responsables
   responsablesTitle?: string;
   responsablesSubtitle?: string;
@@ -458,6 +462,9 @@ export const translations: Record<'en' | 'fr', Partial<Translations>> = {
     loginFailed: 'Login failed',
     loginLink: 'Login',
     logoutButton: 'Logout',
+    // Offline banner
+    offlineModeTitle: 'Offline mode',
+    offlineModeMessage: 'You are currently offline. Changes will sync when you are back online.',
     // Responsables
     navResponsables: 'Responsables',
     responsablesTitle: 'Responsables',
@@ -681,6 +688,9 @@ export const translations: Record<'en' | 'fr', Partial<Translations>> = {
     loginFailed: 'Échec de la connexion',
     loginLink: 'Connexion',
     logoutButton: 'Déconnexion',
+    // Offline banner
+    offlineModeTitle: 'Mode hors ligne',
+    offlineModeMessage: 'Vous êtes hors ligne. Les modifications seront synchronisées lorsque vous serez de nouveau en ligne.',
     // Responsables
     navResponsables: 'Responsables',
     responsablesTitle: 'Responsables',

@@ -935,6 +935,8 @@ export default function EnhancedComplaintDetailDrawer({
                       </h3>
                       <div className="space-y-4">
                         {renderField(t('occurrence') || 'Occurrence', complaint.occurrence, 'occurrence')}
+                        {renderField(t('quantityOrdered') || 'Quantity Ordered', complaint.quantity_ordered, 'quantity_ordered', 'number')}
+                        {renderField(t('quantityReceived') || 'Quantity Received', complaint.quantity_received, 'quantity_received', 'number')}
                         {renderField(t('humanFactor') || 'Human Factor', complaint.human_factor, 'human_factor', 'toggle')}
                         {renderField(t('details') || 'Details', complaint.details, 'details', 'textarea')}
                         {/* Show received part number only when relevant */}

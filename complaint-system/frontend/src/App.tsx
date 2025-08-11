@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'r
 import { LanguageProvider } from './contexts/LanguageContext';
 import { ErrorBoundary } from './components/ErrorBoundary/ErrorBoundary';
 import Navigation from './components/Navigation/Navigation';
+import OfflineBanner from './components/OfflineBanner/OfflineBanner';
 import HomePage from './pages/HomePage';
 import ComplaintsPage from './pages/ComplaintsPage';
 import DashboardPage from './pages/DashboardPage';
@@ -24,6 +25,7 @@ function App() {
       <LanguageProvider>
         <Router>
           <div className="min-h-screen bg-gray-50">
+            <OfflineBanner />
             <Navigation />
             <Routes>
               <Route path="/" element={<HomePage />} />

@@ -1,5 +1,5 @@
 import { useQuery } from 'react-query';
-import axios from 'axios';
+import { get } from '../services/api';
 import { motion } from 'framer-motion';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import { TrendingUp, AlertTriangle, CheckCircle } from 'lucide-react';
@@ -34,25 +34,25 @@ const DashboardPage: React.FC = () => {
   const { t } = useLanguage();
   const { data: rarMetrics, isLoading: loadingRAR } = useQuery<RARMetrics>(
     'rarMetrics',
-    () => axios.get('/api/analytics/rar-metrics').then(res => res.data),
+    () => get<RARMetrics>('/api/analytics/rar-metrics').then(res => res.data),
     { refetchInterval: 30000 }
   );
 
   // New query for complaint status counts
   const { data: statusCounts, isLoading: loadingStatusCounts } = useQuery<StatusCounts>(
     'statusCounts',
-    () => axios.get('/api/analytics/status-counts').then(res => res.data),
+    () => get<StatusCounts>('/api/analytics/status-counts').then(res => res.data),
     { refetchInterval: 30000 }
   );
 
   const { data: failureModes, isLoading: loadingFailure } = useQuery<FailureMode[]>(
     'failureModes',
-    () => axios.get('/api/analytics/failure-modes').then(res => res.data)
+    () => get<FailureMode[]>('/api/analytics/failure-modes').then(res => res.data)
   );
 
   const { data: trends, isLoading: loadingTrends } = useQuery<Trends>(
     'trends',
-    () => axios.get('/api/analytics/trends').then(res => res.data)
+    () => get<Trends>('/api/analytics/trends').then(res => res.data)
   );
 
   if (loadingRAR || loadingFailure || loadingTrends || loadingStatusCounts) {
@@ -83,9 +83,9 @@ const DashboardPage: React.FC = () => {
     );
   }
 
-  const chartData = trends?.labels.map((label, index) => ({
+  const chartData = trends?.labels?.map((label, index) => ({
     date: label,
-    complaints: trends.data[index]
+    complaints: trends?.data?.[index] ?? 0
   })) || [];
 
   return (
@@ -206,7 +206,7 @@ const DashboardPage: React.FC = () => {
           >
             <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('failureModesTitle')}</h2>
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={failureModes}>
+              <BarChart data={failureModes || []}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="issueType" />
                 <YAxis />

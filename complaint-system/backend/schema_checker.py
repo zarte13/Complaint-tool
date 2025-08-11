@@ -15,7 +15,7 @@ Purpose:
 
 Environment variables:
 - DB_ENGINE (must be 'sqlite3' for this checker; default: sqlite3)
-- DB_PATH (path to SQLite file; default: 'database/complaints.db' resolved from repo root)
+- DB_PATH (path to SQLite file; default: complaint-system/backend/database/complaints.db)
 - EXPECTED_SCHEMA_FILE (optional: .json or .yaml/.yml)
 - DB_SCHEMA (ignored for sqlite; present for API symmetry)
 
@@ -46,11 +46,16 @@ def env_or_default(name: str, default: Optional[str] = None) -> str:
 
 
 def resolve_db_path() -> str:
-    # Allow override via DB_PATH; default to repo-level database/complaints.db
+    """Resolve the SQLite DB path.
+
+    Priority:
+      1) DB_PATH env var
+      2) Default to the backend database path: complaint-system/backend/database/complaints.db
+    """
     db_path = os.getenv("DB_PATH")
     if not db_path:
-        # Resolve relative to CWD; workspace root contains the 'database' dir
-        db_path = os.path.join("database", "complaints.db")
+        backend_dir = os.path.dirname(os.path.abspath(__file__))
+        db_path = os.path.join(backend_dir, "database", "complaints.db")
     return db_path
 
 
