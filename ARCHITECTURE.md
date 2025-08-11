@@ -8,42 +8,30 @@
 1. [System Overview](#system-overview)
 2. [Prerequisites](#prerequisites)
 3. [Environment Setup](#environment-setup)
-4. [Project Structure](#project-structure)
+4. [Project Structure (current)](#project-structure-current)
 5. [Backend Setup](#backend-setup)
 6. [Frontend Setup](#frontend-setup)
 7. [Database Configuration](#database-configuration)
 8. [API Endpoints](#api-endpoints)
-9. [Data Models & Schemas](#data-models--schemas)
-10. [File Upload Architecture](#file-upload-architecture)
-11. [Internationalization](#internationalization)
-12. [Routing & Navigation](#routing--navigation)
-13. [Security Policies](#security-policies)
-14. [Deployment Commands](#deployment-commands)
-15. [Monitoring & Logging](#monitoring--logging)
-16. [Testing Infrastructure](#testing-infrastructure)
-17. [Recent Changes](#recent-changes)
+9. [Maintenance/Import Scripts (CLI)](#maintenanceimport-scripts-cli)
+10. [Data Models & Schemas](#data-models--schemas)
+11. [File Upload Architecture](#file-upload-architecture)
+12. [Internationalization](#internationalization)
+13. [Routing & Navigation](#routing--navigation)
+14. [Security Policies](#security-policies)
+15. [Deployment Commands](#deployment-commands)
+16. [Data Import (Companies and Parts)](#data-import-companies-and-parts)
+17. [Testing Infrastructure](#testing-infrastructure)
 18. [Enhanced Complaint Detail System](#enhanced-complaint-detail-system)
-19. [Code Quality & Security Analysis](#code-quality--security-analysis)
-20. [Offline Mode (DA-005)](#offline-mode-da-005)
-21. [Troubleshooting](#troubleshooting)
-22. [Glossary](#glossary)
+19. [Offline Mode](#offline-mode)
+20. [Troubleshooting](#troubleshooting)
+21. [Glossary](#glossary)
 
 ---
 
 ## System Overview
 
-The Complaint Management System is a full-stack web application for tracking part-order complaints with the following specifications:
-
-- Backend: FastAPI with SQLite databases
-  - Domain DB: complaints.db
-  - Auth DB: users.db (separate engine/metadata)
-- Frontend: React + TypeScript with Tailwind CSS
-- AuthN/AuthZ: JWT (HS256), bcrypt, access/refresh tokens, role-based guards
-- File Upload: Local storage with validation and MIME type checking
-- Real-time-ish UX: Optimistic updates and debounced loads
-- Internationalization: English/French language support with persistent toggle
-- Routing: React Router with multi-page navigation
-- Ports: Frontend 3000 (vite), API 8000 (uvicorn)
+For a concise overview and current tree, see `docs/overview.md`.
 
 ---
 
@@ -51,7 +39,7 @@ The Complaint Management System is a full-stack web application for tracking par
 
 ### Required Software
 1. **Python 3.8+** - Backend runtime
-2. **Node.js 18+** - Frontend runtime
+2. **Node.js 20+** - Frontend runtime
 3. **Git** - Version control
 4. **PowerShell** - Command execution (Windows)
 
@@ -89,7 +77,7 @@ python -m venv .venv
 
 ---
 
-## Project Structure
+## Project Structure (current)
 
 ```
 complaint-system/
@@ -97,96 +85,126 @@ complaint-system/
 │   ├── app/
 │   │   ├── api/
 │   │   │   ├── __init__.py
-│   │   │   ├── analytics.py          # Analytics endpoints for dashboard
-│   │   │   ├── companies.py          # Company CRUD operations
-│   │   │   ├── parts.py              # Part CRUD operations
-│   │   │   └── complaints.py         # Complaint management with file uploads
+│   │   │   ├── analytics.py
+│   │   │   ├── companies.py
+│   │   │   ├── complaints.py
+│   │   │   ├── follow_up_actions.py
+│   │   │   ├── parts.py
+│   │   │   └── responsibles.py
+│   │   ├── auth/
+│   │   │   ├── dependencies.py
+│   │   │   ├── models.py
+│   │   │   ├── router.py
+│   │   │   ├── schemas.py
+│   │   │   └── security.py
 │   │   ├── database/
 │   │   │   ├── __init__.py
-│   │   │   └── database.py           # SQLAlchemy configuration
+│   │   │   ├── database.py
+│   │   │   └── users_db.py
 │   │   ├── models/
 │   │   │   ├── __init__.py
-│   │   │   └── models.py             # SQLAlchemy ORM models
+│   │   │   └── models.py
 │   │   ├── schemas/
 │   │   │   ├── __init__.py
-│   │   │   └── schemas.py            # Pydantic validation schemas
+│   │   │   └── schemas.py
 │   │   └── utils/
 │   │       ├── __init__.py
-│   │       └── file_handler.py       # File upload utilities
+│   │       └── file_handler.py
+│   ├── database/
+│   │   ├── complaints.db
+│   │   └── users.db
+│   ├── migrations/
+│   │   ├── 001_da004_follow_up_actions.py
+│   │   └── 002_da008_status_enum.py
+│   ├── scripts/
+│   │   ├── ci_backend_coverage.py
+│   │   ├── clear_uploads.py
+│   │   ├── create_user.py
+│   │   ├── import_companies.py
+│   │   └── import_parts.py
 │   ├── uploads/
-│   │   └── complaints/               # Organized by complaint ID
+│   │   └── complaints/
+│   ├── add_last_edit_column.py
+│   ├── init_db.py
+│   ├── main.py
+│   ├── migrate_db.py
 │   ├── requirements.txt
-│   ├── main.py                       # FastAPI application entry
-│   ├── init_db.py                    # Database initialization script
-│   └── migrate_db.py                 # Database migration script
+│   └── requirements-locked.txt
 ├── frontend/
+│   ├── public/
+│   │   └── sw.js
 │   ├── src/
+│   │   ├── App.tsx
 │   │   ├── components/
-│   │   │   ├── AdvancedTable/
-│   │   │   │   └── ExportButton.tsx
-│   │   │   ├── CompanySearch/
-│   │   │   │   └── CompanySearch.tsx
+│   │   │   ├── AdvancedTable/ExportButton.tsx
+│   │   │   ├── CompanySearch/CompanySearch.tsx
 │   │   │   ├── ComplaintDetailDrawer/
-│   │   │   │   ├── EnhancedComplaintDetailDrawer.tsx    # NEW: Enhanced 2-column drawer
-│   │   │   │   ├── EnhancedComplaintDetailDrawer.test.tsx # NEW: Comprehensive tests
-│   │   │   │   ├── ComplaintDetailView.tsx              # View mode component
-│   │   │   │   ├── ComplaintDetailView.test.tsx         # View component tests
-│   │   │   │   ├── ComplaintEditForm.tsx                # Edit form component
-│   │   │   │   ├── ComplaintEditForm.test.tsx           # Edit form tests
-│   │   │   │   ├── InlineEditField.tsx                  # NEW: Inline editing component
-│   │   │   │   ├── useKeyboardShortcuts.ts              # Keyboard shortcuts hook
-│   │   │   │   ├── useKeyboardShortcuts.test.ts         # Hook tests
-│   │   │   │   ├── useUndoRedo.ts                       # Undo/redo functionality
-│   │   │   │   └── useUndoRedo.test.ts                  # Undo/redo tests
-│   │   │   ├── ComplaintForm/
-│   │   │   │   └── ComplaintForm.tsx
-│   │   │   ├── ComplaintList/
-│   │   │   │   └── ComplaintList.tsx
-│   │   │   ├── FileUpload/
-│   │   │   │   └── FileUpload.tsx
-│   │   │   ├── LanguageToggle/
-│   │   │   │   └── LanguageToggle.tsx
-│   │   │   ├── Navigation/
-│   │   │   │   └── Navigation.tsx
-│   │   │   ├── PartAutocomplete/
-│   │   │   │   └── PartAutocomplete.tsx
-│   │   │   └── Tooltip/
-│   │   │       └── Tooltip.tsx
-│   │   ├── contexts/
-│   │   │   └── LanguageContext.tsx   # Global language state management
+│   │   │   │   ├── ComplaintDetailView.tsx
+│   │   │   │   ├── ComplaintDetailView.test.tsx
+│   │   │   │   ├── ComplaintEditForm.tsx
+│   │   │   │   ├── ComplaintEditForm.test.tsx
+│   │   │   │   ├── EnhancedComplaintDetailDrawer.tsx
+│   │   │   │   ├── EnhancedComplaintDetailDrawer.test.tsx
+│   │   │   │   ├── ImageGallery.tsx
+│   │   │   │   ├── ImageGallery.test.tsx
+│   │   │   │   ├── InlineEditField.tsx
+│   │   │   │   ├── useKeyboardShortcuts.ts
+│   │   │   │   ├── useKeyboardShortcuts.test.ts
+│   │   │   │   ├── useUndoRedo.ts
+│   │   │   │   └── useUndoRedo.test.ts
+│   │   │   ├── ComplaintForm/ComplaintForm.tsx
+│   │   │   ├── ComplaintList/ComplaintList.tsx
+│   │   │   ├── ErrorBoundary/ErrorBoundary.tsx
+│   │   │   ├── FileUpload/FileUpload.tsx
+│   │   │   ├── FollowUpActions/
+│   │   │   │   ├── ActionCard.tsx
+│   │   │   │   ├── ActionFilters.tsx
+│   │   │   │   ├── AddActionForm.tsx
+│   │   │   │   └── FollowUpActionsPanel.tsx
+│   │   │   ├── LanguageToggle/LanguageToggle.tsx
+│   │   │   ├── Navigation/Navigation.tsx
+│   │   │   ├── PartAutocomplete/PartAutocomplete.tsx
+│   │   │   ├── StatusFilter/StatusFilter.tsx
+│   │   │   └── Tooltip/Tooltip.tsx
+│   │   ├── contexts/LanguageContext.tsx
 │   │   ├── hooks/
-│   │   │   ├── useCompanies.ts       # Company data fetching
-│   │   │   ├── useComplaints.ts      # Complaint data fetching
-│   │   │   └── useParts.ts           # Part data fetching
-│   │   ├── i18n/
-│   │   │   └── translations.ts       # EN/FR translation strings
+│   │   │   ├── useCompanies.ts
+│   │   │   ├── useComplaints.ts
+│   │   │   ├── useFollowUpActions.ts
+│   │   │   └── useParts.ts
+│   │   ├── i18n/translations.ts
 │   │   ├── pages/
 │   │   │   ├── ComplaintListView.tsx
-│   │   │   ├── ComplaintsPage.tsx   # Renamed from SecondPage.tsx
-│   │   │   ├── DashboardPage.tsx     # Command center with RAR metrics
-│   │   │   └── HomePage.tsx          # Main complaint form and list
-│   │   ├── services/
-│   │   │   └── api.ts                # API client with consistent trailing slashes
-│   │   ├── test/
-│   │   │   └── setup.ts              # Test configuration and mocks
-│   │   ├── types/
-│   │   │   └── index.ts              # TypeScript type definitions
-│   │   ├── utils/
-│   │   │   └── index.ts              # Utility functions
-│   │   ├── App.tsx                   # Main application component with routing
-│   │   └── main.tsx                  # React entry point
+│   │   │   ├── ComplaintsPage.tsx
+│   │   │   ├── DashboardPage.tsx
+│   │   │   ├── HomePage.tsx
+│   │   │   ├── LoginPage.tsx
+│   │   │   └── ResponsablesPage.tsx
+│   │   ├── services/api.ts
+│   │   ├── stores/
+│   │   │   ├── authStore.ts
+│   │   │   └── complaintsStore.ts
+│   │   ├── test/setup.ts
+│   │   ├── types/index.ts
+│   │   ├── utils/index.ts
+│   │   └── utils/pdfExport.ts
 │   ├── e2e/
-│   │   └── *.spec.ts                 # End-to-end test files
+│   │   ├── dashboard.spec.ts
+│   │   └── offline-mode.spec.ts
+│   ├── index.html
 │   ├── package.json
-│   ├── vite.config.ts                # Vite configuration
-│   ├── vitest.config.ts              # Vitest test configuration
-│   ├── playwright.config.ts          # Playwright E2E configuration
-│   ├── tailwind.config.js            # Tailwind CSS configuration
-│   └── tsconfig.json
-├── ARCHITECTURE.md                   # This file
-├── BUGS.md                          # Bug tracking documentation
-├── README.md                        # Project overview
-└── TASKS.md                        # Task tracking
+│   ├── playwright.config.ts
+│   ├── postcss.config.js
+│   ├── tailwind.config.js
+│   ├── tsconfig.json
+│   ├── vite.config.ts
+│   └── vitest.config.ts
+├── ARCHITECTURE.md
+├── BUGS.md
+├── README.md
+├── TASKS.md
+└── database/
+    └── complaints.db (legacy copy; canonical DB is backend/database/complaints.db)
 ```
 
 ---
@@ -199,28 +217,12 @@ mkdir backend
 cd backend
 ```
 
-### Step 2: Create Requirements File
-Create `requirements.txt`:
-```
-fastapi==0.116.1
-uvicorn[standard]==0.35.0
-sqlalchemy==2.0.41
-alembic==1.16.4
-pydantic==2.11.7
-python-multipart==0.0.20
-aiofiles==24.1.0
-pillow==11.3.0
-python-magic==0.4.27
-pytest==8.3.4
-pytest-cov==6.0.0
-```
-
-### Step 3: Install Dependencies
+### Step 2: Install Dependencies
 ```powershell
 pip install -r requirements.txt
 ```
 
-### Step 4: Create Directory Structure
+### Step 3: Create Directory Structure
 ```powershell
 mkdir app
 mkdir app/api app/database app/models app/schemas app/utils
@@ -302,7 +304,7 @@ CI quality gate:
 
 #### Tables
 
-##### 1. Companies Table
+##### 1. Companies Table (updated)
 ```sql
 CREATE TABLE companies (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -322,21 +324,29 @@ CREATE TABLE parts (
 );
 ```
 
-##### 3. Complaints Table (Updated)
+##### 3. Complaints Table (current)
 ```sql
 CREATE TABLE complaints (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     company_id INTEGER NOT NULL,
     part_id INTEGER NOT NULL,
-    issue_type VARCHAR(100) NOT NULL,
+    issue_type VARCHAR(50) NOT NULL, -- wrong_quantity | wrong_part | damaged | other
+    issue_category VARCHAR(20),      -- dimensional | visual | packaging | other
+    issue_subtypes TEXT,             -- JSON list
+    packaging_received TEXT,         -- JSON map
+    packaging_expected TEXT,         -- JSON map
     details TEXT NOT NULL,
-    quantity_ordered INTEGER NOT NULL,
-    quantity_received INTEGER NOT NULL,
-    status VARCHAR(20) DEFAULT 'open',
-    work_order_number VARCHAR(100),
+    date_received DATE NOT NULL,
+    complaint_kind VARCHAR(20) NOT NULL, -- official | notification
+    ncr_number VARCHAR(100),
+    quantity_ordered INTEGER,
+    quantity_received INTEGER,
+    status VARCHAR(20) DEFAULT 'open',   -- DB-enforced enum in migration
+    work_order_number VARCHAR(100) NOT NULL,
     occurrence VARCHAR(100),
     part_received VARCHAR(100),
-    human_factor BOOLEAN DEFAULT FALSE,
+    human_factor BOOLEAN DEFAULT 0,
+    has_attachments BOOLEAN DEFAULT 0,
     last_edit TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -345,16 +355,16 @@ CREATE TABLE complaints (
 );
 ```
 
-##### 4. Attachments Table
+##### 4. Complaint Attachments Table
 ```sql
-CREATE TABLE attachments (
+CREATE TABLE complaint_attachments (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     complaint_id INTEGER NOT NULL,
     filename VARCHAR(255) NOT NULL,
     original_filename VARCHAR(255) NOT NULL,
     file_path VARCHAR(500) NOT NULL,
-    file_size INTEGER,
-    mime_type VARCHAR(100),
+    file_size INTEGER NOT NULL,
+    mime_type VARCHAR(100) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (complaint_id) REFERENCES complaints(id) ON DELETE CASCADE
 );
@@ -367,7 +377,7 @@ CREATE INDEX idx_complaints_company_id ON complaints(company_id);
 CREATE INDEX idx_complaints_part_id ON complaints(part_id);
 CREATE INDEX idx_complaints_status ON complaints(status);
 CREATE INDEX idx_complaints_created_at ON complaints(created_at);
-CREATE INDEX idx_attachments_complaint_id ON attachments(complaint_id);
+CREATE INDEX idx_attachments_complaint_id ON complaint_attachments(complaint_id);
 ```
 
 #### Relationships
@@ -421,8 +431,9 @@ http://localhost:8000/api/
 ### Companies Endpoints
 | Method | Endpoint | Description | Parameters |
 |--------|----------|-------------|------------|
-| GET | `/companies/` | List all companies | `search` (optional), `limit` (default: 10) |
-| POST | `/companies/` | Create new company | `{"name": "string"}` |
+| GET | `/companies/` | Search companies | `search` (optional: matches name or company_short), `limit` (1-100) |
+| POST | `/companies/` | Create new company | `{ "name": "string", "company_short": "string?" }` |
+| GET | `/companies/all` | List with pagination | `skip`, `limit` |
 | GET | `/companies/{id}/` | Get company by ID | Path parameter |
 | PUT | `/companies/{id}/` | Update company | Path parameter + body |
 | DELETE | `/companies/{id}/` | Delete company | Path parameter |
@@ -461,6 +472,24 @@ http://localhost:8000/api/
 |--------|----------|-------------|------------|
 | GET | `/complaints/export/csv/` | Export complaints as CSV | Query filters |
 | GET | `/complaints/export/xlsx/` | Export complaints as Excel | Query filters |
+
+### Maintenance/Import Scripts (CLI)
+
+- Clear uploads (files and/or DB):
+  - `python scripts/clear_uploads.py --dry-run --all`
+  - `python scripts/clear_uploads.py --clear-files`
+  - `python scripts/clear_uploads.py --clear-db`
+  - `python scripts/clear_uploads.py --all`
+
+- Import companies from CSV:
+  - `python scripts/import_companies.py --csv .\scripts\imports\Clients.csv --dry-run --encoding cp1252 --delimiter ';'`
+  - `python scripts/import_companies.py --csv .\scripts\imports\Clients.csv --clear --encoding cp1252 --delimiter ';'`
+  - `python scripts/import_companies.py --csv .\scripts\imports\Clients.csv --name-column "Client" --short-column "Abbrev"`
+
+- Import parts from CSV:
+  - `python scripts/import_parts.py --csv .\scripts\imports\Parts.csv --dry-run --encoding cp1252 --delimiter ';'`
+  - `python scripts/import_parts.py --csv .\scripts\imports\Parts.csv --clear --encoding cp1252 --delimiter ';'`
+  - `python scripts/import_parts.py --csv .\scripts\imports\Parts.csv --part-number-column "PN"`
 
 ---
 
@@ -1114,199 +1143,9 @@ const validationRules = {
 
 ---
 
-## Code Quality & Security Analysis
+## Code Quality & Security
 
-### Overview
-A comprehensive code review conducted on 2025-07-17 identified multiple critical security vulnerabilities, performance issues, and architectural concerns that require immediate attention. This analysis covers the entire codebase with focus on the recently implemented EnhancedComplaintDetailDrawer system.
-
-### Critical Security Issues
-
-#### Authentication & Authorization
-- **Status**: ❌ **CRITICAL** - No authentication system implemented
-- **Impact**: All API endpoints are publicly accessible
-- **Risk**: Complete system compromise, data breach
-- **Files**: [`main.py`](complaint-system/backend/main.py), all API endpoints
-- **Recommendation**: Implement JWT-based authentication with role-based access control
-
-#### Input Validation & Sanitization
-- **Status**: ❌ **HIGH** - Missing input sanitization in frontend
-- **Impact**: XSS vulnerabilities in complaint detail fields
-- **Risk**: Cross-site scripting attacks, data manipulation
-- **Files**: [`EnhancedComplaintDetailDrawer.tsx:189-248`](complaint-system/frontend/src/components/ComplaintDetailDrawer/EnhancedComplaintDetailDrawer.tsx:189)
-- **Recommendation**: Implement DOMPurify for input sanitization
-
-#### File Upload Security
-- **Status**: ⚠️ **HIGH** - Insufficient MIME type validation
-- **Impact**: Potential malicious file upload
-- **Risk**: Server compromise, malware distribution
-- **Files**: [`file_handler.py:30-40`](complaint-system/backend/app/utils/file_handler.py:30)
-- **Recommendation**: Implement python-magic for content-based validation
-
-#### SQL Injection Prevention
-- **Status**: ⚠️ **MEDIUM** - Needs verification
-- **Impact**: Potential database compromise
-- **Risk**: Data breach, unauthorized access
-- **Files**: [`complaints.py:62-84`](complaint-system/backend/app/api/complaints.py:62)
-- **Recommendation**: Audit all query construction for injection vulnerabilities
-
-### Performance Issues
-
-#### Database Optimization
-- **Status**: ❌ **MEDIUM** - Missing critical indexes
-- **Impact**: Poor query performance with large datasets
-- **Risk**: System slowdown, timeout errors
-- **Files**: [`models.py`](complaint-system/backend/app/models/models.py)
-- **Recommendation**: Add indexes on `work_order_number`, `occurrence`, `part_received` fields
-
-#### Memory Management
-- **Status**: ⚠️ **LOW-MEDIUM** - Potential memory leaks
-- **Impact**: Performance degradation over time
-- **Risk**: Application crashes, poor user experience
-- **Files**: [`useUndoRedo.ts:19-32`](complaint-system/frontend/src/components/ComplaintDetailDrawer/useUndoRedo.ts:19)
-- **Recommendation**: Implement proper history cleanup and size limits
-
-#### API Rate Limiting
-- **Status**: ❌ **MEDIUM** - No rate limiting implemented
-- **Impact**: Potential DoS attacks
-- **Risk**: Service unavailability, resource exhaustion
-- **Files**: [`main.py`](complaint-system/backend/main.py)
-- **Recommendation**: Implement slowapi or similar rate limiting middleware
-
-### Type Safety & Data Integrity
-
-#### Frontend-Backend Type Alignment
-- **Status**: ❌ **MEDIUM** - Type mismatches detected
-- **Impact**: Runtime errors, data inconsistency
-- **Risk**: Application crashes, data corruption
-- **Files**: [`types/index.ts:49-56`](complaint-system/frontend/src/types/index.ts:49), backend schemas
-- **Recommendation**: Align TypeScript interfaces with backend Pydantic schemas
-
-#### Validation Consistency
-- **Status**: ❌ **MEDIUM** - Inconsistent validation rules
-- **Impact**: Data integrity issues, user confusion
-- **Risk**: Invalid data persistence, poor UX
-- **Files**: Frontend validation vs backend schemas
-- **Recommendation**: Create shared validation schema or ensure consistency
-
-### Code Quality Issues
-
-#### Error Handling
-- **Status**: ⚠️ **LOW** - Inconsistent error handling
-- **Impact**: Poor user experience during errors
-- **Risk**: Application crashes, unclear error messages
-- **Files**: Multiple components
-- **Recommendation**: Implement React Error Boundaries and centralized error handling
-
-#### Accessibility Compliance
-- **Status**: ⚠️ **MEDIUM** - Missing accessibility features
-- **Impact**: Non-compliance with accessibility standards
-- **Risk**: Legal compliance issues, poor user experience
-- **Files**: [`EnhancedComplaintDetailDrawer.tsx`](complaint-system/frontend/src/components/ComplaintDetailDrawer/EnhancedComplaintDetailDrawer.tsx)
-- **Recommendation**: Add proper ARIA attributes and focus management
-
-### Data Quality Issues
-
-#### Analytics Data Accuracy
-- **Status**: ❌ **HIGH** - Incorrect status values in analytics
-- **Impact**: Misleading business metrics
-- **Risk**: Poor business decisions based on wrong data
-- **Files**: [`analytics.py:16-18`](complaint-system/backend/app/api/analytics.py:16)
-- **Recommendation**: Use correct status values: open, in_progress, resolved, closed
-
-#### Timestamp Management
-- **Status**: ❌ **HIGH** - Missing last_edit updates
-- **Impact**: Cannot track when complaints were modified
-- **Risk**: Audit trail gaps, poor change tracking
-- **Files**: [`complaints.py:162-179`](complaint-system/backend/app/api/complaints.py:162)
-- **Recommendation**: Add `complaint.last_edit = datetime.utcnow()` in update endpoint
-
-### Configuration & Deployment Issues
-
-#### Environment Configuration
-- **Status**: ❌ **MEDIUM** - Hardcoded API URLs
-- **Impact**: Deployment flexibility issues
-- **Risk**: Difficult environment management
-- **Files**: [`EnhancedComplaintDetailDrawer.tsx:136`](complaint-system/frontend/src/components/ComplaintDetailDrawer/EnhancedComplaintDetailDrawer.tsx:136)
-- **Recommendation**: Use centralized API configuration
-
-#### CSRF Protection
-- **Status**: ❌ **HIGH** - No CSRF protection
-- **Impact**: Cross-site request forgery vulnerability
-- **Risk**: Unauthorized actions, data manipulation
-- **Files**: All API endpoints
-- **Recommendation**: Implement CSRF tokens for state-changing operations
-
-### Testing Coverage Gaps
-
-#### Integration Testing
-- **Status**: ⚠️ **MEDIUM** - Limited integration test coverage
-- **Impact**: Undetected integration issues
-- **Risk**: Production bugs, system failures
-- **Files**: Test suites
-- **Recommendation**: Expand integration test coverage for critical workflows
-
-#### Security Testing
-- **Status**: ❌ **HIGH** - No security testing implemented
-- **Impact**: Undetected security vulnerabilities
-- **Risk**: Security breaches, data compromise
-- **Files**: Test infrastructure
-- **Recommendation**: Implement security testing with tools like OWASP ZAP
-
-### Priority Recommendations
-
-#### Immediate (Critical - Fix within 24 hours)
-1. Implement basic authentication system
-2. Add input sanitization to prevent XSS
-3. Fix analytics data accuracy issues
-4. Add last_edit timestamp updates
-
-#### Short-term (High - Fix within 1 week)
-1. Enhance file upload security validation
-2. Add database performance indexes
-3. Implement CSRF protection
-4. Fix type alignment issues
-
-#### Medium-term (Medium - Fix within 1 month)
-1. Add comprehensive error boundaries
-2. Implement rate limiting
-3. Enhance accessibility compliance
-4. Add security testing framework
-
-#### Long-term (Low - Fix within 3 months)
-1. Optimize memory management
-2. Enhance integration test coverage
-3. Implement centralized configuration
-4. Add comprehensive monitoring
-
-### Risk Assessment Matrix
-
-| Issue Category | Severity | Likelihood | Impact | Priority |
-|---------------|----------|------------|---------|----------|
-| No Authentication | Critical | High | Critical | P0 |
-| XSS Vulnerabilities | High | Medium | High | P1 |
-| File Upload Security | High | Low | High | P1 |
-| Analytics Data Issues | High | High | Medium | P1 |
-| Database Performance | Medium | High | Medium | P2 |
-| Type Safety Issues | Medium | Medium | Medium | P2 |
-| Accessibility Issues | Medium | Low | Medium | P3 |
-| Memory Leaks | Low | Low | Medium | P3 |
-
-### Compliance & Standards
-
-#### Security Standards
-- **OWASP Top 10**: Multiple violations identified
-- **Data Protection**: No encryption or access controls
-- **Authentication**: No user authentication system
-
-#### Code Quality Standards
-- **TypeScript**: Inconsistent type usage
-- **React Best Practices**: Missing error boundaries
-- **API Design**: RESTful principles mostly followed
-
-#### Accessibility Standards
-- **WCAG 2.1**: Multiple accessibility issues
-- **Keyboard Navigation**: Partially implemented
-- **Screen Reader Support**: Missing ARIA labels
+The codebase follows standard best practices for input validation (Pydantic and zod), authentication (JWT with access/refresh tokens), error boundaries, and basic file upload security. See Security Policies and Testing sections for current operational guidance.
 
 ---
 
