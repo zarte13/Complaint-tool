@@ -937,130 +937,11 @@ export default function EnhancedComplaintDetailDrawer({
                         )}
 
                         {/* Issue Category */}
-                        {isEditing ? (
-                          <div>
-                            <label className="text-xs font-medium text-gray-600">{t('issueCategory') || 'Issue Category'}</label>
-                            <select
-                              value={(editData as any).issue_category || (complaint as any).issue_category || ''}
-                              onChange={(e) => {
-                                const val = e.target.value || undefined;
-                                setEditData(prev => ({ ...prev, issue_category: val, issue_subtypes: [] } as any));
-                              }}
-                              className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md"
-                            >
-                              <option value="">{t('selectIssueCategory') || 'Select category'}</option>
-                              <option value="dimensional">{t('categoryDimensional') || 'Dimensional'}</option>
-                              <option value="visual">{t('categoryVisual') || 'Visual'}</option>
-                              <option value="packaging">{t('categoryPackaging') || 'Packaging'}</option>
-                              <option value="other">{t('other') || 'Other'}</option>
-                            </select>
-                          </div>
-                        ) : (
-                          renderField(t('issueCategory') || 'Issue Category', getCategoryLabel(complaint.issue_category as any))
-                        )}
+                        {/* Issue Category moved to Issue Details */}
 
-                        {/* Issue Type (editable in edit mode) */}
-                        {isEditing ? (
-                          <div>
-                            <label className="text-xs font-medium text-gray-600">{t('issueType') || 'Issue Type'}</label>
-                            <select
-                              value={(editData as any).issue_type || complaint.issue_type || ''}
-                              onChange={(e) => setEditData(prev => ({ ...prev, issue_type: e.target.value } as any))}
-                              className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md"
-                            >
-                              <option value="wrong_quantity">{t('wrongQuantity') || 'Wrong Quantity'}</option>
-                              <option value="wrong_part">{t('wrongPart') || 'Wrong Part'}</option>
-                              <option value="damaged">{t('damaged') || 'Damaged'}</option>
-                              <option value="other">{t('other') || 'Other'}</option>
-                            </select>
-                          </div>
-                        ) : (
-                          renderField(t('issueType') || 'Issue Type', getSubtypeLabel(complaint.issue_type || 'other'))
-                        )}
+                        {/* Issue Type — removed per spec */}
 
-                        {/* Issue Subtypes */}
-                        {isEditing ? (
-                          <div className="relative">
-                            <label className="text-xs font-medium text-gray-600">{t('issueSubtypes') || 'Issue Subtypes'}</label>
-                            {(((editData as any).issue_category) || (complaint as any).issue_category) === 'visual' && (
-                              <>
-                                <button
-                                  type="button"
-                                  onClick={() => setIsVisualDropdownOpen(v => !v)}
-                                  className="mt-1 w-full px-3 py-2 border rounded-md text-left bg-white hover:bg-gray-50"
-                                >
-                                  {Array.isArray((editData as any).issue_subtypes) && (editData as any).issue_subtypes.length > 0
-                                    ? ((editData as any).issue_subtypes as string[]).map(s => getSubtypeLabel(s)).join(', ')
-                                    : (t('selectSubtypes') || 'Select subtypes')}
-                                </button>
-                                {isVisualDropdownOpen && (
-                                  <div className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg p-2">
-                                    {['scratch','nicks','rust'].map(val => {
-                                      const checked = Array.isArray((editData as any).issue_subtypes) && (editData as any).issue_subtypes.includes(val);
-                                      return (
-                                        <label key={val} className="flex items-center gap-2 px-2 py-1 hover:bg-gray-50 rounded cursor-pointer">
-                                          <input
-                                            type="checkbox"
-                                            checked={!!checked}
-                                            onChange={(e) => {
-                                              const curr: string[] = Array.isArray((editData as any).issue_subtypes) ? (editData as any).issue_subtypes : [];
-                                              const set = new Set(curr);
-                                              if (e.target.checked) set.add(val); else set.delete(val);
-                                              setEditData(prev => ({ ...prev, issue_subtypes: Array.from(set) } as any));
-                                            }}
-                                          />
-                                          <span className="text-sm text-gray-700">{getSubtypeLabel(val)}</span>
-                                        </label>
-                                      );
-                                    })}
-                                  </div>
-                                )}
-                              </>
-                            )}
-                            {(((editData as any).issue_category) || (complaint as any).issue_category) === 'packaging' && (
-                              <>
-                                <button
-                                  type="button"
-                                  onClick={() => setIsPackagingDropdownOpen(v => !v)}
-                                  className="mt-1 w-full px-3 py-2 border rounded-md text-left bg-white hover:bg-gray-50"
-                                >
-                                  {Array.isArray((editData as any).issue_subtypes) && (editData as any).issue_subtypes.length > 0
-                                    ? ((editData as any).issue_subtypes as string[]).map(s => getSubtypeLabel(s)).join(', ')
-                                    : (t('selectSubtypes') || 'Select subtypes')}
-                                </button>
-                                {isPackagingDropdownOpen && (
-                                  <div className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg p-2 max-h-64 overflow-auto">
-                                    {['wrong_box','wrong_bag','wrong_paper','wrong_part','wrong_quantity','wrong_tags'].map(val => {
-                                      const checked = Array.isArray((editData as any).issue_subtypes) && (editData as any).issue_subtypes.includes(val);
-                                      return (
-                                        <label key={val} className="flex items-center gap-2 px-2 py-1 hover:bg-gray-50 rounded cursor-pointer">
-                                          <input
-                                            type="checkbox"
-                                            checked={!!checked}
-                                            onChange={(e) => {
-                                              const curr: string[] = Array.isArray((editData as any).issue_subtypes) ? (editData as any).issue_subtypes : [];
-                                              const set = new Set(curr);
-                                              if (e.target.checked) set.add(val); else set.delete(val);
-                                              setEditData(prev => ({ ...prev, issue_subtypes: Array.from(set) } as any));
-                                            }}
-                                          />
-                                          <span className="text-sm text-gray-700">{getSubtypeLabel(val)}</span>
-                                        </label>
-                                      );
-                                    })}
-                                  </div>
-                                )}
-                              </>
-                            )}
-                          </div>
-                        ) : (
-                          renderField(
-                            t('issueSubtypes') || 'Issue Subtypes',
-                            (complaint.issue_subtypes && (complaint.issue_subtypes as any[]).length > 0)
-                              ? (complaint.issue_subtypes as string[]).map((s) => getSubtypeLabel(s)).join(', ')
-                              : '-'
-                          )
-                        )}
+                        {/* Issue Sub-categories moved to Issue Details */}
 
                         {/* Work Order Number (Basic Info) */}
                         {renderField(t('workOrderNumber') || 'Work Order Number', complaint.work_order_number, 'work_order_number')}
@@ -1102,6 +983,113 @@ export default function EnhancedComplaintDetailDrawer({
                         {t('issueDetails')}
                       </h3>
                       <div className="space-y-4">
+                        {/* Issue Category (moved here) */}
+                        {isEditing ? (
+                          <div>
+                            <label className="text-xs font-medium text-gray-600">{t('issueCategory') || 'Issue Category'}</label>
+                            <select
+                              value={(editData as any).issue_category || (complaint as any).issue_category || ''}
+                              onChange={(e) => {
+                                const val = e.target.value || undefined;
+                                setEditData(prev => ({ ...prev, issue_category: val, issue_subtypes: [] } as any));
+                              }}
+                              className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md"
+                            >
+                              <option value="">{t('selectIssueCategory') || 'Select category'}</option>
+                              <option value="dimensional">{t('categoryDimensional') || 'Dimensional'}</option>
+                              <option value="visual">{t('categoryVisual') || 'Visual'}</option>
+                              <option value="packaging">{t('categoryPackaging') || 'Packaging'}</option>
+                              <option value="other">{t('other') || 'Other'}</option>
+                            </select>
+                          </div>
+                        ) : (
+                          renderField(t('issueCategory') || 'Issue Category', getCategoryLabel(complaint.issue_category as any))
+                        )}
+
+                        {/* Issue Sub-categories (moved here) */}
+                        {isEditing ? (
+                          <div className="relative">
+                            <label className="text-xs font-medium text-gray-600">{t('issueSubtypes') || 'Issue Sub-categories'}</label>
+                            {(((editData as any).issue_category) || (complaint as any).issue_category) === 'visual' && (
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={() => setIsVisualDropdownOpen(v => !v)}
+                                  className="mt-1 w-full px-3 py-2 border rounded-md text-left bg-white hover:bg-gray-50"
+                                >
+                                  {Array.isArray((editData as any).issue_subtypes) && (editData as any).issue_subtypes.length > 0
+                                    ? ((editData as any).issue_subtypes as string[]).map(s => getSubtypeLabel(s)).join(', ')
+                                    : (t('selectSubtypes') || 'Select sub-categories')}
+                                </button>
+                                {isVisualDropdownOpen && (
+                                  <div className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg p-2">
+                                    {['scratch','nicks','rust'].map(val => {
+                                      const checked = Array.isArray((editData as any).issue_subtypes) && (editData as any).issue_subtypes.includes(val);
+                                      return (
+                                        <label key={val} className="flex items-center gap-2 px-2 py-1 hover:bg-gray-50 rounded cursor-pointer">
+                                          <input
+                                            type="checkbox"
+                                            checked={!!checked}
+                                            onChange={(e) => {
+                                              const curr: string[] = Array.isArray((editData as any).issue_subtypes) ? (editData as any).issue_subtypes : [];
+                                              const set = new Set(curr);
+                                              if (e.target.checked) set.add(val); else set.delete(val);
+                                              setEditData(prev => ({ ...prev, issue_subtypes: Array.from(set) } as any));
+                                            }}
+                                          />
+                                          <span className="text-sm text-gray-700">{getSubtypeLabel(val)}</span>
+                                        </label>
+                                      );
+                                    })}
+                                  </div>
+                                )}
+                              </>
+                            )}
+                            {(((editData as any).issue_category) || (complaint as any).issue_category) === 'packaging' && (
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={() => setIsPackagingDropdownOpen(v => !v)}
+                                  className="mt-1 w-full px-3 py-2 border rounded-md text-left bg-white hover:bg-gray-50"
+                                >
+                                  {Array.isArray((editData as any).issue_subtypes) && (editData as any).issue_subtypes.length > 0
+                                    ? ((editData as any).issue_subtypes as string[]).map(s => getSubtypeLabel(s)).join(', ')
+                                    : (t('selectSubtypes') || 'Select sub-categories')}
+                                </button>
+                                {isPackagingDropdownOpen && (
+                                  <div className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg p-2 max-h-64 overflow-auto">
+                                    {['wrong_box','wrong_bag','wrong_paper','wrong_part','wrong_quantity','wrong_tags'].map(val => {
+                                      const checked = Array.isArray((editData as any).issue_subtypes) && (editData as any).issue_subtypes.includes(val);
+                                      return (
+                                        <label key={val} className="flex items-center gap-2 px-2 py-1 hover:bg-gray-50 rounded cursor-pointer">
+                                          <input
+                                            type="checkbox"
+                                            checked={!!checked}
+                                            onChange={(e) => {
+                                              const curr: string[] = Array.isArray((editData as any).issue_subtypes) ? (editData as any).issue_subtypes : [];
+                                              const set = new Set(curr);
+                                              if (e.target.checked) set.add(val); else set.delete(val);
+                                              setEditData(prev => ({ ...prev, issue_subtypes: Array.from(set) } as any));
+                                            }}
+                                          />
+                                          <span className="text-sm text-gray-700">{getSubtypeLabel(val)}</span>
+                                        </label>
+                                      );
+                                    })}
+                                  </div>
+                                )}
+                              </>
+                            )}
+                          </div>
+                        ) : (
+                          renderField(
+                            t('issueSubtypes') || 'Issue Sub-categories',
+                            (complaint.issue_subtypes && (complaint.issue_subtypes as any[]).length > 0)
+                              ? (complaint.issue_subtypes as string[]).map((s) => getSubtypeLabel(s)).join(', ')
+                              : '-'
+                          )
+                        )}
+
                         {renderField(t('occurrence') || 'Occurrence', complaint.occurrence, 'occurrence')}
                         {/* Show quantities in read-only only when meaningful */}
                         {(isEditing || (typeof complaint.quantity_ordered === 'number' && complaint.quantity_ordered > 0)) &&
