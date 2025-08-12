@@ -508,11 +508,15 @@ export const ActionCard: React.FC<ActionCardProps> = ({
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between">
           <div className="flex-1 min-w-0">
-            <h3 className="text-sm font-medium text-gray-900 truncate">
+            {/* Show full description without truncation, with responsible person inline */}
+            <div className="text-sm font-medium text-gray-900 whitespace-pre-wrap break-words">
               {action.action_text}
-            </h3>
+            </div>
+            <div className="mt-1 text-xs text-gray-700">
+              <span className="font-medium">Responsable:</span> {action.responsible_person || '—'}
+            </div>
             {action.notes && (
-              <p className="text-xs text-gray-500 mt-1 truncate">
+              <p className="text-xs text-gray-500 mt-1 whitespace-pre-wrap break-words">
                 {action.notes}
               </p>
             )}

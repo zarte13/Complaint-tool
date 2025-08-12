@@ -65,29 +65,36 @@ def get_trends(db: Session = Depends(get_db)) -> Dict[str, Any]:
 def get_weekly_type_trends(db: Session = Depends(get_db)) -> List[Dict[str, Any]]:
     """Get last 12 weeks complaint counts split by issue_type buckets.
     Returns an array [{ week: 'YYYY-Www', wrong_quantity: n, wrong_part: n, damaged: n, other: n }].
-    """
-    end_date = datetime.utcnow()
-    # Align to start of current week (Monday) for consistency
-    start_of_week = end_date - timedelta(days=end_date.weekday())
-    # Build 12 weekly windows (oldest first)
-    windows = []
-    for i in range(12, 0, -1):
-        week_start = start_of_week - timedelta(weeks=i)
-        week_end = week_start + timedelta(weeks=1)
-        windows.append((week_start, week_end))
 
-    # Helper to count by type in a window
-    def count_in_range(issue_type: str, start: datetime, end: datetime) -> int:
+    Notes:
+    - Uses Complaint.date_received (business date) instead of created_at
+    - Includes the current week plus previous 11 weeks (total 12)
+    - Weeks aligned to Monday (ISO week date)
+    """
+    # Work with date objects to align with `date_received` column
+    today = datetime.utcnow().date()
+    start_of_week_date = today - timedelta(days=today.weekday())  # Monday
+
+    # Build 12 weekly windows including current week (oldest first)
+    windows: list[tuple] = []
+    for i in range(11, -1, -1):
+        week_start_date = start_of_week_date - timedelta(weeks=i)
+        week_end_date = week_start_date + timedelta(days=7)
+        windows.append((week_start_date, week_end_date))
+
+    # Helper to count by type in a window (inclusive start, exclusive end)
+    def count_in_range(issue_type: str, start_date, end_date) -> int:
         return (
             db.query(Complaint)
-            .filter(Complaint.created_at >= start, Complaint.created_at < end, Complaint.issue_type == issue_type)
+            .filter(Complaint.date_received >= start_date, Complaint.date_received < end_date, Complaint.issue_type == issue_type)
             .count()
         )
 
     response: List[Dict[str, Any]] = []
     for (ws, we) in windows:
-        # Week label ISO year-week
-        iso_year, iso_week, _ = ws.isocalendar()
+        # Week label ISO year-week from start date
+        iso = ws.isocalendar()
+        iso_year, iso_week = iso[0], iso[1]
         label = f"{iso_year}-W{iso_week:02d}"
         row = {
             "week": label,
@@ -95,10 +102,10 @@ def get_weekly_type_trends(db: Session = Depends(get_db)) -> List[Dict[str, Any]
             "wrong_part": count_in_range("wrong_part", ws, we),
             "damaged": count_in_range("damaged", ws, we),
         }
-        # 'other' as remaining types
+        # 'other' as remaining types in the window
         other_count = (
             db.query(Complaint)
-            .filter(Complaint.created_at >= ws, Complaint.created_at < we)
+            .filter(Complaint.date_received >= ws, Complaint.date_received < we)
             .filter(Complaint.issue_type.notin_(["wrong_quantity", "wrong_part", "damaged"]))
             .count()
         )

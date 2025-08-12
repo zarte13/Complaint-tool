@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -100,6 +100,8 @@ export default function ComplaintForm({ onSuccess }: ComplaintFormProps) {
   const [newVisualSubtype, setNewVisualSubtype] = useState('');
   const [visualOptions, setVisualOptions] = useState<string[]>(['scratch', 'nicks', 'rust']);
   const isAdmin = useAuthStore.getState().isAdmin();
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const DRAFT_KEY = 'complaintFormDraft';
   const [isPackagingDropdownOpen, setIsPackagingDropdownOpen] = useState(false);
 
   const {
@@ -118,6 +120,40 @@ export default function ComplaintForm({ onSuccess }: ComplaintFormProps) {
   const issueSubtypes = watch('issue_subtypes') || [];
   const packagingReceived = watch('packaging_received') || {};
   const packagingExpected = watch('packaging_expected') || {};
+
+  // Autosave draft to localStorage to prevent data loss on logout/refresh
+  const isRestoringRef = useRef(false);
+
+  // Restore draft on mount
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (!raw) return;
+      const draft = JSON.parse(raw) as Partial<ComplaintFormData>;
+      isRestoringRef.current = true;
+      Object.entries(draft).forEach(([key, value]) => {
+        // Safety: only set known keys
+        setValue(key as any, value as any, { shouldValidate: false, shouldDirty: true });
+      });
+    } catch {
+      // ignore
+    } finally {
+      // allow next renders to save again
+      setTimeout(() => { isRestoringRef.current = false; }, 0);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Persist on any form value change
+  const allValues = watch();
+  useEffect(() => {
+    if (isRestoringRef.current) return;
+    try {
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(allValues ?? {}));
+    } catch {
+      // ignore quota errors
+    }
+  }, [allValues]);
 
   // Clear irrelevant fields when category changes
   // - Switching to 'visual' should drop any packaging-only subtypes/fields
@@ -218,6 +254,13 @@ export default function ComplaintForm({ onSuccess }: ComplaintFormProps) {
         human_factor: data.human_factor ?? false,
       };
 
+      // Ensure user is authenticated before submitting; if not, preserve draft
+      if (!isAuthenticated) {
+        localStorage.setItem(DRAFT_KEY, JSON.stringify(incoming));
+        setError(t('pleaseLoginToSubmit') || 'Please log in to submit. Your draft was saved.');
+        return;
+      }
+
       const response = await post('/api/complaints/', payload);
       const newComplaint = response.data as { id: number };
 
@@ -230,6 +273,8 @@ export default function ComplaintForm({ onSuccess }: ComplaintFormProps) {
       setSelectedCompany(null);
       setSelectedPart(null);
       setFiles([]);
+      // Clear saved draft on successful submission
+      try { localStorage.removeItem(DRAFT_KEY); } catch {}
       
       if (onSuccess) {
         onSuccess();
