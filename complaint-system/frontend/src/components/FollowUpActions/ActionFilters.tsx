@@ -26,9 +26,8 @@ export const ActionFilters: React.FC<ActionFiltersProps> = ({
   // Get status display name and icon
   const getStatusDisplay = (status: ActionStatus) => {
     switch (status) {
-      case 'open': return { label: 'Ouvert', icon: '⚪' };
+      case 'open': return { label: 'À venir', icon: '⚪' };
       case 'in_progress': return { label: 'En cours', icon: '🟡' };
-      case 'blocked': return { label: 'Bloqué', icon: '⏸️' };
       case 'closed': return { label: 'Fermé', icon: '✅' };
       default: return { label: status, icon: '⚪' };
     }
@@ -75,7 +74,6 @@ export const ActionFilters: React.FC<ActionFiltersProps> = ({
               <option value="">Tous les statuts</option>
             <option value="open">{getStatusDisplay('open').icon} {getStatusDisplay('open').label}</option>
             <option value="in_progress">{getStatusDisplay('in_progress').icon} {getStatusDisplay('in_progress').label}</option>
-            <option value="blocked">{getStatusDisplay('blocked').icon} {getStatusDisplay('blocked').label}</option>
             <option value="closed">{getStatusDisplay('closed').icon} {getStatusDisplay('closed').label}</option>
             </select>
           </div>
@@ -177,16 +175,7 @@ export const ActionFilters: React.FC<ActionFiltersProps> = ({
             ✅ Terminées
           </button>
           
-          <button
-            onClick={() => onStatusFilter('blocked')}
-            className={`text-xs px-2 py-1 rounded-full border transition-colors ${
-              filters.status === 'blocked' 
-                ? 'bg-red-100 text-red-800 border-red-300' 
-                : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
-            }`}
-          >
-            ⏸️ Bloquées
-          </button>
+          
         </div>
       </div>
     </div>

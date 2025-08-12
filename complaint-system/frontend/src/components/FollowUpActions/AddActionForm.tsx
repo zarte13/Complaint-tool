@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { FollowUpActionCreate, ResponsiblePerson, ActionPriority } from '../../types';
+import React, { useState } from 'react';
+import { FollowUpActionCreate, ResponsiblePerson, ActionPriority, ActionStatus } from '../../types';
 
 interface AddActionFormProps {
   complaintId: number;
@@ -26,19 +26,12 @@ export const AddActionForm: React.FC<AddActionFormProps> = ({
     due_date: '',
     notes: ''
   });
+  const [status, setStatus] = useState<ActionStatus>('open');
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [touchedFields, setTouchedFields] = useState<Record<string, boolean>>({});
 
-  // Set default due date to 1 week from now
-  useEffect(() => {
-    const nextWeek = new Date();
-    nextWeek.setDate(nextWeek.getDate() + 7);
-    setFormData(prev => ({
-      ...prev,
-      due_date: nextWeek.toISOString().split('T')[0]
-    }));
-  }, []);
+  // No default due date; optional per request
 
   // Validation rules
   const validateField = (field: string, value: any): string => {
@@ -63,7 +56,7 @@ export const AddActionForm: React.FC<AddActionFormProps> = ({
         return '';
 
       case 'due_date':
-        // Disable past/future validation per request
+        // Optional date
         return '';
 
       case 'notes':
@@ -120,7 +113,7 @@ export const AddActionForm: React.FC<AddActionFormProps> = ({
     }
 
     try {
-      await onSubmit(formData);
+      await onSubmit({ ...formData, status: status as any } as any);
     } catch (error) {
       console.error('Error creating action:', error);
       // Error handling is managed by the parent component
@@ -257,6 +250,23 @@ export const AddActionForm: React.FC<AddActionFormProps> = ({
                   <option value="critical">🔴 Critique</option>
                 </select>
               </div>
+            {/* Status selection */}
+            <div>
+              <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-2">
+                Statut
+              </label>
+              <select
+                id="status"
+                value={status}
+                onChange={(e) => setStatus(e.target.value as ActionStatus)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                disabled={isCreating}
+              >
+                <option value="open">À venir</option>
+                <option value="in_progress">En cours</option>
+                <option value="closed">Fermé</option>
+              </select>
+            </div>
             </div>
 
             {/* Notes */}

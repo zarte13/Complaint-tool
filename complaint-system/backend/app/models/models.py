@@ -45,6 +45,8 @@ class Complaint(Base):
     packaging_received = Column(SQLITE_JSON, nullable=True)
     packaging_expected = Column(SQLITE_JSON, nullable=True)
     details = Column(Text, nullable=False)
+    # New follow-up summary/comment shown in list tiles
+    follow_up = Column(Text, nullable=True)
     # New intake metadata
     date_received = Column(Date, nullable=False)
     # complaint_kind: 'official' or 'notification'

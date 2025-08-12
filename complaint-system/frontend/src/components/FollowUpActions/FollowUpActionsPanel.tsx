@@ -11,13 +11,17 @@ interface FollowUpActionsPanelProps {
   isEditable?: boolean;
   className?: string;
   onFirstActionCreated?: () => void;
+  initialFollowUp?: string;
+  onFollowUpSaved?: (value: string) => void;
 }
 
 export const FollowUpActionsPanel: React.FC<FollowUpActionsPanelProps> = ({
   complaintId,
   isEditable = true,
   className = '',
-  onFirstActionCreated
+  onFirstActionCreated,
+  initialFollowUp = '',
+  onFollowUpSaved,
 }) => {
   const {
     actions,
@@ -38,6 +42,16 @@ export const FollowUpActionsPanel: React.FC<FollowUpActionsPanelProps> = ({
   } = useFollowUpActions({ complaintId });
 
   const { t } = useLanguage();
+  // Lifted follow-up editor: controlled input stored locally and persisted via updateAction? No; follow-up belongs to complaint.
+  // We'll expose a small editor panel that PATCHes the complaint via the existing complaints API.
+  const [followUp, setFollowUp] = useState<string>(initialFollowUp || '');
+  // Keep local follow up in sync when complaintId or initial changes
+  useEffect(() => {
+    setFollowUp(initialFollowUp || '');
+  }, [complaintId, initialFollowUp]);
+
+  const [followUpLoading, setFollowUpLoading] = useState<boolean>(false);
+  const [followUpError, setFollowUpError] = useState<string | null>(null);
 
   const [showAddForm, setShowAddForm] = useState(false);
   const [draggedAction, setDraggedAction] = useState<FollowUpAction | null>(null);
@@ -128,6 +142,52 @@ export const FollowUpActionsPanel: React.FC<FollowUpActionsPanelProps> = ({
   return (
     <>
       <div className={`follow-up-actions-panel bg-white border border-gray-200 rounded-lg overflow-hidden ${className}`}>
+        {/* Follow-up summary editor (above tiles) */}
+        <div className="p-4 border-b border-gray-200 bg-white">
+          <label className="block text-sm font-semibold text-gray-900 mb-2">
+            {(t as any)('followUp') || 'Follow-up'}
+          </label>
+          <textarea
+            value={followUp}
+            onChange={(e) => {
+              const v = e.target.value.slice(0, 1000);
+              setFollowUp(v);
+            }}
+            placeholder={(t as any)('followUpPlaceholder') || 'Add a short follow-up note...'}
+            className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+            rows={3}
+            disabled={followUpLoading || !isEditable}
+          />
+          <div className="mt-2 flex items-center justify-between">
+            <span className="text-xs text-gray-500">{followUp.length}/1000</span>
+            <div className="flex items-center gap-2">
+              {followUpError && <span className="text-xs text-red-600">{followUpError}</span>}
+              <button
+                type="button"
+                disabled={followUpLoading || !isEditable}
+                onClick={async () => {
+                  setFollowUpLoading(true);
+                  setFollowUpError(null);
+                  try {
+                    // PATCH complaint follow_up via generic endpoint
+                    const { put } = await import('../../services/api');
+                    await put(`/api/complaints/${complaintId}` as any, { follow_up: followUp });
+                    // notify parent so it can update local cache/drawer and list
+                    if (onFollowUpSaved) onFollowUpSaved(followUp);
+                  } catch (e: any) {
+                    setFollowUpError(e?.message || 'Failed to save');
+                  } finally {
+                    setFollowUpLoading(false);
+                  }
+                }}
+                className="px-3 py-1.5 text-xs font-medium text-white bg-blue-600 rounded hover:bg-blue-700 disabled:opacity-50"
+              >
+                {followUpLoading ? (t('saving') || 'Saving...') : (t('save') || 'Save')}
+              </button>
+            </div>
+          </div>
+        </div>
+
         {/* Header */}
         <button
           onClick={() => setIsCollapsed(!isCollapsed)}
@@ -176,7 +236,7 @@ export const FollowUpActionsPanel: React.FC<FollowUpActionsPanelProps> = ({
               )}
 
               {metrics && (
-                <div className="flex items-center space-x-4 text-sm text-gray-600">
+              <div className="flex items-center space-x-4 text-sm text-gray-600">
                   <span>{metrics.open_actions} {t('actionsOpen') ?? t('open')}</span>
                   <span>•</span>
                   <span>{metrics.completion_rate}% {t('completionRate')}</span>

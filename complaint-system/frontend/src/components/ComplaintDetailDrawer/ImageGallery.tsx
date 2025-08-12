@@ -4,6 +4,19 @@ import { Attachment } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { format } from 'date-fns';
 import { enUS, fr } from 'date-fns/locale';
+import { apiClient } from '../../services/api';
+
+function getBackendBaseUrl(): string {
+  try {
+    const base = (apiClient as any)?.defaults?.baseURL;
+    if (typeof base === 'string' && base.length > 0) return base.replace(/\/+$/, '');
+  } catch {}
+  try {
+    const winBase = (typeof window !== 'undefined' && (window as any).__API_BASE_URL__) || '';
+    if (typeof winBase === 'string' && winBase.length > 0) return winBase.replace(/\/+$/, '');
+  } catch {}
+  return '';
+}
 
 interface ImageGalleryProps {
   complaintId: number;
@@ -120,7 +133,7 @@ const ImageModal: React.FC<ImageModalProps> = ({ isOpen, onClose, attachment, on
         )}
 
         <img
-          src={`http://localhost:8000/uploads/complaints/${attachment.complaint_id}/${attachment.filename}`}
+          src={`${getBackendBaseUrl()}/uploads/complaints/${attachment.complaint_id}/${attachment.filename}`}
           alt={attachment.original_filename}
           className={`max-w-full max-h-full object-contain transition-transform duration-200 ${
             imageLoaded ? '' : 'hidden'
@@ -163,7 +176,8 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ complaintId, attachments, i
 
   const handleDownload = async (attachment: Attachment) => {
     try {
-      const response = await fetch(`http://localhost:8000/api/complaints/attachments/${attachment.id}/download`);
+      const base = getBackendBaseUrl();
+      const response = await fetch(`${base}/api/complaints/attachments/${attachment.id}/download`);
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -229,7 +243,7 @@ const ImageGallery: React.FC<ImageGalleryProps> = ({ complaintId, attachments, i
                         </div>
                       ) : (
                         <img
-                          src={`http://localhost:8000/uploads/complaints/${complaintId}/${attachment.filename}`}
+                          src={`${getBackendBaseUrl()}/uploads/complaints/${complaintId}/${attachment.filename}`}
                           alt={attachment.original_filename}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
                           onError={() => handleThumbnailError(attachment.id)}

@@ -28,6 +28,7 @@ export interface Complaint {
   packaging_received?: Record<string, string>;
   packaging_expected?: Record<string, string>;
   details: string;
+  follow_up?: string;
   date_received: string;
   complaint_kind: 'official' | 'notification';
   ncr_number?: string;
@@ -53,6 +54,7 @@ export interface ComplaintCreate {
   packaging_received?: Record<string, string>;
   packaging_expected?: Record<string, string>;
   details: string;
+  follow_up?: string;
   date_received: string; // YYYY-MM-DD
   complaint_kind: 'official' | 'notification';
   ncr_number?: string;
@@ -91,7 +93,7 @@ export interface FileUploadProgress {
 
 // DA-004: Follow-up Actions Types
 
-export type ActionStatus = 'open' | 'in_progress' | 'blocked' | 'closed';
+export type ActionStatus = 'open' | 'in_progress' | 'closed';
 export type ActionPriority = 'low' | 'medium' | 'high' | 'critical';
 export type DependencyType = 'sequential' | 'blocking' | 'optional';
 

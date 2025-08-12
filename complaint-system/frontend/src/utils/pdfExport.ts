@@ -3,7 +3,7 @@ import autoTable from 'jspdf-autotable';
 import { format } from 'date-fns';
 import { fr as frLocale, enUS as enLocale } from 'date-fns/locale';
 import type { Attachment, Complaint, FollowUpAction } from '../types';
-import { get as apiGet } from '../services/api';
+import { get as apiGet, apiClient } from '../services/api';
 
 // Vite will resolve this to a URL at build time
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -102,6 +102,18 @@ async function urlToDataUrl(url: string, toType: 'image/png' | 'image/jpeg' = 'i
   const dataUrl = canvas.toDataURL(toType);
   URL.revokeObjectURL(img.src);
   return { dataUrl, width: img.naturalWidth, height: img.naturalHeight };
+}
+
+function getBackendBaseUrl(): string {
+  try {
+    const base = (apiClient as any)?.defaults?.baseURL;
+    if (typeof base === 'string' && base.length > 0) return base.replace(/\/+$/, '');
+  } catch {}
+  try {
+    const winBase = (typeof window !== 'undefined' && (window as any).__API_BASE_URL__) || '';
+    if (typeof winBase === 'string' && winBase.length > 0) return winBase.replace(/\/+$/, '');
+  } catch {}
+  return '';
 }
 
 function addSectionTitle(doc: jsPDF, title: string, y: number): number {
@@ -385,7 +397,8 @@ export async function exportComplaintToPDF({ complaint, attachments, actions, la
 
     for (let i = 0; i < imageAtts.length; i++) {
       const a = imageAtts[i];
-      const url = `/uploads/complaints/${a.complaint_id}/${a.filename}`;
+      const base = getBackendBaseUrl();
+      const url = `${base}/uploads/complaints/${a.complaint_id}/${a.filename}`;
       try {
         const { dataUrl, width, height } = await urlToDataUrl(url, 'image/png');
         const naturalW = width || 800;

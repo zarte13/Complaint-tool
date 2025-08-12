@@ -31,7 +31,7 @@ const complaintSchema = z.object({
   details: z.string().min(10, 'minCharacters'),
   quantity_ordered: z.number().optional(),
   quantity_received: z.number().optional(),
-  work_order_number: z.string().min(1, 'requiredField'),
+  work_order_number: z.string().optional(),
   // occurrence removed per spec
   part_received: z.string().optional(),
   human_factor: z.boolean().default(false),
@@ -246,9 +246,10 @@ export default function ComplaintForm({ onSuccess }: ComplaintFormProps) {
         packaging_expected: data.packaging_expected,
         issue_type: deriveIssueType(data.issue_category as IssueCategory, data.issue_subtypes as any),
         details: data.details,
+        follow_up: (data as any).follow_up,
         quantity_ordered: data.quantity_ordered,
         quantity_received: data.quantity_received,
-        work_order_number: data.work_order_number,
+        work_order_number: (data.work_order_number ?? '') as any,
         // occurrence removed
         part_received: data.part_received,
         human_factor: data.human_factor ?? false,
@@ -416,10 +417,11 @@ export default function ComplaintForm({ onSuccess }: ComplaintFormProps) {
         <input
           type="text"
           id="work_order_number"
-          {...register('work_order_number')}
+          {...register('work_order_number' as any)}
           className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
             errors.work_order_number ? 'border-red-300' : 'border-gray-300'
           }`}
+          defaultValue=""
         />
         {errors.work_order_number && (
           <p className="mt-1 text-sm text-red-600">{errors.work_order_number.message}</p>

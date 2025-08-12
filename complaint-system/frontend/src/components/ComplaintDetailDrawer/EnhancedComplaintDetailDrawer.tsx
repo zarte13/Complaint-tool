@@ -152,6 +152,10 @@ export default function EnhancedComplaintDetailDrawer({
         if (!value || value.trim().length < 10) return 'Minimum 10 characters';
         if (value.length > 5000) return 'Maximum 5000 characters';
         return null;
+      case 'follow_up':
+        if (!value) return null;
+        if (typeof value === 'string' && value.length > 1000) return 'Maximum 1000 characters';
+        return null;
       default:
         return null;
     }
@@ -175,6 +179,7 @@ export default function EnhancedComplaintDetailDrawer({
       part_received: complaint.part_received,
       human_factor: complaint.human_factor,
       details: complaint.details,
+      follow_up: (complaint as any).follow_up,
       issue_category: (complaint as any).issue_category,
       issue_subtypes: (complaint as any).issue_subtypes,
       packaging_received: (complaint as any).packaging_received,
@@ -1202,11 +1207,18 @@ export default function EnhancedComplaintDetailDrawer({
                       transition={{ duration: 0.25, ease: 'easeOut', delay: 0.36 }}
                     >
                        <FollowUpActionsPanel
-                        complaintId={complaint.id}
+                         complaintId={complaint.id}
                          isEditable={isAuthenticated && !isEditing}
-                        className="bg-white border border-gray-200 rounded-lg"
-                        onFirstActionCreated={handleFirstActionCreated}
-                      />
+                         className="bg-white border border-gray-200 rounded-lg"
+                         onFirstActionCreated={handleFirstActionCreated}
+                         initialFollowUp={(complaint as any).follow_up || ''}
+                         onFollowUpSaved={(value) => {
+                           // Update parent/drawer complaint and cache so value persists on reopen
+                           const updated = { ...(complaint as any), follow_up: value } as Complaint;
+                           complaintsStore.updateComplaintInCache(updated);
+                           onUpdate({ follow_up: value } as any);
+                         }}
+                       />
                     </motion.div>
 
                     {/* Attached Files */}

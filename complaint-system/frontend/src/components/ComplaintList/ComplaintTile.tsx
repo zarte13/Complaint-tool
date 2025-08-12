@@ -1,9 +1,12 @@
-import React, { useState, useRef } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Paperclip, Calendar, Package, ChevronDown, ChevronUp } from 'lucide-react';
+import { Paperclip, Calendar, Package, ChevronDown, ChevronUp, MoreVertical, FileDown } from 'lucide-react';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { Complaint } from '../../types';
+import { Complaint, ActionMetrics } from '../../types';
 import FileUpload from '../FileUpload/FileUpload';
+import { get as apiGet } from '../../services/api';
+import { PieChart, Pie, Cell, Tooltip as ReTooltip, ResponsiveContainer } from 'recharts';
+import { exportComplaintToPDF } from '../../utils/pdfExport';
 
 interface ComplaintTileProps {
   complaint: Complaint;
@@ -16,6 +19,10 @@ export default function ComplaintTile({ complaint, onClick, onFileUploadComplete
   const { t } = useLanguage();
   const [isExpanded, setIsExpanded] = useState(false);
   const fileUploadRef = useRef<HTMLDivElement>(null);
+  const [metrics, setMetrics] = useState<ActionMetrics | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [loadingMetrics, setLoadingMetrics] = useState(false);
+  const [metricsError, setMetricsError] = useState<string | null>(null);
 
   const handleAttachFiles = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -25,6 +32,56 @@ export default function ComplaintTile({ complaint, onClick, onFileUploadComplete
       fileUploadRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }, 100);
   };
+
+  // Fetch actions metrics for pie chart
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        setLoadingMetrics(true);
+        const { data } = await apiGet<ActionMetrics>(`/api/complaints/${complaint.id}/actions/metrics` as any);
+        if (!mounted) return;
+        setMetrics(data);
+        setMetricsError(null);
+      } catch (e: any) {
+        if (!mounted) return;
+        setMetrics(null);
+        setMetricsError(e?.message || '');
+      } finally {
+        if (mounted) setLoadingMetrics(false);
+      }
+    })();
+    return () => { mounted = false; };
+  }, [complaint.id]);
+
+  // Build pie chart data
+  const pieData = (() => {
+    const byStatus = (metrics?.actions_by_status || {}) as Record<string, number>;
+    const mapLabel = (key: string) => {
+      switch (key) {
+        case 'open': return 'Upcoming';
+        case 'in_progress': return 'In Progress';
+        case 'closed': return t('closed') || 'Closed';
+        case 'pending': return 'Upcoming';
+        case 'blocked': return 'In Progress';
+        case 'escalated': return 'In Progress';
+        default: return key;
+      }
+    };
+    const color = (key: string) => {
+      switch (key) {
+        case 'open': return '#6b7280'; // gray
+        case 'pending': return '#9ca3af'; // light gray
+        case 'in_progress': return '#3b82f6'; // blue
+        case 'blocked': return '#ef4444'; // red
+        case 'escalated': return '#e11d48'; // pink/red
+        case 'closed': return '#10b981'; // green
+        default: return '#a3a3a3';
+      }
+    };
+    const entries = Object.entries(byStatus).filter(([, v]) => v > 0);
+    return entries.map(([k, v]) => ({ key: k, name: mapLabel(k), value: v, fill: color(k) }));
+  })();
 
   const getCategoryLabel = (category?: string, fallbackIssueType?: string) => {
     switch (category) {
@@ -103,10 +160,13 @@ export default function ComplaintTile({ complaint, onClick, onFileUploadComplete
       <div className="flex flex-col sm:flex-row justify-between items-start mb-3 gap-2">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
           <span className="font-semibold text-gray-900">#{complaint.id}</span>
+          <span className="text-gray-600">{complaint.company.name}</span>
+          {complaint.ncr_number && (
+            <span className="text-gray-600">{t('ncrNumber') || 'NCR'}: {complaint.ncr_number}</span>
+          )}
           {complaint.work_order_number && (
             <span className="text-gray-600">{t('workOrderAbbrev') || 'WO'}: {complaint.work_order_number}</span>
           )}
-          <span className="text-gray-600">{complaint.company.name}</span>
         </div>
         <div className="flex items-center space-x-2 flex-shrink-0">
           <span className={`px-2 py-1 text-xs font-medium rounded-full ${getCategoryColor(complaint.issue_category as any, complaint.issue_type)}`}>
@@ -128,12 +188,74 @@ export default function ComplaintTile({ complaint, onClick, onFileUploadComplete
               </div>
             </div>
           )}
+          {/* Hover menu trigger */}
+          <div className="relative">
+            <button
+              className="p-1 text-gray-400 hover:text-gray-600"
+              onClick={(e) => { e.stopPropagation(); setMenuOpen((v) => !v); }}
+              aria-label="Open menu"
+            >
+              <MoreVertical className="h-4 w-4" />
+            </button>
+            {menuOpen && (
+              <div className="absolute right-0 mt-2 w-40 bg-white border border-gray-200 rounded-md shadow-lg z-20" onClick={(e) => e.stopPropagation()}>
+                <button
+                  className="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
+                  onClick={() => { setMenuOpen(false); onClick(complaint); }}
+                >
+                  View details
+                </button>
+                <button
+                  className="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
+                  onClick={async () => {
+                    setMenuOpen(false);
+                    try { await exportComplaintToPDF({ complaint }); } catch {}
+                  }}
+                >
+                  <span className="inline-flex items-center"><FileDown className="h-4 w-4 mr-2" />{t('exportPdf') || 'Export PDF'}</span>
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Second Row: Description */}
+      {/* Second Row: Follow-up comment instead of description */}
+      {complaint.follow_up && (
+        <div className="mb-3">
+          <p className="text-sm text-gray-700 line-clamp-2">{complaint.follow_up}</p>
+        </div>
+      )}
+
+      {/* Actions status pie chart */}
       <div className="mb-3">
-        <p className="text-sm text-gray-700 line-clamp-2">{complaint.details}</p>
+        {loadingMetrics ? (
+          <div className="h-20 flex items-center text-xs text-gray-500">{t('loading') || 'Loading...'}</div>
+        ) : metrics && (metrics.total_actions ?? 0) > 0 ? (
+          <div className="flex items-center gap-4">
+            <div className="w-24 h-24">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie data={pieData} dataKey="value" nameKey="name" outerRadius={46} innerRadius={24} stroke="#ffffff" strokeWidth={1}>
+                    {pieData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.fill} />
+                    ))}
+                  </Pie>
+                  <ReTooltip formatter={(value: any, name: any) => [value as string, name as string]} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+              <div className="text-xs text-gray-600 space-y-1">
+              <div><span className="inline-block w-2 h-2 rounded-sm mr-2" style={{ background: '#6b7280' }}></span>Upcoming: {metrics.actions_by_status.open || 0}</div>
+              <div><span className="inline-block w-2 h-2 rounded-sm mr-2" style={{ background: '#3b82f6' }}></span>In Progress: {metrics.actions_by_status.in_progress || 0}</div>
+              <div><span className="inline-block w-2 h-2 rounded-sm mr-2" style={{ background: '#10b981' }}></span>{t('closed') || 'Closed'}: {metrics.actions_by_status.closed || 0}</div>
+            </div>
+          </div>
+        ) : metricsError ? (
+          <div className="text-xs text-red-600">{metricsError}</div>
+        ) : (
+          <div className="text-xs text-gray-500">{t('noActionsFound') || 'No actions yet'}</div>
+        )}
       </div>
 
       {/* Third Row: Optional Extra Info (conditionally rendered) */}
@@ -184,7 +306,7 @@ export default function ComplaintTile({ complaint, onClick, onFileUploadComplete
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
           <div className="flex items-center">
             <Calendar className="h-3 w-3 mr-1" />
-            {formatDate(complaint.created_at)}
+            {formatDate(complaint.date_received)}
           </div>
           <div className="flex items-center">
             <Package className="h-3 w-3 mr-1" />

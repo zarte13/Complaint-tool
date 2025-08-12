@@ -22,7 +22,17 @@ app = FastAPI(
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:5173","http://192.168.3.82:3000"],  # React dev server
+    # Allow localhost origins and common LAN patterns for local prod-like hosting with npx serve
+    allow_origins=[
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        # Add a permissive pattern for local LAN during development; tighten for real prod
+        # FastAPI's CORSMiddleware doesn't support wildcards with ports per origin, but browsers treat exact match.
+        # Users should add their LAN URL below when testing across devices.
+        "http://192.168.3.82:3000",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

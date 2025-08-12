@@ -537,10 +537,9 @@ export const ActionCard: React.FC<ActionCardProps> = ({
 
       {/* Status Dot */}
       <div className="flex-shrink-0 mr-4">
-        <div className={`w-3 h-3 rounded-full ${
+          <div className={`w-3 h-3 rounded-full ${
           action.status === 'closed' ? 'bg-green-500' :
           action.status === 'in_progress' ? 'bg-blue-500' :
-          action.status === 'blocked' ? 'bg-red-500' :
           'bg-gray-400'
         }`}></div>
       </div>

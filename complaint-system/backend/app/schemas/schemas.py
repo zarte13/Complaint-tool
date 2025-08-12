@@ -71,6 +71,7 @@ class ComplaintBase(BaseModel):
     part_id: int
     issue_type: IssueType
     details: str = Field(..., min_length=10)
+    follow_up: Optional[str] = Field(None, max_length=1000)
     date_received: date
     complaint_kind: str = Field(..., pattern=r"^(official|notification)$")
     ncr_number: Optional[str] = Field(None, max_length=100)
@@ -151,6 +152,7 @@ class ComplaintUpdate(BaseModel):
     # Accept broader inputs for status to support legacy synonyms like "closed"
     status: Optional[str] = None
     details: Optional[str] = Field(None, min_length=10)
+    follow_up: Optional[str] = Field(None, max_length=1000)
     # Allow updating FF-002 fields
     issue_category: Optional[IssueCategory] = None
     issue_subtypes: Optional[List[str]] = None
@@ -184,6 +186,7 @@ class ComplaintResponse(BaseModel):
     packaging_received: Optional[Dict[str, str]]
     packaging_expected: Optional[Dict[str, str]]
     details: str
+    follow_up: Optional[str]
     date_received: date
     complaint_kind: str
     ncr_number: Optional[str]

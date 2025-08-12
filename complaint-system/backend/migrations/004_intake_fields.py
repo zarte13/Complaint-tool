@@ -43,6 +43,11 @@ def migrate():
             cur.execute("ALTER TABLE complaints ADD COLUMN ncr_number TEXT")
             changed = True
 
+        # Add follow_up column if missing
+        if not column_exists(conn, 'complaints', 'follow_up'):
+            cur.execute("ALTER TABLE complaints ADD COLUMN follow_up TEXT")
+            changed = True
+
         conn.commit()
         if changed:
             print("✅ Migration 004 applied: intake fields added")
