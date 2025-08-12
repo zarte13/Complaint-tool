@@ -63,22 +63,7 @@ export const AddActionForm: React.FC<AddActionFormProps> = ({
         return '';
 
       case 'due_date':
-        if (value) {
-          const selectedDate = new Date(value);
-          const today = new Date();
-          today.setHours(0, 0, 0, 0);
-          
-          if (selectedDate < today) {
-            return 'La date d\'échéance ne peut pas être dans le passé';
-          }
-          
-          // Check if date is too far in the future (e.g., more than 1 year)
-          const oneYearFromNow = new Date();
-          oneYearFromNow.setFullYear(oneYearFromNow.getFullYear() + 1);
-          if (selectedDate > oneYearFromNow) {
-            return 'La date d\'échéance ne peut pas être supérieure à un an';
-          }
-        }
+        // Disable past/future validation per request
         return '';
 
       case 'notes':

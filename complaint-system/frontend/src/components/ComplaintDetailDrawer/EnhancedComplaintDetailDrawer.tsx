@@ -85,11 +85,17 @@ export default function EnhancedComplaintDetailDrawer({
     return d ? format(d, 'PP', { locale: dateLocale }) : '-';
   };
   const toInputDate = (value: any): string => {
+    // Preserve plain date strings to avoid timezone shifts
+    if (typeof value === 'string') {
+      const trimmed = value.trim();
+      if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return trimmed;
+    }
     const d = normalizeDate(value);
     if (!d) return '';
-    const yyyy = d.getFullYear();
-    const mm = String(d.getMonth() + 1).padStart(2, '0');
-    const dd = String(d.getDate()).padStart(2, '0');
+    // Use UTC getters to avoid off-by-one due to local timezone
+    const yyyy = d.getUTCFullYear();
+    const mm = String(d.getUTCMonth() + 1).padStart(2, '0');
+    const dd = String(d.getUTCDate()).padStart(2, '0');
     return `${yyyy}-${mm}-${dd}`;
   };
 

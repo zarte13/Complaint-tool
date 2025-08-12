@@ -9,9 +9,11 @@ import PartAutocomplete from '../PartAutocomplete/PartAutocomplete';
 import Tooltip from '../Tooltip/Tooltip';
 import { Company, Part, IssueCategory, PackagingSubtype, VisualSubtype, ComplaintCreate } from '../../types';
 import { post } from '../../services/api';
+import { useAuthStore } from '../../stores/authStore';
 
 const IssueCategoryEnum = z.enum(['dimensional', 'visual', 'packaging', 'other']);
-const VisualSubtypeEnum = z.enum(['scratch', 'nicks', 'rust']);
+// Allow user-defined visual sub-categories as free-form strings
+const VisualSubtypeEnum = z.string();
 const PackagingSubtypeEnum = z.enum(['wrong_box', 'wrong_bag', 'wrong_paper', 'wrong_part', 'wrong_quantity', 'wrong_tags']);
 
 const complaintSchema = z.object({
@@ -95,6 +97,9 @@ export default function ComplaintForm({ onSuccess }: ComplaintFormProps) {
   const [files, setFiles] = useState<File[]>([]);
   const { t } = useLanguage();
   const [isVisualDropdownOpen, setIsVisualDropdownOpen] = useState(false);
+  const [newVisualSubtype, setNewVisualSubtype] = useState('');
+  const [visualOptions, setVisualOptions] = useState<string[]>(['scratch', 'nicks', 'rust']);
+  const isAdmin = useAuthStore.getState().isAdmin();
   const [isPackagingDropdownOpen, setIsPackagingDropdownOpen] = useState(false);
 
   const {
@@ -124,7 +129,7 @@ export default function ComplaintForm({ onSuccess }: ComplaintFormProps) {
 
     const currentSubtypes: string[] = (issueSubtypes as string[]) || [];
     if (next === 'visual') {
-      const filtered = currentSubtypes.filter((s) => s === 'scratch' || s === 'nicks' || s === 'rust');
+      const filtered = currentSubtypes.filter((s) => visualOptions.includes(s));
       setValue('issue_subtypes' as any, filtered, { shouldValidate: true });
       setValue('packaging_received' as any, {}, { shouldValidate: true });
       setValue('packaging_expected' as any, {}, { shouldValidate: true });
@@ -422,7 +427,7 @@ export default function ComplaintForm({ onSuccess }: ComplaintFormProps) {
 
       {issueCategory === 'visual' && (
         <div className="relative">
-          <label className="block text-sm font-medium text-gray-700 mb-1">{t('issueSubtypes') || 'Issue Subtypes'}</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t('issueSubtypes') || 'Issue Sub-categories'}</label>
           <button
             type="button"
             onClick={() => setIsVisualDropdownOpen((v) => !v)}
@@ -434,32 +439,60 @@ export default function ComplaintForm({ onSuccess }: ComplaintFormProps) {
                   nicks: t('visualNicks') || 'Nicks',
                   rust: t('visualRust') || 'Rust',
                 } as Record<string,string>)[s] || s).join(', ')
-              : (t('selectSubtypes') || 'Select subtypes')}
+              : (t('selectSubtypes') || 'Select sub-categories')}
           </button>
           {isVisualDropdownOpen && (
             <div className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg p-2 max-h-56 overflow-auto">
-              {([
-                { value: 'scratch', label: t('visualScratch') || 'Scratch' },
-                { value: 'nicks', label: t('visualNicks') || 'Nicks' },
-                { value: 'rust', label: t('visualRust') || 'Rust' },
-              ] as {value: VisualSubtype, label: string}[]).map((opt) => {
-                const checked = (issueSubtypes as any[]).includes(opt.value);
+              {visualOptions.map((opt) => {
+                const key = opt;
+                const label = ({
+                  scratch: t('visualScratch') || 'Scratch',
+                  nicks: t('visualNicks') || 'Nicks',
+                  rust: t('visualRust') || 'Rust',
+                } as Record<string,string>)[opt] || opt;
+                const checked = (issueSubtypes as any[]).includes(key);
                 return (
-                  <label key={opt.value} className="flex items-center gap-2 px-2 py-1 hover:bg-gray-50 rounded cursor-pointer">
+                  <label key={key} className="flex items-center gap-2 px-2 py-1 hover:bg-gray-50 rounded cursor-pointer">
                     <input
                       type="checkbox"
                       checked={checked}
                       onChange={(e) => {
                         const next = new Set(issueSubtypes as string[]);
-                        if (e.target.checked) next.add(opt.value);
-                        else next.delete(opt.value);
+                        if (e.target.checked) next.add(key);
+                        else next.delete(key);
                         setValue('issue_subtypes' as any, Array.from(next), { shouldValidate: true });
                       }}
                     />
-                    <span className="text-sm text-gray-700">{opt.label}</span>
+                    <span className="text-sm text-gray-700">{label}</span>
                   </label>
                 );
               })}
+              {isAdmin && (
+                <div className="mt-2 flex items-center gap-2 border-t pt-2">
+                  <input
+                    type="text"
+                    value={newVisualSubtype}
+                    onChange={(e) => setNewVisualSubtype(e.target.value)}
+                    placeholder={t('newSubtypePlaceholder') || 'New sub-category...'}
+                    className="flex-1 px-2 py-1 border rounded"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const v = newVisualSubtype.trim();
+                      if (!v) return;
+                      if (!visualOptions.includes(v)) setVisualOptions((opts) => [...opts, v]);
+                      const next = new Set(issueSubtypes as string[]);
+                      next.add(v);
+                      setValue('issue_subtypes' as any, Array.from(next), { shouldValidate: true });
+                      setNewVisualSubtype('');
+                    }}
+                    className="px-2 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
+                  >
+                    {t('addSubtype') || 'Add'}
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>

@@ -66,6 +66,8 @@ export interface Translations {
   other: string;
   issueCategory?: string;
   issueSubtypes?: string;
+  newSubtypePlaceholder?: string;
+  addSubtype?: string;
   categoryDimensional?: string;
   categoryVisual?: string;
   categoryPackaging?: string;
@@ -324,6 +326,8 @@ export const translations: Record<'en' | 'fr', Partial<Translations>> = {
     other: 'Other',
     issueCategory: 'Issue Category',
     issueSubtypes: 'Issue Subtypes',
+    newSubtypePlaceholder: 'New sub-category...',
+    addSubtype: 'Add',
     categoryDimensional: 'Dimensional',
     categoryVisual: 'Visual',
     categoryPackaging: 'Packaging',
@@ -556,6 +560,8 @@ export const translations: Record<'en' | 'fr', Partial<Translations>> = {
     other: 'Autre',
     issueCategory: 'Catégorie du problème',
     issueSubtypes: 'Sous-types',
+    newSubtypePlaceholder: 'Nouvelle sous-catégorie...',
+    addSubtype: 'Ajouter',
     categoryDimensional: 'Dimensionnel',
     categoryVisual: 'Visuel',
     categoryPackaging: 'Emballage',

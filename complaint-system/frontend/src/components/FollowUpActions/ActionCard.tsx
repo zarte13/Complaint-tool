@@ -60,9 +60,7 @@ export const ActionCard: React.FC<ActionCardProps> = ({
         }
         return '';
       case 'due_date':
-        if (value && new Date(value) < new Date(new Date().toDateString())) {
-          return 'La date d\'échéance ne peut pas être dans le passé';
-        }
+        // Disable past-date validation per request
         return '';
       case 'notes':
         if (value && value.length > 1000) {

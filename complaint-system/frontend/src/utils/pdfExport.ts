@@ -46,7 +46,9 @@ type ExportArgs = {
 
 const PAGE_MARGIN = 16; // pt
 const SECTION_SPACING = 10; // pt
-const LINE_HEIGHT = 6; // pt for body text
+// Use a readable line height for 11pt body text to avoid overlapping lines in PDFs
+const BODY_FONT_SIZE = 11; // pt
+const LINE_HEIGHT = Math.ceil(BODY_FONT_SIZE * 1.35); // ~15pt leading
 
 async function fetchActions(complaintId: number): Promise<FollowUpAction[]> {
   try {
@@ -120,6 +122,8 @@ function ensureSpace(doc: jsPDF, y: number, needed: number): number {
 
 export async function exportComplaintToPDF({ complaint, attachments, actions, language = 'en', labels = {} }: ExportArgs): Promise<void> {
   const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+  // Improve text rendering to avoid overwriting artifacts
+  (doc as any).setLineHeightFactor?.(1.35);
   const pageWidth = doc.internal.pageSize.getWidth();
   const contentWidth = pageWidth - PAGE_MARGIN * 2;
   const isFR = language === 'fr';
@@ -137,9 +141,9 @@ export async function exportComplaintToPDF({ complaint, attachments, actions, la
     complaintId: isFR ? 'ID de réclamation' : 'Complaint ID',
     company: isFR ? 'Client' : 'Company',
     part: isFR ? 'Pièce' : 'Part',
-    issueType: isFR ? "Type d'anomalie" : 'Issue Type',
     category: isFR ? 'Catégorie' : 'Category',
     subtypes: isFR ? 'Sous-types' : 'Subtypes',
+    attachmentsList: isFR ? 'Pièces jointes' : 'Attachments',
     status: isFR ? 'Statut' : 'Status',
     workOrder: isFR ? 'Bon de travail #' : 'Work Order #',
     occurrence: isFR ? 'Occurrence' : 'Occurrence',
@@ -148,6 +152,7 @@ export async function exportComplaintToPDF({ complaint, attachments, actions, la
     due: isFR ? 'Échéance' : 'Due',
     responsible: isFR ? 'Responsable' : 'Responsible',
     priority: isFR ? 'Priorité' : 'Priority',
+    ncr: isFR ? 'Numéro NCR' : 'NCR Number',
     packagingDetails: isFR ? "Détails d'emballage" : 'Packaging Details',
     received: isFR ? 'Reçu' : 'Received',
     expected: isFR ? 'Attendu' : 'Expected',
@@ -162,13 +167,7 @@ export async function exportComplaintToPDF({ complaint, attachments, actions, la
       : { open: 'open', in_progress: 'in progress', resolved: 'resolved', closed: 'closed', in_planning: 'in planning' };
     return (m as any)[raw] || raw;
   };
-  const mapIssueType = (raw?: string) => {
-    if (!raw) return '';
-    const m = isFR
-      ? { wrong_quantity: 'Mauvaise quantité', wrong_part: 'Mauvaise pièce', damaged: 'Endommagé', other: 'Autre' }
-      : { wrong_quantity: 'Wrong Quantity', wrong_part: 'Wrong Part', damaged: 'Damaged', other: 'Other' };
-    return (m as any)[raw] || raw;
-  };
+  // mapIssueType removed from usage per spec (Issue Type line omitted)
   const mapCategory = (raw?: string) => {
     if (!raw) return '';
     const m = isFR
@@ -215,6 +214,11 @@ export async function exportComplaintToPDF({ complaint, attachments, actions, la
 
   y += 50;
 
+  // Preload attachments to reference in summary and later sections
+  const atts = attachments ?? await fetchAttachments(complaint.id);
+  const imageAtts = atts.filter(a => (a.mime_type || '').startsWith('image/'));
+  const otherAtts = atts.filter(a => !(a.mime_type || '').startsWith('image/'));
+
   // Basic metadata using a 4-column table: Label, Value, Label, Value
   y = addSectionTitle(doc, L.summary, y);
   y += 2;
@@ -226,7 +230,7 @@ export async function exportComplaintToPDF({ complaint, attachments, actions, la
     [L.complaintId, `#${complaint.id}`],
     [L.company, complaint.company?.name || ''],
     [L.part, partLabel],
-    [L.issueType, mapIssueType((complaint.issue_type as any) || '')],
+    [L.ncr, (complaint as any).ncr_number || ''],
     [L.category, mapCategory((complaint as any).issue_category || '')],
     [L.subtypes, localizedSubtypes],
   ];
@@ -242,6 +246,11 @@ export async function exportComplaintToPDF({ complaint, attachments, actions, la
     rightPairs.push([L.partReceived, complaint.part_received || '']);
   }
   rightPairs.push([L.createdUpdated, `${format(new Date(complaint.created_at), 'yyyy-MM-dd HH:mm', { locale: dfLocale })} / ${format(new Date(complaint.updated_at), 'yyyy-MM-dd HH:mm', { locale: dfLocale })}`]);
+  // List non-image attachments after created/updated
+  if (otherAtts.length > 0) {
+    const names = otherAtts.map(a => a.original_filename).join(', ');
+    rightPairs.push([L.attachmentsList, names]);
+  }
 
   // Zip into rows of 4 columns
   const maxLen = Math.max(leftPairs.length, rightPairs.length);
@@ -280,7 +289,7 @@ export async function exportComplaintToPDF({ complaint, attachments, actions, la
   const details = (complaint.details || '').trim();
   if (details) {
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(11);
+    doc.setFontSize(BODY_FONT_SIZE);
     const wrapped = doc.splitTextToSize(details, contentWidth);
     for (const line of wrapped) {
       y = ensureSpace(doc, y, LINE_HEIGHT);
@@ -319,39 +328,7 @@ export async function exportComplaintToPDF({ complaint, attachments, actions, la
     y = (doc as any).lastAutoTable?.finalY ? (doc as any).lastAutoTable.finalY + SECTION_SPACING : y + 60;
   }
 
-  // Images (attachments)
-  const atts = attachments ?? await fetchAttachments(complaint.id);
-  const imageAtts = atts.filter(a => (a.mime_type || '').startsWith('image/'));
-  if (imageAtts.length > 0) {
-    y = ensureSpace(doc, y, 24);
-    y = addSectionTitle(doc, L.images, y);
-    const maxImageWidth = contentWidth;
-
-    for (const a of imageAtts) {
-      const url = `/uploads/complaints/${a.complaint_id}/${a.filename}`;
-      try {
-        const { dataUrl, width, height } = await urlToDataUrl(url, 'image/png');
-        // Compute display size maintaining aspect ratio
-        const naturalW = width || 800;
-        const naturalH = height || 600;
-        const scale = Math.min(maxImageWidth / naturalW, 1);
-        const displayW = naturalW * scale;
-        const displayH = naturalH * scale;
-
-        y = ensureSpace(doc, y, displayH + 8);
-        doc.addImage(dataUrl, 'PNG', PAGE_MARGIN, y, displayW, displayH);
-        y += displayH + 8;
-      } catch {
-        // Skip problematic images
-        y = ensureSpace(doc, y, LINE_HEIGHT);
-        doc.setFont('helvetica', 'italic');
-        const msg = isFR ? `(Impossible d'intégrer l'image : ${a.original_filename})` : `(Unable to embed image: ${a.original_filename})`;
-        doc.text(msg, PAGE_MARGIN, y);
-        y += LINE_HEIGHT;
-      }
-    }
-    y += SECTION_SPACING;
-  }
+  // (Images moved below Actions section)
 
   // Actions table
   const acts = actions ?? await fetchActions(complaint.id);
@@ -361,6 +338,7 @@ export async function exportComplaintToPDF({ complaint, attachments, actions, la
   if (acts.length === 0) {
     doc.setFont('helvetica', 'italic');
     doc.text(L.noActions, PAGE_MARGIN, y);
+    y += LINE_HEIGHT + SECTION_SPACING;
   } else {
     const rows = acts
       .sort((a, b) => (a.action_number || 0) - (b.action_number || 0))
@@ -390,6 +368,79 @@ export async function exportComplaintToPDF({ complaint, attachments, actions, la
         5: { cellWidth: 70 },
       },
     });
+    // Advance y below the actions table before rendering images
+    y = (doc as any).lastAutoTable?.finalY ? (doc as any).lastAutoTable.finalY + SECTION_SPACING : y + 60;
+  }
+
+  // Images (attachments) — shown after actions, in a 2-column grid
+  if (imageAtts.length > 0) {
+    y = ensureSpace(doc, y, 24);
+    y = addSectionTitle(doc, L.images, y);
+    const gutter = 12; // pt between columns
+    const colWidth = Math.floor((contentWidth - gutter) / 2);
+    let xLeft = PAGE_MARGIN;
+    let xRight = PAGE_MARGIN + colWidth + gutter;
+    let isLeft = true;
+    let rowMaxHeight = 0;
+
+    for (let i = 0; i < imageAtts.length; i++) {
+      const a = imageAtts[i];
+      const url = `/uploads/complaints/${a.complaint_id}/${a.filename}`;
+      try {
+        const { dataUrl, width, height } = await urlToDataUrl(url, 'image/png');
+        const naturalW = width || 800;
+        const naturalH = height || 600;
+        const scale = Math.min(colWidth / naturalW, 1);
+        const displayW = naturalW * scale;
+        const displayH = naturalH * scale;
+
+        // Start new row if needed for right column overflow
+        const neededHeight = displayH + 8;
+        const pageHeight = doc.internal.pageSize.getHeight();
+        if (isLeft) {
+          // ensure space for the tallest image in the row once known; here ensure for current image
+          y = ensureSpace(doc, y, neededHeight);
+        } else {
+          // For right column, ensure we still fit in the page; otherwise wrap to new row
+          if (y + neededHeight > pageHeight - PAGE_MARGIN) {
+            // move to next row
+            y = ensureSpace(doc, y, neededHeight);
+            // reset row
+            isLeft = true;
+            rowMaxHeight = 0;
+          }
+        }
+
+        const x = isLeft ? xLeft : xRight;
+        doc.addImage(dataUrl, 'PNG', x, y, displayW, displayH);
+        rowMaxHeight = Math.max(rowMaxHeight, displayH);
+
+        if (!isLeft) {
+          // move to next row
+          y += rowMaxHeight + 8;
+          rowMaxHeight = 0;
+        }
+        isLeft = !isLeft;
+      } catch {
+        // Skip problematic images but keep grid flow
+        if (!isLeft) {
+          // close the row spacing if right failed
+          y += rowMaxHeight + 8;
+          rowMaxHeight = 0;
+          isLeft = true;
+        }
+        doc.setFont('helvetica', 'italic');
+        const msg = isFR ? `(Image ignorée)` : `(Image skipped)`;
+        y = ensureSpace(doc, y, LINE_HEIGHT);
+        doc.text(msg, PAGE_MARGIN, y);
+        y += LINE_HEIGHT;
+      }
+    }
+    // If last placement was left column (meaning right empty), close the row by advancing y
+    if (!isLeft) {
+      y += rowMaxHeight + 8;
+    }
+    y += SECTION_SPACING;
   }
 
   // Filename
