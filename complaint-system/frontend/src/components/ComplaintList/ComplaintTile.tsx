@@ -59,12 +59,12 @@ export default function ComplaintTile({ complaint, onClick, onFileUploadComplete
     const byStatus = (metrics?.actions_by_status || {}) as Record<string, number>;
     const mapLabel = (key: string) => {
       switch (key) {
-        case 'open': return 'Upcoming';
-        case 'in_progress': return 'In Progress';
-        case 'closed': return t('closed') || 'Closed';
-        case 'pending': return 'Upcoming';
-        case 'blocked': return 'In Progress';
-        case 'escalated': return 'In Progress';
+        case 'open': return t('statusUpcoming') || 'Upcoming';
+        case 'in_progress': return t('statusInProgress') || 'In Progress';
+        case 'closed': return t('statusClosed') || 'Closed';
+        case 'pending': return t('statusUpcoming') || 'Upcoming';
+        case 'blocked': return t('statusInProgress') || 'In Progress';
+        case 'escalated': return t('statusInProgress') || 'In Progress';
         default: return key;
       }
     };
@@ -203,7 +203,7 @@ export default function ComplaintTile({ complaint, onClick, onFileUploadComplete
                   className="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
                   onClick={() => { setMenuOpen(false); onClick(complaint); }}
                 >
-                  View details
+                  {t('viewDetails') || 'View details'}
                 </button>
                 <button
                   className="block w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100"
@@ -246,9 +246,9 @@ export default function ComplaintTile({ complaint, onClick, onFileUploadComplete
               </ResponsiveContainer>
             </div>
               <div className="text-xs text-gray-600 space-y-1">
-              <div><span className="inline-block w-2 h-2 rounded-sm mr-2" style={{ background: '#6b7280' }}></span>Upcoming: {metrics.actions_by_status.open || 0}</div>
-              <div><span className="inline-block w-2 h-2 rounded-sm mr-2" style={{ background: '#3b82f6' }}></span>In Progress: {metrics.actions_by_status.in_progress || 0}</div>
-              <div><span className="inline-block w-2 h-2 rounded-sm mr-2" style={{ background: '#10b981' }}></span>{t('closed') || 'Closed'}: {metrics.actions_by_status.closed || 0}</div>
+              <div><span className="inline-block w-2 h-2 rounded-sm mr-2" style={{ background: '#6b7280' }}></span>{t('statusUpcoming') || 'Upcoming'}: {metrics.actions_by_status.open || 0}</div>
+              <div><span className="inline-block w-2 h-2 rounded-sm mr-2" style={{ background: '#3b82f6' }}></span>{t('statusInProgress') || 'In Progress'}: {metrics.actions_by_status.in_progress || 0}</div>
+              <div><span className="inline-block w-2 h-2 rounded-sm mr-2" style={{ background: '#10b981' }}></span>{t('statusClosed') || 'Closed'}: {metrics.actions_by_status.closed || 0}</div>
             </div>
           </div>
         ) : metricsError ? (

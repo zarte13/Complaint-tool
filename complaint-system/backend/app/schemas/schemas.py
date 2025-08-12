@@ -77,7 +77,8 @@ class ComplaintBase(BaseModel):
     ncr_number: Optional[str] = Field(None, max_length=100)
     quantity_ordered: Optional[int] = Field(None, ge=0)
     quantity_received: Optional[int] = Field(None, ge=0)
-    work_order_number: str = Field(..., min_length=1, max_length=100)
+    # Make BT/WO optional for creation; store empty string if omitted (DB column is non-nullable)
+    work_order_number: str = Field(default="", max_length=100)
     occurrence: Optional[str] = Field(None, max_length=100)
     part_received: Optional[str] = Field(None, max_length=100)
     human_factor: bool = Field(default=False)
@@ -112,11 +113,8 @@ class ComplaintBase(BaseModel):
         if v is None:
             return v
         category: Optional[IssueCategory] = values.get('issue_category')
-        if category == IssueCategory.VISUAL:
-            invalid = [s for s in v if s not in ALLOWED_VISUAL_SUBTYPES]
-            if invalid:
-                raise ValueError(f"Invalid visual subtypes: {invalid}")
-        elif category == IssueCategory.PACKAGING:
+        # Allow any visual subtypes (admin may add new values via UI)
+        if category == IssueCategory.PACKAGING:
             invalid = [s for s in v if s not in ALLOWED_PACKAGING_SUBTYPES]
             if invalid:
                 raise ValueError(f"Invalid packaging subtypes: {invalid}")

@@ -168,6 +168,12 @@ export async function exportComplaintToPDF({ complaint, attachments, actions, la
     packagingDetails: isFR ? "Détails d'emballage" : 'Packaging Details',
     received: isFR ? 'Reçu' : 'Received',
     expected: isFR ? 'Attendu' : 'Expected',
+    // Action table headers i18n
+    actionNumber: isFR ? 'Action #' : 'Action #',
+    actionText: isFR ? 'Action' : 'Action',
+    upcoming: isFR ? 'À venir' : 'Upcoming',
+    inProgress: isFR ? 'En cours' : 'In Progress',
+    closed: isFR ? 'Fermée' : 'Closed',
     ...labels,
   };
 
@@ -359,13 +365,20 @@ export async function exportComplaintToPDF({ complaint, attachments, actions, la
         a.action_text || '',
         a.responsible_person || '',
         a.due_date ? format(new Date(a.due_date), 'yyyy-MM-dd HH:mm', { locale: dfLocale }) : '',
-        a.status || '',
-        a.priority || '',
+        // Localize status value for PDF
+        ((): string => {
+          const s = (a.status || '').toLowerCase();
+          if (s === 'open' || s === 'pending') return L.upcoming;
+          if (s === 'in_progress' || s === 'blocked' || s === 'escalated') return L.inProgress;
+          if (s === 'closed') return L.closed;
+          return a.status || '';
+        })(),
+        (a.priority || '').toString(),
       ]);
 
     // Start table slightly below current y
     autoTable(doc, {
-      head: [['#', isFR ? 'Action' : 'Action', L.responsible, L.due, L.status, L.priority]],
+      head: [[L.actionNumber, L.actionText, L.responsible, L.due, L.status, L.priority]],
       body: rows,
       startY: y + 4,
       margin: { left: PAGE_MARGIN, right: PAGE_MARGIN },

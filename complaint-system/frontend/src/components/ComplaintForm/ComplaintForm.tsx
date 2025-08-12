@@ -281,7 +281,16 @@ export default function ComplaintForm({ onSuccess }: ComplaintFormProps) {
         onSuccess();
       }
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to submit complaint');
+      const detail = err?.response?.data?.detail;
+      let message = 'Failed to submit complaint';
+      if (Array.isArray(detail)) {
+        message = detail.map((d: any) => d?.msg || JSON.stringify(d)).join('; ');
+      } else if (typeof detail === 'string') {
+        message = detail;
+      } else if (detail && typeof detail === 'object' && detail.msg) {
+        message = detail.msg;
+      }
+      setError(message);
     } finally {
       setSubmitting(false);
     }

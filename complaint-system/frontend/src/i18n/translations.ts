@@ -86,6 +86,8 @@ export interface Translations {
   statusInPlanningLabel?: string;
   statusInProgressLabel: string;
   statusClosedLabel: string;
+  // Optional alternate label for open actions in summaries/tiles
+  statusUpcoming?: string;
   
   // Fields
   workOrderNumber: string;
@@ -346,9 +348,10 @@ export const translations: Record<'en' | 'fr', Partial<Translations>> = {
     statusInPlanningLabel: 'In Planning',
     statusInProgressLabel: 'In Progress',
     statusClosedLabel: 'Closed',
+    statusUpcoming: 'Upcoming',
     
     // Fields
-    workOrderNumber: 'Work Order Number *',
+    workOrderNumber: 'Work Order Number',
     workOrderAbbrev: 'WO',
     occurrence: 'Occurrence',
     dateReceived: 'Date Received',
@@ -580,9 +583,12 @@ export const translations: Record<'en' | 'fr', Partial<Translations>> = {
     statusInPlanningLabel: 'Plans établis',
     statusInProgressLabel: 'En cours',
     statusClosedLabel: 'Fermée',
+    statusUpcoming: 'À venir',
+    statusInProgress: 'En cours',
+    statusClosed: 'Complétée',
     
     // Fields
-    workOrderNumber: 'Numéro de bon de travail (BT) *',
+    workOrderNumber: 'Numéro de bon de travail (BT)',
     workOrderAbbrev: 'BT',
     occurrence: 'Occurrence',
     dateReceived: 'Date de réception',

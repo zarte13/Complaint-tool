@@ -118,7 +118,8 @@ export default function EnhancedComplaintDetailDrawer({
         return null;
       }
       case 'work_order_number':
-        if (!value || value.trim().length === 0) return 'Work order number is required';
+        // Optional: allow empty value; validate only when provided
+        if (!value || value.trim().length === 0) return null;
         if (value.length > 100) return 'Maximum 100 characters';
         if (!/^[A-Za-z0-9-]+$/.test(value)) return 'Only letters, numbers, and hyphens';
         return null;
