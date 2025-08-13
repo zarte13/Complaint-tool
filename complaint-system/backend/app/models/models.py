@@ -153,3 +153,12 @@ class ActionDependency(Base):
     action = relationship("FollowUpAction", 
                          foreign_keys=[action_id], 
                          back_populates="dependencies")
+
+# App Settings (KV store)
+class AppSetting(Base):
+    __tablename__ = "app_settings"
+
+    key = Column(String(150), primary_key=True, index=True)
+    value_json = Column(Text, nullable=False)  # JSON string
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    updated_by = Column(String(150), nullable=True)

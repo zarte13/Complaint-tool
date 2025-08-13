@@ -83,6 +83,12 @@ export default function ComplaintTile({ complaint, onClick, onFileUploadComplete
     return entries.map(([k, v]) => ({ key: k, name: mapLabel(k), value: v, fill: color(k) }));
   })();
 
+  // Aggregate counts to match displayed labels
+  const byStatus = (metrics?.actions_by_status || {}) as Record<string, number>;
+  const upcomingCount = (byStatus.open || 0) + (byStatus.pending || 0);
+  const inProgressCount = (byStatus.in_progress || 0) + (byStatus.blocked || 0) + (byStatus.escalated || 0);
+  const closedCount = (byStatus.closed || 0);
+
   const getCategoryLabel = (category?: string, fallbackIssueType?: string) => {
     switch (category) {
       case 'dimensional':
@@ -246,9 +252,9 @@ export default function ComplaintTile({ complaint, onClick, onFileUploadComplete
               </ResponsiveContainer>
             </div>
               <div className="text-xs text-gray-600 space-y-1">
-              <div><span className="inline-block w-2 h-2 rounded-sm mr-2" style={{ background: '#6b7280' }}></span>{t('statusUpcoming') || 'Upcoming'}: {metrics.actions_by_status.open || 0}</div>
-              <div><span className="inline-block w-2 h-2 rounded-sm mr-2" style={{ background: '#3b82f6' }}></span>{t('statusInProgress') || 'In Progress'}: {metrics.actions_by_status.in_progress || 0}</div>
-              <div><span className="inline-block w-2 h-2 rounded-sm mr-2" style={{ background: '#10b981' }}></span>{t('statusClosed') || 'Closed'}: {metrics.actions_by_status.closed || 0}</div>
+              <div><span className="inline-block w-2 h-2 rounded-sm mr-2" style={{ background: '#6b7280' }}></span>{t('statusUpcoming') || 'Upcoming'}: {upcomingCount}</div>
+              <div><span className="inline-block w-2 h-2 rounded-sm mr-2" style={{ background: '#3b82f6' }}></span>{t('statusInProgress') || 'In Progress'}: {inProgressCount}</div>
+              <div><span className="inline-block w-2 h-2 rounded-sm mr-2" style={{ background: '#10b981' }}></span>{t('statusClosed') || 'Closed'}: {closedCount}</div>
             </div>
           </div>
         ) : metricsError ? (

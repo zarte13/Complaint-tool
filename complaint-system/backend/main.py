@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from app.database.database import engine
 from app.models import models
-from app.api import companies, parts, complaints, analytics, follow_up_actions, responsibles
+from app.api import companies, parts, complaints, analytics, follow_up_actions, responsibles, settings
 from app.auth import router as auth_router  # NEW
 import os
 
@@ -54,6 +54,7 @@ app.include_router(complaints.router)
 app.include_router(analytics.router)
 app.include_router(follow_up_actions.router)
 app.include_router(responsibles.router)
+app.include_router(settings.router)
 
 @app.get("/")
 async def root():

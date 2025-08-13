@@ -8,6 +8,7 @@ import ComplaintsPage from './pages/ComplaintsPage';
 import DashboardPage from './pages/DashboardPage';
 import LoginPage from './pages/LoginPage';
 import ResponsablesPage from './pages/ResponsablesPage';
+import SettingsPage from './pages/SettingsPage';
 import { useAuthStore } from './stores/authStore';
 
 function ProtectedRoute({ children }: { children: JSX.Element }) {
@@ -39,6 +40,14 @@ function App() {
                 }
               />
               <Route path="/complaints" element={<ComplaintsPage />} />
+              <Route
+                path="/settings"
+                element={
+                  <ProtectedRoute>
+                    <SettingsPage />
+                  </ProtectedRoute>
+                }
+              />
               <Route
                 path="/responsables"
                 element={

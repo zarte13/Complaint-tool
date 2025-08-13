@@ -70,6 +70,12 @@ export default function EnhancedComplaintDetailDrawer({
         const time = dt.getTime();
         return Number.isFinite(time) ? dt : null;
       }
+      // Treat bare ISO datetime without timezone as UTC to avoid local shift (backend stores UTC)
+      if (/^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}(?:\.\d+)?$/.test(trimmed) && !/[Zz]|[+\-]\d{2}:?\d{2}$/.test(trimmed)) {
+        const iso = trimmed.replace(' ', 'T') + 'Z';
+        const nd = new Date(iso);
+        return Number.isFinite(nd.getTime()) ? nd : null;
+      }
       // Fallback to native Date parsing
       const nd = new Date(trimmed);
       return Number.isFinite(nd.getTime()) ? nd : null;
@@ -78,7 +84,18 @@ export default function EnhancedComplaintDetailDrawer({
   };
   const formatDate = (dateString: string) => {
     const d = normalizeDate(dateString);
-    return d ? format(d, 'PPpp', { locale: dateLocale }) : '-';
+    if (!d) return '-';
+    try {
+      // Explicitly format in the user's local timezone and show TZ label
+      return new Intl.DateTimeFormat(undefined, {
+        dateStyle: 'medium',
+        timeStyle: 'short',
+        timeZoneName: 'short',
+      }).format(d);
+    } catch {
+      // Fallback to date-fns localized formatting if Intl options fail
+      return format(d, 'PPpp', { locale: dateLocale });
+    }
   };
   const formatDateOnly = (dateString: string) => {
     const d = normalizeDate(dateString);

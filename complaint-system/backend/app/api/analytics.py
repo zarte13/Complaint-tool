@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from typing import List, Dict, Any
 from datetime import datetime, timedelta
@@ -62,7 +62,10 @@ def get_trends(db: Session = Depends(get_db)) -> Dict[str, Any]:
     }
 
 @router.get("/weekly-type-trends")
-def get_weekly_type_trends(db: Session = Depends(get_db)) -> List[Dict[str, Any]]:
+def get_weekly_type_trends(
+    weeks: int = Query(12, ge=1, le=52, description="Number of recent ISO weeks to include"),
+    db: Session = Depends(get_db)
+) -> List[Dict[str, Any]]:
     """Get last 12 weeks complaint counts split by issue_type buckets.
     Returns an array [{ week: 'YYYY-Www', wrong_quantity: n, wrong_part: n, damaged: n, other: n }].
 
@@ -75,9 +78,9 @@ def get_weekly_type_trends(db: Session = Depends(get_db)) -> List[Dict[str, Any]
     today = datetime.utcnow().date()
     start_of_week_date = today - timedelta(days=today.weekday())  # Monday
 
-    # Build 12 weekly windows including current week (oldest first)
+    # Build N weekly windows including current week (oldest first)
     windows: list[tuple] = []
-    for i in range(11, -1, -1):
+    for i in range(weeks - 1, -1, -1):
         week_start_date = start_of_week_date - timedelta(weeks=i)
         week_end_date = week_start_date + timedelta(days=7)
         windows.append((week_start_date, week_end_date))

@@ -4,6 +4,22 @@ export interface Translations {
   navComplaints: string;
   navDashboard: string;
   navResponsables?: string;
+  settings?: string;
+  notAuthorized?: string;
+  settingsTaxonomy?: string;
+  settingsDashboard?: string;
+  settingsMasterData?: string;
+  settingsTaxonomyIntro?: string;
+  settingsDashboardIntro?: string;
+  settingsMasterDataIntro?: string;
+  settingsDashboardWeeks?: string;
+  settingsCardKpis?: string;
+  settingsCardTrends?: string;
+  settingsCardFailures?: string;
+  settingsCardStacked?: string;
+  settingsCardRAR?: string;
+  saved?: string;
+  failedToSave?: string;
   systemTitle: string;
   
   // Home Page
@@ -181,6 +197,7 @@ export interface Translations {
   viewFiles: string;
   noFiles: string;
   extraInfo: string;
+  viewDetails?: string;
   
   // Validation
   requiredField: string;
@@ -270,6 +287,22 @@ export const translations: Record<'en' | 'fr', Partial<Translations>> = {
     navHome: 'Home',
     navComplaints: 'Complaints',
     navDashboard: 'Dashboard',
+    settings: 'Settings',
+    notAuthorized: 'You are not authorized to view this page.',
+    settingsTaxonomy: 'Complaint Taxonomy',
+    settingsDashboard: 'Dashboard',
+    settingsMasterData: 'Master Data',
+    settingsTaxonomyIntro: 'Manage issue categories and sub-types with English/French labels. Changes are global.',
+    settingsDashboardIntro: 'Customize which cards are shown, their order/size, and the default time window.',
+    settingsMasterDataIntro: 'Admin utilities for Companies and Parts.',
+    settingsDashboardWeeks: 'Default weeks window',
+    settingsCardKpis: 'Show KPI counters',
+    settingsCardTrends: 'Show 12-week trend',
+    settingsCardFailures: 'Show failure modes pie',
+    settingsCardStacked: 'Show stacked glowing bar',
+    settingsCardRAR: 'Show RAR metric card',
+    saved: 'Saved',
+    failedToSave: 'Failed to save',
     systemTitle: 'Complaint System',
     homeTitle: 'Part Order Complaint System',
     homeSubtitle: 'Submit and track complaints for part order issues',
@@ -412,6 +445,7 @@ export const translations: Record<'en' | 'fr', Partial<Translations>> = {
     viewFiles: 'View Files',
     noFiles: 'No files',
     extraInfo: 'Additional Information',
+    viewDetails: 'View details',
     
     // Follow-up Actions Extended
     actionsPanel: 'Follow-up Actions',
@@ -505,6 +539,22 @@ export const translations: Record<'en' | 'fr', Partial<Translations>> = {
     navHome: 'Accueil',
     navComplaints: 'Réclamations',
     navDashboard: 'Tableau de bord',
+    settings: 'Paramètres',
+    notAuthorized: 'Vous n\'êtes pas autorisé à voir cette page.',
+    settingsTaxonomy: 'Taxonomie des réclamations',
+    settingsDashboard: 'Tableau de bord',
+    settingsMasterData: 'Données de référence',
+    settingsTaxonomyIntro: 'Gérer les catégories et sous-types avec libellés FR/EN. Changements globaux.',
+    settingsDashboardIntro: 'Personnalisez les cartes affichées, l\'ordre/la taille et la période par défaut.',
+    settingsMasterDataIntro: 'Outils d\'administration pour les Clients et Pièces.',
+    settingsDashboardWeeks: 'Période par défaut (semaines)',
+    settingsCardKpis: 'Afficher les indicateurs KPI',
+    settingsCardTrends: 'Afficher la tendance sur 12 semaines',
+    settingsCardFailures: 'Afficher le camembert des modes de défaillance',
+    settingsCardStacked: 'Afficher le graphique à barres empilées',
+    settingsCardRAR: 'Afficher la carte RAR',
+    saved: 'Enregistré',
+    failedToSave: 'Échec de l\'enregistrement',
     systemTitle: 'Système de plainte',
     homeTitle: 'Système de Réclamation de Commandes de Pièces',
     homeSubtitle: 'Soumettre et suivre les réclamations pour les problèmes de commandes de pièces',
@@ -649,6 +699,7 @@ export const translations: Record<'en' | 'fr', Partial<Translations>> = {
     viewFiles: 'Voir les fichiers',
     noFiles: 'Aucun fichier',
     extraInfo: 'Informations supplémentaires',
+    viewDetails: 'Voir les détails',
     
     // Validation
     requiredField: 'Ce champ est obligatoire',

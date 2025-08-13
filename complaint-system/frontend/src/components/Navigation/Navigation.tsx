@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Home, FileText, BarChart3, Users, LogOut } from 'lucide-react';
+import { Home, FileText, BarChart3, Users, LogOut, Settings } from 'lucide-react';
 import LanguageToggle from '../LanguageToggle/LanguageToggle';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useAuthStore } from '../../stores/authStore';
@@ -74,6 +74,20 @@ export default function Navigation() {
               <Users className="h-4 w-4 mr-2" />
               {t('navResponsables') || 'Responsables'}
             </Link>
+
+            {isAuthenticated && useAuthStore.getState().isAdmin() && (
+              <Link
+                to="/settings"
+                className={`inline-flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                  isActive('/settings')
+                    ? 'bg-blue-100 text-blue-700'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                }`}
+              >
+                <Settings className="h-4 w-4 mr-2" />
+                {t('settings') || 'Settings'}
+              </Link>
+            )}
             
             <div className="ml-4">
               <LanguageToggle />

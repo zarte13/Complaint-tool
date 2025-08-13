@@ -61,14 +61,26 @@ const DashboardPage: React.FC = () => {
     () => get<FailureMode[]>('/api/analytics/failure-modes').then(res => res.data)
   );
 
+  // Load app settings to drive dashboard config
+  const { data: appSettings } = useQuery<any>('appSettings', () => get<any>('/api/settings/app').then(res => res.data));
+
+  const weeksWindow = Math.max(1, Math.min(52, Number(appSettings?.dashboard?.timeWindow?.value ?? 12)));
+  const cards = {
+    kpis: appSettings?.dashboard?.cards?.kpis ?? true,
+    trends: appSettings?.dashboard?.cards?.trends ?? true,
+    failures: appSettings?.dashboard?.cards?.failures ?? true,
+    stacked: appSettings?.dashboard?.cards?.stacked ?? false,
+    rar: appSettings?.dashboard?.cards?.rar ?? true,
+  } as const;
+
   const { isLoading: loadingTrends } = useQuery<Trends>(
-    'trends',
-    () => get<Trends>('/api/analytics/trends').then(res => res.data)
+    ['trends', weeksWindow],
+    () => get<Trends>(`/api/analytics/trends`).then(res => res.data)
   );
 
   const { data: weeklyTypeTrends, isLoading: loadingWeeklyTypes } = useQuery<WeeklyTypeRow[]>(
-    'weeklyTypeTrends',
-    () => get<WeeklyTypeRow[]>('/api/analytics/weekly-type-trends').then(res => res.data)
+    ['weeklyTypeTrends', weeksWindow],
+    () => get<WeeklyTypeRow[]>(`/api/analytics/weekly-type-trends?weeks=${weeksWindow}`).then(res => res.data)
   );
 
   if (loadingRAR || loadingFailure || loadingTrends || loadingStatusCounts || loadingWeeklyTypes) {
@@ -122,6 +134,7 @@ const DashboardPage: React.FC = () => {
         </motion.h1>
         
         {/* KPI Cards: Complaint status counts */}
+        {cards.kpis && (
         <motion.div
           className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8"
           initial={{ opacity: 0, y: 20 }}
@@ -176,7 +189,9 @@ const DashboardPage: React.FC = () => {
             </div>
           </motion.div>
         </motion.div>
+        )}
 {/* RAR Metric Card */}
+{cards.rar && (
 <motion.div
   className="bg-white rounded-lg shadow p-6"
   whileHover={{ scale: 1.02 }}
@@ -192,9 +207,11 @@ const DashboardPage: React.FC = () => {
     </div>
   </div>
 </motion.div>
+)}
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Complaint Trends (12 weeks stacked per type) */}
+          {cards.stacked && (
           <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5, delay: 0.4 }}>
             <EvilStackedGlowingBarCard
               title={t('trendsTitle')}
@@ -207,8 +224,10 @@ const DashboardPage: React.FC = () => {
               }}
             />
           </motion.div>
+          )}
 
           {/* Failure Modes (all four main categories) as Pie */}
+          {cards.failures && (
           <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5, delay: 0.4 }}>
             {(() => {
               // Normalize API keys into our 4 canonical buckets
@@ -242,6 +261,7 @@ const DashboardPage: React.FC = () => {
               );
             })()}
           </motion.div>
+          )}
         </div>
       </div>
     </motion.div>
