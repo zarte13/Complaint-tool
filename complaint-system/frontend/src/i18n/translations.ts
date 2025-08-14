@@ -87,11 +87,14 @@ export interface Translations {
   ofTotal?: string;
   avgFromComplaints?: string;
   configureDashboard?: string;
+  dragFromLibrary?: string;
+  goToSettings?: string;
   topCompanies?: string;
   topParts?: string;
   actionsOverdueKpi?: string;
   actionsPerComplaint?: string;
   mttrTitle?: string;
+  topN?: string;
   overdueActionsTitle?: string;
   actionsPerComplaintTitle?: string;
   topCompaniesTitle?: string;
@@ -451,11 +454,14 @@ export const translations: Record<'en' | 'fr', Partial<Translations>> = {
     ofTotal: 'of {{total}} total',
     avgFromComplaints: 'Avg from {{count}} complaints',
     configureDashboard: 'Go to Settings to configure your dashboard cards',
+    dragFromLibrary: 'Drag cards from the library to build your dashboard',
+    goToSettings: 'Go to Settings',
     topCompanies: 'Top Companies',
     topParts: 'Top Parts',
     actionsOverdueKpi: 'Overdue Actions',
     actionsPerComplaint: 'Actions / Complaint',
     mttrTitle: 'Mean Time To Resolution',
+    topN: 'Top N',
     overdueActionsTitle: 'Overdue Actions',
     actionsPerComplaintTitle: 'Actions per Complaint',
     topCompaniesTitle: 'Top Companies (by complaints)',
@@ -784,11 +790,14 @@ export const translations: Record<'en' | 'fr', Partial<Translations>> = {
     ofTotal: 'sur {{total}} au total',
     avgFromComplaints: 'Moy. de {{count}} réclamations',
     configureDashboard: 'Allez dans Paramètres pour configurer vos cartes de tableau de bord',
+    dragFromLibrary: 'Glissez les cartes de la bibliothèque pour construire votre tableau de bord',
+    goToSettings: 'Aller aux Paramètres',
     topCompanies: 'Meilleures compagnies',
     topParts: 'Meilleures pièces',
     actionsOverdueKpi: 'Actions en retard',
     actionsPerComplaint: 'Actions / Réclamation',
     mttrTitle: 'Délai moyen de résolution',
+    topN: 'Top N',
     overdueActionsTitle: 'Actions en retard',
     actionsPerComplaintTitle: 'Actions par réclamation',
     topCompaniesTitle: 'Clients avec le plus de réclamations',

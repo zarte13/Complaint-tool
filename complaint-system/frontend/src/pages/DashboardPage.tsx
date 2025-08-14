@@ -60,15 +60,10 @@ interface DashboardCard {
     showLegend?: boolean;
     granularity?: 'weekly' | 'monthly';
   };
+  grid?: { x: number; y: number; w: number; h: number };
 }
 
-// Card size classes mapping
-const cardSizeClasses = {
-  sm: 'col-span-1 row-span-1',
-  md: 'col-span-2 row-span-1', 
-  lg: 'col-span-3 row-span-2',
-  xl: 'col-span-6 row-span-2'
-};
+// Deprecated: replaced by explicit CSS grid coordinates using card.grid
 
 // Individual card components
 function StatusOverviewCard({ weeks }: { weeks: number }) {
@@ -296,7 +291,7 @@ function RARMetricsCard({ weeks }: { weeks: number }) {
   );
 
   return (
-    <div className="bg-white rounded-lg shadow p-6">
+    <div className="bg-white rounded-lg shadow p-6 h-full">
       <div className="flex items-center gap-3 mb-4">
         <div className="p-2 bg-purple-100 rounded-lg">
           <TrendingUp className="h-6 w-6 text-purple-600" />
@@ -327,7 +322,12 @@ function RARMetricsCard({ weeks }: { weeks: number }) {
 // Card renderer function
 function renderCard(card: DashboardCard, globalWeeks: number, index: number) {
   const weeks = card.config?.timeWindow || globalWeeks;
-  const size = cardSizeClasses[card.size];
+  // Map sizes to default spans (columns: 6 grid)
+  const sizeToCols: Record<'sm'|'md'|'lg'|'xl', number> = { sm: 1, md: 2, lg: 3, xl: 6 };
+  const sizeToRows: Record<'sm'|'md'|'lg'|'xl', number> = { sm: 2, md: 2, lg: 4, xl: 4 };
+  const defaultW = sizeToCols[card.size];
+  const defaultH = sizeToRows[card.size];
+  const g = card.grid || { x: 0, y: 0, w: defaultW, h: defaultH };
   
   const cardContent = (() => {
     switch (card.type) {
@@ -361,7 +361,12 @@ function renderCard(card: DashboardCard, globalWeeks: number, index: number) {
   return (
     <motion.div
       key={card.id}
-      className={size}
+      className=""
+      style={{
+        gridColumn: `${(g.x ?? 0) + 1} / span ${Math.max(1, g.w ?? defaultW)}`,
+        gridRow: `${(g.y ?? 0) + 1} / span ${Math.max(1, g.h ?? defaultH)}`,
+        padding: '0.5rem',
+      }}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: index * 0.1 }}
@@ -412,18 +417,8 @@ const DashboardPage: React.FC = () => {
   const globalWeeks = Math.max(1, Math.min(52, Number(appSettings?.dashboard?.timeWindow?.value ?? 12)));
   const configuredCards = (appSettings?.dashboard?.cards?.order || []) as DashboardCard[];
 
-  // If no cards are configured, show a default layout
-  const defaultCards: DashboardCard[] = [
-    { id: 'default-status', type: 'kpi_status', size: 'md', config: { timeWindow: globalWeeks } },
-    { id: 'default-mttr', type: 'kpi_mttr', size: 'sm', config: { timeWindow: globalWeeks } },
-    { id: 'default-overdue', type: 'kpi_overdue_actions', size: 'sm', config: { timeWindow: globalWeeks } },
-    { id: 'default-apc', type: 'kpi_actions_per_complaint', size: 'sm', config: { timeWindow: globalWeeks } },
-    { id: 'default-trends', type: 'graph_trends', size: 'xl', config: { timeWindow: globalWeeks } },
-    { id: 'default-failures', type: 'graph_failures', size: 'lg', config: { timeWindow: globalWeeks } },
-    { id: 'default-companies', type: 'graph_top_companies', size: 'lg', config: { timeWindow: globalWeeks, limit: 6 } },
-  ];
-
-  const cardsToRender = configuredCards.length > 0 ? configuredCards : defaultCards;
+  // If no cards are configured, show a helpful message to configure in settings
+  const cardsToRender = configuredCards.length > 0 ? configuredCards : [];
 
   return (
     <motion.div 
@@ -442,7 +437,7 @@ const DashboardPage: React.FC = () => {
           {t('dashboardTitle') || 'Dashboard'}
         </motion.h1>
         
-        {cardsToRender.length === 0 ? (
+                {cardsToRender.length === 0 ? (
         <motion.div
             className="text-center py-12"
             initial={{ opacity: 0 }}
@@ -453,12 +448,30 @@ const DashboardPage: React.FC = () => {
             <h2 className="text-xl font-semibold text-gray-700 mb-2">
               {t('noDashboardCards') || 'No dashboard cards configured'}
             </h2>
-            <p className="text-gray-500">
+            <p className="text-gray-500 mb-4">
               {t('configureDashboard') || 'Go to Settings to configure your dashboard cards'}
             </p>
+            <motion.a
+              href="/settings"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <Package className="w-4 h-4" />
+              {t('goToSettings') || 'Go to Settings'}
+            </motion.a>
           </motion.div>
         ) : (
-          <div className="grid grid-cols-6 gap-6 auto-rows-min">
+          <div
+            className="grid"
+            style={{
+              gridTemplateColumns: 'repeat(6, minmax(0, 1fr))',
+              gridAutoRows: '48px',
+              columnGap: '12px',
+              rowGap: '28px',
+              padding: '0.5rem',
+            }}
+          >
             {cardsToRender.map((card, index) => renderCard(card, globalWeeks, index))}
               </div>
         )}

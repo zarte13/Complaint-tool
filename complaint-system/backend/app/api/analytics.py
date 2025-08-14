@@ -40,7 +40,8 @@ def get_failure_modes(weeks: int = Query(12, ge=1, le=52), db: Session = Depends
         Complaint.issue_type,
         func.count(Complaint.id).label('count')
     ).filter(
-        Complaint.date_received >= start_date
+        Complaint.date_received >= start_date,
+        Complaint.is_deleted == False
     ).group_by(Complaint.issue_type).order_by(func.count(Complaint.id).desc()).all()
     
     return [
@@ -114,100 +115,84 @@ def get_overdue_actions_summary(db: Session = Depends(get_db)) -> Dict[str, Any]
 
 @router.get("/top/companies")
 def get_top_companies(limit: int = Query(6, ge=1, le=50), weeks: int = Query(12, ge=1, le=52), db: Session = Depends(get_db)) -> List[Dict[str, Any]]:
-    """Get top companies by complaint count within the specified time window."""
+    """Get top companies by complaint count.
+    Robust against missing Company rows and sparse windows. Excludes soft-deleted complaints.
+    """
     from app.models.models import Company
-    
-    end_date = datetime.utcnow().date()
-    start_date = end_date - timedelta(weeks=weeks)
-    
-    # First try with JOIN - if no results, fallback to simpler approach
-    results = (
-        db.query(
-            Company.name.label('company_name'),
-            func.count(Complaint.id).label('complaint_count')
+
+    def aggregate(window_weeks: int | None) -> List[tuple[int, int]]:
+        q = db.query(Complaint.company_id, func.count(Complaint.id).label('count')).filter(Complaint.is_deleted == False)
+        if window_weeks is not None:
+            end_d = datetime.utcnow().date()
+            start_d = end_d - timedelta(weeks=window_weeks)
+            q = q.filter(Complaint.date_received >= start_d)
+        return (
+            q.filter(Complaint.company_id.isnot(None))
+             .group_by(Complaint.company_id)
+             .order_by(func.count(Complaint.id).desc())
+             .limit(limit)
+             .all()
         )
-        .join(Complaint, Company.id == Complaint.company_id)
-        .filter(Complaint.date_received >= start_date)
-        .group_by(Company.id, Company.name)
-        .order_by(func.count(Complaint.id).desc())
-        .limit(limit)
-        .all()
-    )
-    
-    # If no results with JOIN, try a simpler approach
-    if not results:
-        # Get company_ids with counts, then resolve names
-        company_counts = (
-            db.query(Complaint.company_id, func.count(Complaint.id).label('count'))
-            .filter(Complaint.date_received >= start_date)
-            .filter(Complaint.company_id.isnot(None))
-            .group_by(Complaint.company_id)
-            .order_by(func.count(Complaint.id).desc())
-            .limit(limit)
-            .all()
-        )
-        
-        result_list = []
-        for company_id, count in company_counts:
-            # Try to get company name
-            company = db.query(Company).filter(Company.id == company_id).first()
-            company_name = company.name if company else f"Company {company_id}"
-            result_list.append({"label": company_name, "value": count})
-        
-        return result_list
-    
+
+    rows = aggregate(weeks)
+    if not rows:
+        rows = aggregate(52)
+    if not rows:
+        rows = aggregate(None)
+
+    if not rows:
+        return []
+
+    company_ids = [cid for cid, _ in rows if cid is not None]
+    names_map: Dict[int, str] = {}
+    if company_ids:
+        for cid, name in db.query(Company.id, Company.name).filter(Company.id.in_(company_ids)).all():
+            names_map[cid] = name
+
     return [
-        {"label": result.company_name or "Unknown Company", "value": result.complaint_count}
-        for result in results
+        {"label": names_map.get(cid, f"Company {cid}"), "value": cnt}
+        for cid, cnt in rows
     ]
 
 @router.get("/top/parts")
 def get_top_parts(limit: int = Query(20, ge=1, le=100), weeks: int = Query(12, ge=1, le=52), db: Session = Depends(get_db)) -> List[Dict[str, Any]]:
-    """Get top parts by complaint count within the specified time window."""
+    """Get top parts by complaint count.
+    Robust against missing Part rows and sparse windows. Excludes soft-deleted complaints.
+    """
     from app.models.models import Part
-    
-    end_date = datetime.utcnow().date()
-    start_date = end_date - timedelta(weeks=weeks)
-    
-    # First try with JOIN - if no results, fallback to simpler approach
-    results = (
-        db.query(
-            Part.part_number.label('part_number'),
-            func.count(Complaint.id).label('complaint_count')
+
+    def aggregate(window_weeks: int | None) -> List[tuple[int, int]]:
+        q = db.query(Complaint.part_id, func.count(Complaint.id).label('count')).filter(Complaint.is_deleted == False)
+        if window_weeks is not None:
+            end_d = datetime.utcnow().date()
+            start_d = end_d - timedelta(weeks=window_weeks)
+            q = q.filter(Complaint.date_received >= start_d)
+        return (
+            q.filter(Complaint.part_id.isnot(None))
+             .group_by(Complaint.part_id)
+             .order_by(func.count(Complaint.id).desc())
+             .limit(limit)
+             .all()
         )
-        .join(Complaint, Part.id == Complaint.part_id)
-        .filter(Complaint.date_received >= start_date)
-        .group_by(Part.id, Part.part_number)
-        .order_by(func.count(Complaint.id).desc())
-        .limit(limit)
-        .all()
-    )
-    
-    # If no results with JOIN, try a simpler approach
-    if not results:
-        # Get part_ids with counts, then resolve part numbers
-        part_counts = (
-            db.query(Complaint.part_id, func.count(Complaint.id).label('count'))
-            .filter(Complaint.date_received >= start_date)
-            .filter(Complaint.part_id.isnot(None))
-            .group_by(Complaint.part_id)
-            .order_by(func.count(Complaint.id).desc())
-            .limit(limit)
-            .all()
-        )
-        
-        result_list = []
-        for part_id, count in part_counts:
-            # Try to get part number
-            part = db.query(Part).filter(Part.id == part_id).first()
-            part_number = part.part_number if part else f"Part {part_id}"
-            result_list.append({"label": part_number, "value": count})
-        
-        return result_list
-    
+
+    rows = aggregate(weeks)
+    if not rows:
+        rows = aggregate(52)
+    if not rows:
+        rows = aggregate(None)
+
+    if not rows:
+        return []
+
+    part_ids = [pid for pid, _ in rows if pid is not None]
+    numbers_map: Dict[int, str] = {}
+    if part_ids:
+        for pid, num in db.query(Part.id, Part.part_number).filter(Part.id.in_(part_ids)).all():
+            numbers_map[pid] = num
+
     return [
-        {"label": result.part_number or "Unknown Part", "value": result.complaint_count}
-        for result in results
+        {"label": numbers_map.get(pid, f"Part {pid}"), "value": cnt}
+        for pid, cnt in rows
     ]
 
 @router.get("/actions-per-complaint")
@@ -221,6 +206,7 @@ def get_actions_per_complaint(weeks: int = Query(12, ge=1, le=52), db: Session =
     q_ids = (
         db.query(Complaint.id)
         .filter(Complaint.date_received >= start_date)
+        .filter(Complaint.is_deleted == False)
         .all()
     )
     complaint_ids = [row[0] for row in q_ids]
@@ -302,15 +288,18 @@ def get_status_counts(weeks: int = Query(12, ge=1, le=52), db: Session = Depends
     # Count complaints by status within the time window
     open_count = db.query(Complaint).filter(
         Complaint.status == "open",
-        Complaint.date_received >= start_date
+        Complaint.date_received >= start_date,
+        Complaint.is_deleted == False
     ).count()
     in_progress_count = db.query(Complaint).filter(
         Complaint.status == "in_progress",
-        Complaint.date_received >= start_date
+        Complaint.date_received >= start_date,
+        Complaint.is_deleted == False
     ).count()
     resolved_count = db.query(Complaint).filter(
         Complaint.status == "resolved",
-        Complaint.date_received >= start_date
+        Complaint.date_received >= start_date,
+        Complaint.is_deleted == False
     ).count()
     
     return {

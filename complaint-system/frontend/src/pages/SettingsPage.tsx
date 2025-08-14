@@ -3,7 +3,8 @@ import { useAuthStore } from '../stores/authStore';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useCompanies } from '../hooks/useCompanies';
 import { useParts } from '../hooks/useParts';
-import SimpleDashboardSettings from '../components/DashboardSettings/SimpleDashboardSettings';
+
+import GridDashboardSettingsWrapper from '../components/DashboardSettings/GridDashboardSettingsWrapper';
 import type { DashboardCard } from '../components/DashboardSettings/SimpleDashboardSettings';
 import { put } from '../services/api';
 
@@ -66,13 +67,12 @@ export default function SettingsPage() {
       )}
 
       {activeTab === 'dashboard' && (
-        <SimpleDashboardSettings
+        <GridDashboardSettingsWrapper
           onSave={async (cards: DashboardCard[], globalConfig: any) => {
             const payload = {
               dashboard: {
                 ...globalConfig,
                 cards: {
-                  // Keep legacy flags for backward compatibility
                   kpis: cards.some(c => c.type.startsWith('kpi_')),
                   trends: cards.some(c => c.type === 'graph_trends'),
                   failures: cards.some(c => c.type === 'graph_failures'),
