@@ -5,6 +5,7 @@ import { useCompanies } from '../hooks/useCompanies';
 import { useParts } from '../hooks/useParts';
 import SimpleDashboardSettings from '../components/DashboardSettings/SimpleDashboardSettings';
 import type { DashboardCard } from '../components/DashboardSettings/SimpleDashboardSettings';
+import { put } from '../services/api';
 
 type TabKey = 'taxonomy' | 'dashboard' | 'master';
 
@@ -67,7 +68,6 @@ export default function SettingsPage() {
       {activeTab === 'dashboard' && (
         <SimpleDashboardSettings
           onSave={async (cards: DashboardCard[], globalConfig: any) => {
-            const { put } = await import('../services/api');
             const payload = {
               dashboard: {
                 ...globalConfig,

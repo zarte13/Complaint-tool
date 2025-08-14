@@ -81,6 +81,12 @@ export interface Translations {
   topPartsDesc?: string;
   rarMetricsTitle?: string;
   rarMetricsDesc?: string;
+  
+  // Dashboard additional
+  lastNWeeks?: string;
+  ofTotal?: string;
+  avgFromComplaints?: string;
+  configureDashboard?: string;
   topCompanies?: string;
   topParts?: string;
   actionsOverdueKpi?: string;
@@ -439,6 +445,12 @@ export const translations: Record<'en' | 'fr', Partial<Translations>> = {
     topPartsDesc: 'Parts with most complaints',
     rarMetricsTitle: 'RAR Metrics',
     rarMetricsDesc: 'Return, Authorization, Rejection rates',
+    
+    // Dashboard additional
+    lastNWeeks: 'Last {{weeks}} weeks',
+    ofTotal: 'of {{total}} total',
+    avgFromComplaints: 'Avg from {{count}} complaints',
+    configureDashboard: 'Go to Settings to configure your dashboard cards',
     topCompanies: 'Top Companies',
     topParts: 'Top Parts',
     actionsOverdueKpi: 'Overdue Actions',
@@ -766,6 +778,12 @@ export const translations: Record<'en' | 'fr', Partial<Translations>> = {
     topPartsDesc: 'Pièces avec le plus de réclamations',
     rarMetricsTitle: 'Métriques RAR',
     rarMetricsDesc: 'Taux de retour, autorisation, rejet',
+    
+    // Dashboard additional
+    lastNWeeks: 'Dernières {{weeks}} semaines',
+    ofTotal: 'sur {{total}} au total',
+    avgFromComplaints: 'Moy. de {{count}} réclamations',
+    configureDashboard: 'Allez dans Paramètres pour configurer vos cartes de tableau de bord',
     topCompanies: 'Meilleures compagnies',
     topParts: 'Meilleures pièces',
     actionsOverdueKpi: 'Actions en retard',

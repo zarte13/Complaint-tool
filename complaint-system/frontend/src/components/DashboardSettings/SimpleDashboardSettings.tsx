@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { Save, RefreshCw, Plus, Trash2, ChevronUp, ChevronDown, TrendingUp, AlertTriangle, Clock, BarChart3, Users, Package } from 'lucide-react';
+import { get } from '../../services/api';
 
 export interface DashboardCard {
   id: string;
@@ -56,7 +57,6 @@ export default function SimpleDashboardSettings({ onSave }: SimpleDashboardSetti
 
   const loadExistingSettings = async () => {
     try {
-      const { get } = await import('../../services/api');
       const { data } = await get('/api/settings/app');
       const dashboardConfig = (data as any)?.dashboard;
       
@@ -169,8 +169,17 @@ export default function SimpleDashboardSettings({ onSave }: SimpleDashboardSetti
     })));
   };
 
-  const handleSave = async () => {
-    if (!onSave) return;
+  const handleSave = async (event?: React.MouseEvent) => {
+    // Prevent any form submission or default behavior
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+    
+    if (!onSave) {
+      setSaveError('No save function provided');
+      return;
+    }
     
     try {
       setSaving(true);
@@ -180,12 +189,17 @@ export default function SimpleDashboardSettings({ onSave }: SimpleDashboardSetti
         timeWindow: { kind: 'weeks', value: globalTimeWindow },
       };
       
-      await onSave(cards, globalConfig);
+      // Ensure we always pass an array, even if empty
+      const cardsToSave = Array.isArray(cards) ? cards : [];
+      
+      await onSave(cardsToSave, globalConfig);
       
       setSavedFlag(true);
       setTimeout(() => setSavedFlag(false), 2500);
     } catch (error: any) {
-      setSaveError(error?.message || (t('failedToSave') || 'Failed to save'));
+      console.error('Save error:', error);
+      const errorMessage = error?.response?.data?.detail || error?.message || (t('failedToSave') || 'Failed to save');
+      setSaveError(errorMessage);
     } finally {
       setSaving(false);
     }
@@ -224,6 +238,7 @@ export default function SimpleDashboardSettings({ onSave }: SimpleDashboardSetti
 
         <div className="flex items-center gap-2">
           <button
+            type="button"
             onClick={handleSave}
             disabled={saving}
             className={`flex items-center gap-2 px-4 py-2 text-white text-sm rounded-md transition-colors ${
