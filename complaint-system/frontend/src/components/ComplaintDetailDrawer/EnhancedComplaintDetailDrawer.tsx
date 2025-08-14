@@ -759,7 +759,7 @@ export default function EnhancedComplaintDetailDrawer({
                         {isSaving ? (
                           <>
                             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
-                            {t('saving') || 'Saving...'}
+                            {t('savingProgress') || 'Saving...'}
                           </>
                         ) : (
                           <>

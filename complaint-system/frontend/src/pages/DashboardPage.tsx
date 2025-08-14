@@ -5,7 +5,8 @@ import { motion } from 'framer-motion';
 // import EvilBarChartCard from '../components/EvilCharts/EvilBarChartCard';
 import EvilPieChartCard from '../components/EvilCharts/EvilPieChartCard';
 import EvilStackedGlowingBarCard from '../components/EvilCharts/EvilStackedGlowingBarCard';
-import { TrendingUp, AlertTriangle, CheckCircle } from 'lucide-react';
+import EvilBarChartCard from '../components/EvilCharts/EvilBarChartCard';
+import { TrendingUp } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 
 interface RARMetrics {
@@ -41,6 +42,48 @@ type WeeklyTypeRow = {
   other: number;
 };
 
+function TopCompaniesCard({ weeks }: { weeks: number }) {
+  const { t } = useLanguage();
+  const { data } = useQuery<any>(['topCompanies', weeks], () => get<any>(`/api/analytics/top/companies?limit=6&weeks=${weeks}`).then(r => r.data));
+  const list = (data as Array<{ label: string; value: number }>) || [];
+  return <EvilBarChartCard title={t('topCompaniesTitle') || 'Top Companies (by complaints)'} data={list} />
+}
+
+function TopPartsCard({ weeks }: { weeks: number }) {
+  const { t } = useLanguage();
+  const { data } = useQuery<any>(['topParts', weeks], () => get<any>(`/api/analytics/top/parts?limit=20&weeks=${weeks}`).then(r => r.data));
+  const list = (data as Array<{ label: string; value: number }>) || [];
+  return <EvilBarChartCard title={t('topPartsTitle') || 'Top Parts (by complaints)'} data={list} />
+}
+
+function KpiRow({ weeks }: { weeks: number }) {
+  const { t } = useLanguage();
+  const { data: mttr } = useQuery<any>(['kpi_mttr', weeks], () => get<any>(`/api/analytics/mttr?weeks=${weeks}`).then(r => r.data));
+  const { data: overdue } = useQuery<any>(['kpi_overdue'], () => get<any>(`/api/analytics/actions/overdue-summary`).then(r => r.data));
+  const { data: apc } = useQuery<any>(['kpi_actions_per_complaint', weeks], () => get<any>(`/api/analytics/actions-per-complaint?weeks=${weeks}`).then(r => r.data));
+  return (
+    <motion.div
+      className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, delay: 0.2 }}
+    >
+      <div className="bg-white rounded-lg shadow p-6">
+        <div className="text-sm text-gray-600">{t('mttrTitle') || 'Mean Time To Resolution'}</div>
+        <div className="text-2xl font-bold text-gray-900">{mttr?.mttr_days ?? 0}d</div>
+      </div>
+      <div className="bg-white rounded-lg shadow p-6">
+        <div className="text-sm text-gray-600">{t('overdueActionsTitle') || 'Overdue Actions'}</div>
+        <div className="text-2xl font-bold text-gray-900">{overdue?.overdue_actions ?? 0}</div>
+      </div>
+      <div className="bg-white rounded-lg shadow p-6">
+        <div className="text-sm text-gray-600">{t('actionsPerComplaintTitle') || 'Actions per Complaint'}</div>
+        <div className="text-2xl font-bold text-gray-900">{apc?.average ?? 0}</div>
+      </div>
+    </motion.div>
+  );
+}
+
 const DashboardPage: React.FC = () => {
   const { t } = useLanguage();
   const { data: rarMetrics, isLoading: loadingRAR } = useQuery<RARMetrics>(
@@ -50,7 +93,7 @@ const DashboardPage: React.FC = () => {
   );
 
   // New query for complaint status counts
-  const { data: statusCounts, isLoading: loadingStatusCounts } = useQuery<StatusCounts>(
+  const { isLoading: loadingStatusCounts } = useQuery<StatusCounts>(
     'statusCounts',
     () => get<StatusCounts>('/api/analytics/status-counts').then(res => res.data),
     { refetchInterval: 30000 }
@@ -72,6 +115,13 @@ const DashboardPage: React.FC = () => {
     stacked: appSettings?.dashboard?.cards?.stacked ?? false,
     rar: appSettings?.dashboard?.cards?.rar ?? true,
   } as const;
+
+  const orderedCards = (appSettings?.dashboard?.cards?.order || []) as Array<{ id: string; type: string; size: 'sm'|'md'|'lg' }>;
+  const defaultOrderedCards: Array<{ id: string; type: string; size: 'sm'|'md'|'lg' }> = [
+    { id: 'graph_top_companies-default', type: 'graph_top_companies', size: 'lg' },
+    { id: 'graph_top_parts-default', type: 'graph_top_parts', size: 'lg' },
+  ];
+  const effectiveCards = orderedCards.length > 0 ? orderedCards : defaultOrderedCards;
 
   const { isLoading: loadingTrends } = useQuery<Trends>(
     ['trends', weeksWindow],
@@ -135,60 +185,7 @@ const DashboardPage: React.FC = () => {
         
         {/* KPI Cards: Complaint status counts */}
         {cards.kpis && (
-        <motion.div
-          className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-        >
-          <motion.div
-            className="bg-white rounded-lg shadow p-6"
-            whileHover={{ scale: 1.02 }}
-            transition={{ type: "spring", stiffness: 300 }}
-          >
-            <div className="flex items-center">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <AlertTriangle className="h-6 w-6 text-blue-600" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">{t('kpiOpenCount')}</p>
-                <p className="text-2xl font-bold text-gray-900">{statusCounts?.open ?? 0}</p>
-              </div>
-            </div>
-          </motion.div>
-
-          <motion.div
-            className="bg-white rounded-lg shadow p-6"
-            whileHover={{ scale: 1.02 }}
-            transition={{ type: "spring", stiffness: 300 }}
-          >
-            <div className="flex items-center">
-              <div className="p-2 bg-yellow-100 rounded-lg">
-                <TrendingUp className="h-6 w-6 text-yellow-600" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">{t('kpiInProgressCount')}</p>
-                <p className="text-2xl font-bold text-gray-900">{statusCounts?.in_progress ?? 0}</p>
-              </div>
-            </div>
-          </motion.div>
-
-          <motion.div
-            className="bg-white rounded-lg shadow p-6"
-            whileHover={{ scale: 1.02 }}
-            transition={{ type: "spring", stiffness: 300 }}
-          >
-            <div className="flex items-center">
-              <div className="p-2 bg-green-100 rounded-lg">
-                <CheckCircle className="h-6 w-6 text-green-600" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">{t('kpiResolvedCount')}</p>
-                <p className="text-2xl font-bold text-gray-900">{statusCounts?.resolved ?? 0}</p>
-              </div>
-            </div>
-          </motion.div>
-        </motion.div>
+          <KpiRow weeks={weeksWindow} />
         )}
 {/* RAR Metric Card */}
 {cards.rar && (
@@ -210,8 +207,29 @@ const DashboardPage: React.FC = () => {
 )}
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Render modular cards first if any */}
+          {effectiveCards.map((c, idx) => {
+            const colSpan = c.size === 'lg' ? 'lg:col-span-2' : 'lg:col-span-1';
+            if (c.type === 'graph_top_companies') {
+              return (
+                <motion.div key={c.id} className={colSpan} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5, delay: 0.2 + idx * 0.05 }}>
+                  {/* Fetch and render top companies */}
+                  <TopCompaniesCard weeks={weeksWindow} />
+                </motion.div>
+              );
+            }
+            if (c.type === 'graph_top_parts') {
+              return (
+                <motion.div key={c.id} className={colSpan} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5, delay: 0.2 + idx * 0.05 }}>
+                  <TopPartsCard weeks={weeksWindow} />
+                </motion.div>
+              );
+            }
+            // KPIs would be rendered in the KPI row; keep here for future individual placements
+            return null;
+          })}
           {/* Complaint Trends (12 weeks stacked per type) */}
-          {cards.stacked && (
+          {cards.stacked && effectiveCards.length === 0 && (
           <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5, delay: 0.4 }}>
             <EvilStackedGlowingBarCard
               title={t('trendsTitle')}
@@ -227,7 +245,7 @@ const DashboardPage: React.FC = () => {
           )}
 
           {/* Failure Modes (all four main categories) as Pie */}
-          {cards.failures && (
+          {cards.failures && effectiveCards.length === 0 && (
           <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5, delay: 0.4 }}>
             {(() => {
               // Normalize API keys into our 4 canonical buckets

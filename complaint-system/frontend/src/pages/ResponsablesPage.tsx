@@ -214,7 +214,7 @@ function AddPersonModal({ onClose, onAdded }: { onClose: () => void; onAdded: ()
             onClick={handleSave}
             className="px-3 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 text-sm"
           >
-            {saving ? (t('saving') || 'Saving...') : (t('save') || 'Save')}
+            {saving ? (t('savingProgress') || 'Saving...') : (t('save') || 'Save')}
           </button>
         </div>
       </div>
@@ -288,7 +288,7 @@ function InlineEdit({ person, onSaved }: { person: Person; onSaved: () => void }
       </label>
       <button className="px-2 py-1 text-xs rounded border" onClick={() => setEditing(false)}>{t('cancel') || 'Cancel'}</button>
       <button className="px-2 py-1 text-xs rounded bg-blue-600 text-white disabled:opacity-50" disabled={saving} onClick={handleSave}>
-        {saving ? (t('saving') || 'Saving...') : (t('save') || 'Save')}
+        {saving ? (t('savingProgress') || 'Saving...') : (t('save') || 'Save')}
       </button>
       {error && <span className="text-xs text-red-600 ml-2">{error}</span>}
     </div>

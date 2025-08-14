@@ -182,7 +182,7 @@ export const FollowUpActionsPanel: React.FC<FollowUpActionsPanelProps> = ({
                 }}
                 className="px-3 py-1.5 text-xs font-medium text-white bg-blue-600 rounded hover:bg-blue-700 disabled:opacity-50"
               >
-                {followUpLoading ? (t('saving') || 'Saving...') : (t('save') || 'Save')}
+                {followUpLoading ? (t('savingProgress') || 'Saving...') : (t('save') || 'Save')}
               </button>
             </div>
           </div>
@@ -227,7 +227,7 @@ export const FollowUpActionsPanel: React.FC<FollowUpActionsPanelProps> = ({
                   {creating ? (
                     <>
                       <span className="inline-block w-4 h-4 bg-white/50 rounded-full mr-2"></span>
-                      {t('saving')}
+                      {t('savingProgress') || 'Saving...'}
                     </>
                   ) : (
                     t('createNewAction') ?? t('addAction')

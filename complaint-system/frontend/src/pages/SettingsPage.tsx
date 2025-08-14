@@ -1,8 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useAuthStore } from '../stores/authStore';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useCompanies } from '../hooks/useCompanies';
 import { useParts } from '../hooks/useParts';
+import SimpleDashboardSettings from '../components/DashboardSettings/SimpleDashboardSettings';
+import type { DashboardCard } from '../components/DashboardSettings/SimpleDashboardSettings';
 
 type TabKey = 'taxonomy' | 'dashboard' | 'master';
 
@@ -10,42 +12,8 @@ export default function SettingsPage() {
   const isAdmin = useAuthStore.getState().isAdmin();
   const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState<TabKey>('taxonomy');
-  const [weeks, setWeeks] = useState<number>(12);
-  const [cardKpis, setCardKpis] = useState<boolean>(true);
-  const [cardTrends, setCardTrends] = useState<boolean>(true);
-  const [cardFailures, setCardFailures] = useState<boolean>(true);
-  const [cardStacked, setCardStacked] = useState<boolean>(false);
-  const [cardRAR, setCardRAR] = useState<boolean>(true);
-  const [saving, setSaving] = useState<boolean>(false);
-  const [savedFlag, setSavedFlag] = useState<boolean>(false);
-  const [saveError, setSaveError] = useState<string | null>(null);
 
-  // Load existing settings from backend on mount
-  useEffect(() => {
-    let mounted = true;
-    (async () => {
-      try {
-        const { get } = await import('../services/api');
-        const { data } = await get('/api/settings/app');
-        if (!mounted) return;
-        const dash = (data as any)?.dashboard;
-        if (dash?.timeWindow?.value) {
-          setWeeks(Number(dash.timeWindow.value) || 12);
-        }
-        if (dash?.cards) {
-          const c = dash.cards as any;
-          if (typeof c.kpis === 'boolean') setCardKpis(c.kpis);
-          if (typeof c.trends === 'boolean') setCardTrends(c.trends);
-          if (typeof c.failures === 'boolean') setCardFailures(c.failures);
-          if (typeof c.stacked === 'boolean') setCardStacked(c.stacked);
-          if (typeof c.rar === 'boolean') setCardRAR(c.rar);
-        }
-      } catch {
-        // ignore; defaults remain
-      }
-    })();
-    return () => { mounted = false; };
-  }, []);
+
 
   if (!isAdmin) {
     return (
@@ -97,83 +65,26 @@ export default function SettingsPage() {
       )}
 
       {activeTab === 'dashboard' && (
-        <section className="bg-white border border-gray-200 rounded-lg p-4">
-          <h2 className="text-sm font-semibold text-gray-900 mb-3">{t('settingsDashboard') || 'Dashboard'}</h2>
-          <p className="text-sm text-gray-600 mb-4">{t('settingsDashboardIntro') || 'Customize which cards are shown, their order/size, and the default time window.'}</p>
-
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{t('settingsDashboardWeeks') || 'Default weeks window'}</label>
-              <input type="number" min={4} max={52} value={weeks} onChange={(e) => setWeeks(parseInt(e.target.value || '12', 10))}
-                className="w-32 px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <label className="inline-flex items-center gap-2 text-sm text-gray-700">
-                <input type="checkbox" checked={cardKpis} onChange={(e) => setCardKpis(e.target.checked)} />
-                {t('settingsCardKpis') || 'Show KPI counters'}
-              </label>
-              <label className="inline-flex items-center gap-2 text-sm text-gray-700">
-                <input type="checkbox" checked={cardTrends} onChange={(e) => setCardTrends(e.target.checked)} />
-                {t('settingsCardTrends') || 'Show 12-week trend'}
-              </label>
-              <label className="inline-flex items-center gap-2 text-sm text-gray-700">
-                <input type="checkbox" checked={cardFailures} onChange={(e) => setCardFailures(e.target.checked)} />
-                {t('settingsCardFailures') || 'Show failure modes pie'}
-              </label>
-              <label className="inline-flex items-center gap-2 text-sm text-gray-700">
-                <input type="checkbox" checked={cardStacked} onChange={(e) => setCardStacked(e.target.checked)} />
-                {t('settingsCardStacked') || 'Show stacked glowing bar'}
-              </label>
-              <label className="inline-flex items-center gap-2 text-sm text-gray-700">
-                <input type="checkbox" checked={cardRAR} onChange={(e) => setCardRAR(e.target.checked)} />
-                {t('settingsCardRAR') || 'Show RAR metric card'}
-              </label>
-            </div>
-
-            <div>
-              <button
-                type="button"
-                className={`px-4 py-2 text-white rounded-md ${saving ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`}
-                disabled={saving}
-                onClick={async () => {
-                  try {
-                    setSaving(true);
-                    setSaveError(null);
-                    const payload = {
-                      dashboard: {
-                        timeWindow: { kind: 'weeks', value: weeks },
-                        cards: {
-                          kpis: cardKpis,
-                          trends: cardTrends,
-                          failures: cardFailures,
-                          stacked: cardStacked,
-                          rar: cardRAR,
-                        },
-                      },
-                    } as any;
-                    const { put } = await import('../services/api');
-                    await put('/api/settings/app', payload as any);
-                    setSavedFlag(true);
-                    setTimeout(() => setSavedFlag(false), 2500);
-                  } catch (e: any) {
-                    setSaveError(e?.message || (t('failedToSave') || 'Failed to save'));
-                  } finally {
-                    setSaving(false);
-                  }
-                }}
-              >
-                {t('save') || 'Save'}
-              </button>
-              {savedFlag && (
-                <span className="ml-3 text-sm text-green-600">{t('saved') || 'Saved'}</span>
-              )}
-              {saveError && !savedFlag && (
-                <span className="ml-3 text-sm text-red-600">{saveError}</span>
-              )}
-            </div>
-          </div>
-        </section>
+        <SimpleDashboardSettings
+          onSave={async (cards: DashboardCard[], globalConfig: any) => {
+            const { put } = await import('../services/api');
+            const payload = {
+              dashboard: {
+                ...globalConfig,
+                cards: {
+                  // Keep legacy flags for backward compatibility
+                  kpis: cards.some(c => c.type.startsWith('kpi_')),
+                  trends: cards.some(c => c.type === 'graph_trends'),
+                  failures: cards.some(c => c.type === 'graph_failures'),
+                  stacked: cards.some(c => c.type === 'graph_stacked'),
+                  rar: cards.some(c => c.type === 'rar_metric'),
+                  order: cards,
+                },
+              },
+            };
+            await put('/api/settings/app', payload);
+          }}
+        />
       )}
 
       {activeTab === 'master' && (

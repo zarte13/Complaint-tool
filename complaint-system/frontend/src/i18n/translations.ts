@@ -20,6 +20,81 @@ export interface Translations {
   settingsCardRAR?: string;
   saved?: string;
   failedToSave?: string;
+  addCard?: string;
+  cardType?: string;
+  remove?: string;
+  moveUp?: string;
+  moveDown?: string;
+  size?: string;
+  sizeSmall?: string;
+  sizeMedium?: string;
+  sizeLarge?: string;
+  sizeExtraLarge?: string;
+  
+  // Dashboard Settings Redesign
+  dashboardCustomization?: string;
+  globalTimeWindow?: string;
+  weeks?: string;
+  editMode?: string;
+  previewMode?: string;
+  savingProgress?: string;
+  dashboardPreview?: string;
+  clickToSelect?: string;
+  noDashboardCards?: string;
+  addCardsToStart?: string;
+  cardLibrary?: string;
+  kpiCards?: string;
+  chartCards?: string;
+  metricCards?: string;
+  cardConfiguration?: string;
+  selectCardToConfig?: string;
+  configuringCard?: string;
+  cardSize?: string;
+  timeWindow?: string;
+  topLimit?: string;
+  granularity?: string;
+  weekly?: string;
+  monthly?: string;
+  showLegend?: string;
+  cardInfo?: string;
+  type?: string;
+  limit?: string;
+  instructions?: string;
+  instructionAddCards?: string;
+  instructionSelectCards?: string;
+  instructionDragCards?: string;
+  instructionPreview?: string;
+  instructionGlobalTime?: string;
+  
+  // Card descriptions
+  statusOverview?: string;
+  statusOverviewDesc?: string;
+  mttrDesc?: string;
+  overdueActionsDesc?: string;
+  actionsPerComplaintDesc?: string;
+  trendsTitle?: string;
+  trendsDesc?: string;
+  failureModesDesc?: string;
+  stackedAnalysisTitle?: string;
+  stackedAnalysisDesc?: string;
+  topCompaniesDesc?: string;
+  topPartsDesc?: string;
+  rarMetricsTitle?: string;
+  rarMetricsDesc?: string;
+  topCompanies?: string;
+  topParts?: string;
+  actionsOverdueKpi?: string;
+  actionsPerComplaint?: string;
+  mttrTitle?: string;
+  overdueActionsTitle?: string;
+  actionsPerComplaintTitle?: string;
+  topCompaniesTitle?: string;
+  topPartsTitle?: string;
+  kpiMttr?: string;
+  kpiOverdueActions?: string;
+  kpiActionsPerComplaint?: string;
+  graphTopCompanies?: string;
+  graphTopParts?: string;
   systemTitle: string;
   
   // Home Page
@@ -208,7 +283,7 @@ export interface Translations {
   // Drawer
   closePanel: string;
   edit: string;
-  saving: string;
+
   undo: string;
   redo: string;
   lastEdit: string;
@@ -238,7 +313,7 @@ export interface Translations {
   kpiOpenCount: string;
   kpiInProgressCount: string;
   kpiResolvedCount: string;
-  trendsTitle: string;
+
   failureModesTitle: string;
 
   // Attachments (Detail view)
@@ -303,6 +378,81 @@ export const translations: Record<'en' | 'fr', Partial<Translations>> = {
     settingsCardRAR: 'Show RAR metric card',
     saved: 'Saved',
     failedToSave: 'Failed to save',
+    addCard: 'Add Card',
+    cardType: 'Card Type',
+    remove: 'Remove',
+    moveUp: 'Move up',
+    moveDown: 'Move down',
+    size: 'Size',
+    sizeSmall: 'Small',
+    sizeMedium: 'Medium',
+    sizeLarge: 'Large',
+    sizeExtraLarge: 'X-Large',
+    
+    // Dashboard Settings Redesign
+    dashboardCustomization: 'Dashboard Customization',
+    globalTimeWindow: 'Global Time Window',
+    weeks: 'weeks',
+    editMode: 'Edit Mode',
+    previewMode: 'Preview Mode',
+    savingProgress: 'Saving...',
+    dashboardPreview: 'Dashboard Preview',
+    clickToSelect: 'Click cards to configure',
+    noDashboardCards: 'No dashboard cards configured',
+    addCardsToStart: 'Add cards below to start building your dashboard',
+    cardLibrary: 'Card Library',
+    kpiCards: 'KPI Cards',
+    chartCards: 'Chart Cards',
+    metricCards: 'Metric Cards',
+    cardConfiguration: 'Card Configuration',
+    selectCardToConfig: 'Select a card from the preview to configure its settings',
+    configuringCard: 'Configuring:',
+    cardSize: 'Card Size',
+    timeWindow: 'Time Window (weeks)',
+    topLimit: 'Top N Items',
+    granularity: 'Time Granularity',
+    weekly: 'Weekly',
+    monthly: 'Monthly',
+    showLegend: 'Show Legend',
+    cardInfo: 'Card Information',
+    type: 'Type',
+    limit: 'Limit',
+    instructions: 'Instructions',
+    instructionAddCards: 'Click cards in the library to add them to your dashboard',
+    instructionSelectCards: 'Click cards in the preview to select and configure them',
+    instructionDragCards: 'Drag cards in the preview to reorder them',
+    instructionPreview: 'Use Preview Mode to see how your dashboard will look',
+    instructionGlobalTime: 'Global time window applies to all time-based cards',
+    
+    // Card descriptions
+    statusOverview: 'Status Overview',
+    statusOverviewDesc: 'Current complaint status counts',
+    mttrDesc: 'Average resolution time',
+    overdueActionsDesc: 'Count of overdue follow-up actions',
+    actionsPerComplaintDesc: 'Average actions per complaint',
+    trendsTitle: 'Weekly Trends',
+    trendsDesc: 'Complaint trends over time',
+    failureModesDesc: 'Breakdown by issue type',
+    stackedAnalysisTitle: 'Stacked Analysis',
+    stackedAnalysisDesc: 'Multi-dimensional breakdown',
+    topCompaniesDesc: 'Companies with most complaints',
+    topPartsDesc: 'Parts with most complaints',
+    rarMetricsTitle: 'RAR Metrics',
+    rarMetricsDesc: 'Return, Authorization, Rejection rates',
+    topCompanies: 'Top Companies',
+    topParts: 'Top Parts',
+    actionsOverdueKpi: 'Overdue Actions',
+    actionsPerComplaint: 'Actions / Complaint',
+    mttrTitle: 'Mean Time To Resolution',
+    overdueActionsTitle: 'Overdue Actions',
+    actionsPerComplaintTitle: 'Actions per Complaint',
+    topCompaniesTitle: 'Top Companies (by complaints)',
+    topPartsTitle: 'Top Parts (by complaints)',
+    kpiMttr: 'KPI: MTTR',
+    kpiOverdueActions: 'KPI: Overdue Actions',
+    kpiActionsPerComplaint: 'KPI: Actions per Complaint',
+    graphTopCompanies: 'Graph: Top Companies',
+    graphTopParts: 'Graph: Top Parts',
     systemTitle: 'Complaint System',
     homeTitle: 'Part Order Complaint System',
     homeSubtitle: 'Submit and track complaints for part order issues',
@@ -472,7 +622,7 @@ export const translations: Record<'en' | 'fr', Partial<Translations>> = {
     // Drawer
     closePanel: 'Close Panel',
     edit: 'Edit',
-    saving: 'Saving...',
+
     undo: 'Undo',
     redo: 'Redo',
     lastEdit: 'Last Edit',
@@ -502,7 +652,7 @@ export const translations: Record<'en' | 'fr', Partial<Translations>> = {
     kpiOpenCount: 'Number of open complaints',
     kpiInProgressCount: 'Number of in progress complaints',
     kpiResolvedCount: 'Number of resolved complaints',
-    trendsTitle: 'Complaint Trends (12 Weeks)',
+
     failureModesTitle: 'Failure Modes',
 
     // Authentication (Login)
@@ -555,6 +705,81 @@ export const translations: Record<'en' | 'fr', Partial<Translations>> = {
     settingsCardRAR: 'Afficher la carte RAR',
     saved: 'Enregistré',
     failedToSave: 'Échec de l\'enregistrement',
+    addCard: 'Ajouter une carte',
+    cardType: 'Type de carte',
+    remove: 'Supprimer',
+    moveUp: 'Monter',
+    moveDown: 'Descendre',
+    size: 'Taille',
+    sizeSmall: 'Petit',
+    sizeMedium: 'Moyen',
+    sizeLarge: 'Grand',
+    sizeExtraLarge: 'Très Grand',
+    
+    // Dashboard Settings Redesign
+    dashboardCustomization: 'Personnalisation du Tableau de Bord',
+    globalTimeWindow: 'Fenêtre Temporelle Globale',
+    weeks: 'semaines',
+    editMode: 'Mode Édition',
+    previewMode: 'Mode Aperçu',
+    savingProgress: 'Sauvegarde...',
+    dashboardPreview: 'Aperçu du Tableau de Bord',
+    clickToSelect: 'Cliquez sur les cartes pour les configurer',
+    noDashboardCards: 'Aucune carte de tableau de bord configurée',
+    addCardsToStart: 'Ajoutez des cartes ci-dessous pour commencer à construire votre tableau de bord',
+    cardLibrary: 'Bibliothèque de Cartes',
+    kpiCards: 'Cartes KPI',
+    chartCards: 'Cartes Graphiques',
+    metricCards: 'Cartes Métriques',
+    cardConfiguration: 'Configuration de Carte',
+    selectCardToConfig: 'Sélectionnez une carte de l\'aperçu pour configurer ses paramètres',
+    configuringCard: 'Configuration :',
+    cardSize: 'Taille de la Carte',
+    timeWindow: 'Fenêtre Temporelle (semaines)',
+    topLimit: 'Top N Éléments',
+    granularity: 'Granularité Temporelle',
+    weekly: 'Hebdomadaire',
+    monthly: 'Mensuel',
+    showLegend: 'Afficher la Légende',
+    cardInfo: 'Informations de la Carte',
+    type: 'Type',
+    limit: 'Limite',
+    instructions: 'Instructions',
+    instructionAddCards: 'Cliquez sur les cartes dans la bibliothèque pour les ajouter à votre tableau de bord',
+    instructionSelectCards: 'Cliquez sur les cartes dans l\'aperçu pour les sélectionner et les configurer',
+    instructionDragCards: 'Glissez les cartes dans l\'aperçu pour les réorganiser',
+    instructionPreview: 'Utilisez le Mode Aperçu pour voir à quoi ressemblera votre tableau de bord',
+    instructionGlobalTime: 'La fenêtre temporelle globale s\'applique à toutes les cartes temporelles',
+    
+    // Card descriptions
+    statusOverview: 'Vue d\'ensemble des Statuts',
+    statusOverviewDesc: 'Comptes des statuts actuels des réclamations',
+    mttrDesc: 'Temps moyen de résolution',
+    overdueActionsDesc: 'Nombre d\'actions de suivi en retard',
+    actionsPerComplaintDesc: 'Nombre moyen d\'actions par réclamation',
+    trendsTitle: 'Tendances Hebdomadaires',
+    trendsDesc: 'Tendances des réclamations dans le temps',
+    failureModesDesc: 'Répartition par type de problème',
+    stackedAnalysisTitle: 'Analyse Empilée',
+    stackedAnalysisDesc: 'Analyse multi-dimensionnelle',
+    topCompaniesDesc: 'Entreprises avec le plus de réclamations',
+    topPartsDesc: 'Pièces avec le plus de réclamations',
+    rarMetricsTitle: 'Métriques RAR',
+    rarMetricsDesc: 'Taux de retour, autorisation, rejet',
+    topCompanies: 'Meilleures compagnies',
+    topParts: 'Meilleures pièces',
+    actionsOverdueKpi: 'Actions en retard',
+    actionsPerComplaint: 'Actions / Réclamation',
+    mttrTitle: 'Délai moyen de résolution',
+    overdueActionsTitle: 'Actions en retard',
+    actionsPerComplaintTitle: 'Actions par réclamation',
+    topCompaniesTitle: 'Clients avec le plus de réclamations',
+    topPartsTitle: 'Pièces avec le plus de réclamations',
+    kpiMttr: 'KPI : MTTR',
+    kpiOverdueActions: 'KPI : Actions en retard',
+    kpiActionsPerComplaint: 'KPI : Actions par réclamation',
+    graphTopCompanies: 'Graphique : Principaux clients',
+    graphTopParts: 'Graphique : Pièces les plus signalées',
     systemTitle: 'Système de plainte',
     homeTitle: 'Système de Réclamation de Commandes de Pièces',
     homeSubtitle: 'Soumettre et suivre les réclamations pour les problèmes de commandes de pièces',
@@ -710,7 +935,7 @@ export const translations: Record<'en' | 'fr', Partial<Translations>> = {
     // Drawer
     closePanel: 'Fermer le panneau',
     edit: 'Modifier',
-    saving: 'Enregistrement...',
+
     undo: 'Annuler',
     redo: 'Refaire',
     lastEdit: 'Dernière modification',
@@ -756,7 +981,7 @@ export const translations: Record<'en' | 'fr', Partial<Translations>> = {
     kpiOpenCount: 'Nombre de réclamations ouvertes',
     kpiInProgressCount: 'Nombre de réclamations en cours',
     kpiResolvedCount: 'Nombre de réclamations résolues',
-    trendsTitle: 'Tendances des plaintes (12 semaines)',
+
     failureModesTitle: 'Modes de défaillance',
 
     // Authentication (Login)

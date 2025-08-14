@@ -17,6 +17,7 @@ import mimetypes
 import os
 from app.auth.dependencies import require_admin, get_current_user
 from app.auth.models import User
+from datetime import datetime
 
 router = APIRouter(prefix="/api/complaints", tags=["complaints"])
 # Register alias routes to support both "/api/complaints" and "/api/complaints/" without 307 redirects
@@ -233,6 +234,17 @@ async def update_complaint(
     # Ensure default status is "open" if not explicitly set on creation elsewhere
     if not complaint.status:
         complaint.status = "open"
+
+    # Backfill resolved_at when status transitions to resolved (from non-resolved)
+    try:
+        if "status" in update_data:
+            new_status = str(update_data.get("status") or "").strip().lower()
+            if new_status == "closed":
+                new_status = "resolved"
+            if new_status == "resolved" and not complaint.resolved_at:
+                complaint.resolved_at = datetime.utcnow()
+    except Exception:
+        pass
     
     db.commit()
     db.refresh(complaint)
