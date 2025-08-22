@@ -36,7 +36,7 @@ describe('ComplaintEditForm', () => {
             />
         );
 
-        expect(screen.getByLabelText('Work Order Number *')).toHaveValue('WO-123');
+        expect(screen.getByLabelText('Work Order Number')).toHaveValue('WO-123');
         expect(screen.getByLabelText('Occurrence')).toHaveValue('2022-01-01');
     });
 
@@ -53,7 +53,7 @@ describe('ComplaintEditForm', () => {
             />
         );
 
-        const workOrderInput = screen.getByLabelText('Work Order Number *');
+        const workOrderInput = screen.getByLabelText('Work Order Number');
         fireEvent.change(workOrderInput, { target: { value: 'WO-456' } });
 
         expect(onFieldChange).toHaveBeenCalledWith('work_order_number', 'WO-456');

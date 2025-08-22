@@ -50,6 +50,20 @@ describe('DashboardPage', () => {
 
   it('renders RAR metrics correctly', async () => {
     getMock.mockImplementation((url: string) => {
+      if (url === '/api/settings/app') {
+        return Promise.resolve({
+          data: {
+            dashboard: {
+              cards: {
+                order: [
+                  { id: '1', type: 'rar_metric', size: 'md' }
+                ]
+              },
+              timeWindow: { value: 12 }
+            }
+          }
+        });
+      }
       if (url === '/api/analytics/rar-metrics') {
         return Promise.resolve({
           data: {
@@ -80,6 +94,20 @@ describe('DashboardPage', () => {
 
   it('renders failure modes correctly', async () => {
     getMock.mockImplementation((url: string) => {
+      if (url === '/api/settings/app') {
+        return Promise.resolve({
+          data: {
+            dashboard: {
+              cards: {
+                order: [
+                  { id: '1', type: 'graph_failures', size: 'md' }
+                ]
+              },
+              timeWindow: { value: 12 }
+            }
+          }
+        });
+      }
       if (url === '/api/analytics/rar-metrics') {
         return Promise.resolve({ data: { returnRate: 0, authorizationRate: 0, rejectionRate: 0, totalComplaints: 0, period: 'all_time' } });
       }
@@ -107,6 +135,20 @@ describe('DashboardPage', () => {
 
   it('renders trends chart correctly', async () => {
     getMock.mockImplementation((url: string) => {
+      if (url === '/api/settings/app') {
+        return Promise.resolve({
+          data: {
+            dashboard: {
+              cards: {
+                order: [
+                  { id: '1', type: 'graph_trends', size: 'md' }
+                ]
+              },
+              timeWindow: { value: 12 }
+            }
+          }
+        });
+      }
       if (url === '/api/analytics/rar-metrics') {
         return Promise.resolve({ data: { returnRate: 0, authorizationRate: 0, rejectionRate: 0, totalComplaints: 0, period: 'all_time' } });
       }
@@ -130,7 +172,7 @@ describe('DashboardPage', () => {
     renderWithQueryClient(<DashboardPage />);
 
     await waitFor(() => {
-      expect(screen.getByText('Complaint Trends (12 Weeks)')).toBeInTheDocument();
+      expect(screen.getByText('Weekly Trends')).toBeInTheDocument();
     });
 
     expect(screen.getByTestId('evil-stacked-bar')).toBeInTheDocument();

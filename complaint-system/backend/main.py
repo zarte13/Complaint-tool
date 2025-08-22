@@ -25,6 +25,7 @@ app.add_middleware(
     # Allow localhost origins and common LAN patterns for local prod-like hosting with npx serve
     allow_origins=[
         "http://localhost:3000",
+        "http://localhost:3001",
         "http://127.0.0.1:3000",
         "http://localhost:5173",
         "http://127.0.0.1:5173",
@@ -32,6 +33,8 @@ app.add_middleware(
         # FastAPI's CORSMiddleware doesn't support wildcards with ports per origin, but browsers treat exact match.
         # Users should add their LAN URL below when testing across devices.
         "http://192.168.3.82:3000",
+        "http://10.10.30.161:3000",
+        "http://10.10.30.161:3001",
     ],
     allow_credentials=True,
     allow_methods=["*"],

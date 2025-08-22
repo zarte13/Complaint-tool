@@ -1,0 +1,1 @@
+Use the powershell sythax when running commands. Always use ; and not &&. 

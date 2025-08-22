@@ -93,3 +93,28 @@ vi.mock('react-router-dom', () => ({
   Route: ({ element }: { element: React.ReactNode }) => React.createElement('div', {}, element),
   Link: ({ children, to }: { children: React.ReactNode; to: string }) => React.createElement('a', { href: to }, children),
 }));
+
+// Mock auth store globally
+const mockState = {
+  isAuthenticated: false,
+  accessToken: null as string | null,
+  refreshToken: null as string | null,
+  login: vi.fn(),
+  logout: vi.fn(),
+  setTokens: vi.fn(),
+  isAdmin: vi.fn(() => false),
+  getRole: vi.fn(() => null),
+};
+
+vi.mock('../stores/authStore', () => ({
+  useAuthStore: (selector?: (s: typeof mockState) => any) =>
+    selector ? selector(mockState) : mockState,
+  // Add getState method that returns the state with methods
+  getState: () => ({
+    ...mockState,
+    isAdmin: () => mockState.isAdmin(),
+  }),
+}));
+
+// Make the mock state available globally for tests
+(global as any).__AUTH_MOCK_STATE__ = mockState;

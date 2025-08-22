@@ -23,7 +23,7 @@ The build outputs static files to `complaint-system/frontend/dist`.
 
 ```powershell
 cd ..\frontend
-$env:VITE_API_BASE_URL = 'http://127.0.0.1:8000'
+$env:VITE_API_BASE_URL = 'http://10.10.30.161:8000'
 npm ci --no-audit --no-fund
 npm run build
 ```

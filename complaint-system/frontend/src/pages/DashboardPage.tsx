@@ -291,8 +291,8 @@ function RARMetricsCard({ weeks }: { weeks: number }) {
   );
 
   return (
-    <div className="bg-white rounded-lg shadow p-6 h-full">
-      <div className="flex items-center gap-3 mb-4">
+    <div className="bg-white rounded-lg shadow p-4 sm:p-6 flex flex-col h-full min-h-[145px]">
+      <div className="flex items-center gap-3 mb-4 flex-shrink-0">
         <div className="p-2 bg-purple-100 rounded-lg">
           <TrendingUp className="h-6 w-6 text-purple-600" />
         </div>
@@ -300,19 +300,25 @@ function RARMetricsCard({ weeks }: { weeks: number }) {
           <h3 className="text-lg font-semibold text-gray-900">{t('rarMetricsTitle') || 'RAR Metrics'}</h3>
         </div>
       </div>
-      
-      <div className="grid grid-cols-3 gap-4">
-        <div className="text-center">
-          <div className="text-2xl font-bold text-purple-600">{rarMetrics?.returnRate ?? 0}%</div>
-          <div className="text-sm text-gray-600">Return Rate</div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 flex-1 items-center">
+        <div className="text-center flex flex-col justify-center">
+          <div className="text-xl sm:text-2xl font-bold text-purple-600 break-words overflow-hidden">
+            {rarMetrics?.returnRate ?? 0}%
+          </div>
+          <div className="text-xs sm:text-sm text-gray-600 mt-1 whitespace-nowrap">Return Rate</div>
         </div>
-        <div className="text-center">
-          <div className="text-2xl font-bold text-blue-600">{rarMetrics?.authorizationRate ?? 0}%</div>
-          <div className="text-sm text-gray-600">Authorization Rate</div>
+        <div className="text-center flex flex-col justify-center">
+          <div className="text-xl sm:text-2xl font-bold text-blue-600 break-words overflow-hidden">
+            {rarMetrics?.authorizationRate ?? 0}%
+          </div>
+          <div className="text-xs sm:text-sm text-gray-600 mt-1 whitespace-nowrap">Authorization Rate</div>
         </div>
-        <div className="text-center">
-          <div className="text-2xl font-bold text-red-600">{rarMetrics?.rejectionRate ?? 0}%</div>
-          <div className="text-sm text-gray-600">Rejection Rate</div>
+        <div className="text-center flex flex-col justify-center">
+          <div className="text-xl sm:text-2xl font-bold text-red-600 break-words overflow-hidden">
+            {rarMetrics?.rejectionRate ?? 0}%
+          </div>
+          <div className="text-xs sm:text-sm text-gray-600 mt-1 whitespace-nowrap">Rejection Rate</div>
         </div>
       </div>
     </div>

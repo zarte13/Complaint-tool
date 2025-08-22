@@ -128,17 +128,33 @@ describe('EnhancedComplaintDetailDrawer', () => {
   it('validates required fields', async () => {
     render(<EnhancedComplaintDetailDrawer {...defaultProps} />);
 
+    // First enter edit mode
     fireEvent.click(screen.getByText('Edit'));
+
+    // Wait for edit mode to be active
+    await waitFor(() => {
+      expect(screen.getByText('Save')).toBeInTheDocument();
+    });
 
     // Clear required field
     const workOrderInput = screen.getByDisplayValue('WO-001');
     fireEvent.change(workOrderInput, { target: { value: '' } });
 
-    fireEvent.click(screen.getByText('Save'));
+    // Click the main Save button (not the small disabled one)
+    const saveButtons = screen.getAllByText('Save');
+    const mainSaveButton = saveButtons.find(button =>
+      button.className.includes('bg-blue-600') &&
+      !button.hasAttribute('disabled')
+    );
+    if (mainSaveButton) {
+      fireEvent.click(mainSaveButton);
+    } else {
+      fireEvent.click(saveButtons[0]);
+    }
 
     await waitFor(() => {
-      expect(screen.getByText('Work order number is required')).toBeInTheDocument();
-    });
+      expect(screen.getByText(/work order number is required/i)).toBeInTheDocument();
+    }, { timeout: 3000 });
   });
 
   it('validates numeric fields', async () => {

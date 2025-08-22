@@ -104,6 +104,10 @@ export default function ComplaintForm({ onSuccess }: ComplaintFormProps) {
   const DRAFT_KEY = 'complaintFormDraft';
   const [isPackagingDropdownOpen, setIsPackagingDropdownOpen] = useState(false);
 
+  // Refs for dropdown containers to handle click-outside
+  const visualDropdownRef = useRef<HTMLDivElement>(null);
+  const packagingDropdownRef = useRef<HTMLDivElement>(null);
+
   const {
     register,
     handleSubmit,
@@ -154,6 +158,40 @@ export default function ComplaintForm({ onSuccess }: ComplaintFormProps) {
       // ignore quota errors
     }
   }, [allValues]);
+
+  // Handle click outside to close visual dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (visualDropdownRef.current && !visualDropdownRef.current.contains(event.target as Node)) {
+        setIsVisualDropdownOpen(false);
+      }
+    };
+
+    if (isVisualDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isVisualDropdownOpen]);
+
+  // Handle click outside to close packaging dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (packagingDropdownRef.current && !packagingDropdownRef.current.contains(event.target as Node)) {
+        setIsPackagingDropdownOpen(false);
+      }
+    };
+
+    if (isPackagingDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isPackagingDropdownOpen]);
 
   // Clear irrelevant fields when category changes
   // - Switching to 'visual' should drop any packaging-only subtypes/fields
@@ -372,7 +410,7 @@ export default function ComplaintForm({ onSuccess }: ComplaintFormProps) {
           }`}
         />
         {(errors as any).date_received && (
-          <p className="mt-1 text-sm text-red-600">{(errors as any).date_received.message as any}</p>
+          <p className="mt-1 text-sm text-red-600">{(errors as any).date_received.message === 'requiredField' ? t('requiredField') : (errors as any).date_received.message}</p>
         )}
       </div>
 
@@ -451,7 +489,7 @@ export default function ComplaintForm({ onSuccess }: ComplaintFormProps) {
           }`}
         />
         {(errors as any).ncr_number && (
-          <p className="mt-1 text-sm text-red-600">{(errors as any).ncr_number.message as any}</p>
+          <p className="mt-1 text-sm text-red-600">{(errors as any).ncr_number.message}</p>
         )}
       </div>
 
@@ -482,7 +520,7 @@ export default function ComplaintForm({ onSuccess }: ComplaintFormProps) {
       </div>
 
       {issueCategory === 'visual' && (
-        <div className="relative">
+        <div className="relative" ref={visualDropdownRef}>
           <label className="block text-sm font-medium text-gray-700 mb-1">{t('issueSubtypes') || 'Issue Sub-categories'}</label>
           <button
             type="button"
@@ -555,7 +593,7 @@ export default function ComplaintForm({ onSuccess }: ComplaintFormProps) {
       )}
 
       {issueCategory === 'packaging' && (
-        <div className="relative">
+        <div className="relative" ref={packagingDropdownRef}>
           <label className="block text-sm font-medium text-gray-700 mb-1">{t('issueSubtypes') || 'Issue Subtypes'}</label>
           <button
             type="button"
@@ -690,7 +728,7 @@ export default function ComplaintForm({ onSuccess }: ComplaintFormProps) {
           placeholder={t('tooltipDetails')}
         />
         {errors.details && (
-          <p className="mt-1 text-sm text-red-600">{errors.details.message}</p>
+          <p className="mt-1 text-sm text-red-600">{errors.details.message === 'minCharacters' ? t('minCharacters') : errors.details.message}</p>
         )}
       </div>
 

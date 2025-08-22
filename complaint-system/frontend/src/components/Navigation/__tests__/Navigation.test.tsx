@@ -22,12 +22,18 @@ const mockState = {
   login: vi.fn(),
   logout: vi.fn(),
   setTokens: vi.fn(),
+  isAdmin: vi.fn(() => false),
 };
 
 vi.mock('../../../stores/authStore', () => {
   return {
     useAuthStore: (selector?: (s: typeof mockState) => any) =>
       selector ? selector(mockState) : mockState,
+    // Add getState method that returns the state with methods
+    getState: () => ({
+      ...mockState,
+      isAdmin: () => mockState.isAdmin(),
+    }),
   };
 });
 
